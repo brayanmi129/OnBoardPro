@@ -34,8 +34,8 @@ app.use(cors({
     allowedHeaders: ['Content-Type'], // Encabezados permitidos
 }));
 
-app.use('/users', userRoutes);
-app.use('/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 
 
 app.get('/',(req, res) => {
