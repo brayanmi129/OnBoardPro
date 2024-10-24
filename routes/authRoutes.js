@@ -6,7 +6,7 @@ const path = require('path');
 
 
 // Importa el controlador de autenticación
-const AuthController = require('../controllers/authcontroller.js');
+const AuthController = require('../control');
 
 // Definir rutas
 router.post('/localuser', AuthController.AuthUser ); // Ruta para iniciar sesión
