@@ -2,11 +2,11 @@
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
-require('./api/control/externos/google/googleproperties.js');
+require('./control/externos/google/googleproperties.js');
 const app = express();
 
 //firebase
-const { conectfirebase } = require('./api/control/externos/firebase/firebaseinit.js');
+const { conectfirebase } = require('./control/externos/firebase/firebaseinit.js');
 const functions = require('firebase-functions');
 conectfirebase();
 
@@ -36,12 +36,6 @@ app.use(cors({
 
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
-
-
-app.get('/',(req, res) => {
-    res.sendFile(__dirname + '/public/index.html');
-
-});
 
 module.exports = app;
 
