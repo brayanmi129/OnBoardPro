@@ -2,11 +2,11 @@
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
-require('./api/control/externos/google/googleproperties.js');
+require('./control/externos/google/googleproperties.js');
 const app = express();
 
 //firebase
-const { conectfirebase } = require('./api/control/externos/firebase/firebaseinit.js');
+const { conectfirebase } = require('./control/externos/firebase/firebaseinit.js');
 const functions = require('firebase-functions');
 conectfirebase();
 
@@ -17,8 +17,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 //routes
-const userRoutes = require('./api/routes/userroutes.js');
-const authRoutes = require('./api/routes/authRoutes.js');
+const userRoutes = require('./routes/userroutes.js');
+const authRoutes = require('./routes/authRoutes.js');
 
 
 //middlewares para poder recibir datos json
@@ -37,5 +37,7 @@ app.use(cors({
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
-module.exports = app;
+app.listen(3000, () => {
+    console.log('Servidor iniciado en http://localhost:3000');
+});
 
