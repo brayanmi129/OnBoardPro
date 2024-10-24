@@ -2,11 +2,11 @@
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
-require('./Apis/google/googleproperties.js');
+require('./api/control/externos/google/googleproperties.js');
 const app = express();
 
 //firebase
-const { conectfirebase } = require('./Apis/firebase/firebaseinit.js');
+const { conectfirebase } = require('./api/control/externos/firebase/firebaseinit.js');
 const functions = require('firebase-functions');
 conectfirebase();
 
