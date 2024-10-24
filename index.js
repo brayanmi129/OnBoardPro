@@ -3,6 +3,7 @@ const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
 require('./control/externos/google/googleproperties.js');
+const port = process.env.PORT || 3000;
 const app = express();
 
 //firebase
@@ -41,7 +42,7 @@ app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html'); 
 });
 
-app.listen(3000, () => {
+app.listen(port, () => {
     console.log('Servidor iniciado en http://localhost:3000');
 });
 
