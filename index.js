@@ -2,11 +2,11 @@
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
-require('./control/externos/google/googleproperties.js');
+require('./api/control/externos/google/googleproperties.js');
 const app = express();
 
 //firebase
-const { conectfirebase } = require('./control/externos/firebase/firebaseinit.js');
+const { conectfirebase } = require('./api/control/externos/firebase/firebaseinit.js');
 const functions = require('firebase-functions');
 conectfirebase();
 
@@ -17,8 +17,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 //routes
-const userRoutes = require('./routes/userroutes.js');
-const authRoutes = require('./routes/authRoutes.js');
+const userRoutes = require('./api/routes/userroutes.js');
+const authRoutes = require('./api/routes/authRoutes.js');
 
 
 //middlewares para poder recibir datos json
