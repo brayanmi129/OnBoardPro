@@ -39,7 +39,7 @@ app.use('/auth', authRoutes);
 
 
 app.get('/',(req, res) => {
-    res.sendFile(__dirname + '/publics/index.html');
+    res.sendFile(__dirname + '/public/index.html');
 
 });
 
