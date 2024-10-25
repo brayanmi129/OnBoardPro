@@ -6,7 +6,7 @@ const port = process.env.PORT || 3000;
 const app = express();
 
 //firebase
-const { conectfirebase } = require('./api-ext/firebase/firebaseinit.js');
+const { conectfirebase } = require('../api-ext/firebase/firebaseinit.js');
 conectfirebase();
 
 //google
@@ -16,8 +16,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 //routes
-const userRoutes = require('./routes/userroutes.js');
-const authRoutes = require('./routes/authRoutes.js');
+const userRoutes = require('../routes/userroutes.js');
+const authRoutes = require('../routes/authRoutes.js');
 
 
 //middlewares para poder recibir datos json
@@ -44,3 +44,5 @@ app.listen(port, () => {
     console.log('Servidor iniciado en http://localhost:3000');
 });
 
+
+module.exports = app; // Exporta la aplicación
