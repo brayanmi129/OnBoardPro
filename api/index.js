@@ -36,10 +36,14 @@ app.use(cors({
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 
+app.get('/login', (req, res) => {
+    res.sendFile(__dirname + '/public/inicio.html'); 
+});
+
 app.get('/*', (req, res) => {
     res.sendFile(__dirname + '/public/index.html'); 
 });
 
-app.listen(port, () => {
-    console.log('Servidor iniciado en http://localhost:3000');
-});
+// app.listen(port, () => console.log('Server ready on port 3000.'));
+
+module.exports = app;
