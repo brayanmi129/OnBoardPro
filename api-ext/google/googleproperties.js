@@ -1,6 +1,6 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const UserController = require('../../usercontroller.js');
+const UserController = require('../../control/usercontroller.js');
 const { getdb } = require('../firebase/firebaseinit.js');
 const User = require('../../entidad/usuario.js'); // Importar la clase User
 

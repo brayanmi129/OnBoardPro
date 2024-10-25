@@ -2,12 +2,12 @@
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
-require('./externos/google/googleproperties.js');
+// require('./api-ext/google/googleproperties.js');
 const port = process.env.PORT || 3000;
 const app = express();
 
 //firebase
-const { conectfirebase } = require('./control/externos/firebase/firebaseinit.js');
+const { conectfirebase } = require('./api-ext/firebase/firebaseinit.js');
 const functions = require('firebase-functions');
 conectfirebase();
 
@@ -35,14 +35,18 @@ app.use(cors({
     allowedHeaders: ['Content-Type'], // Encabezados permitidos
 }));
 
-app.use('/api/users', userRoutes);
-app.use('/api/auth', authRoutes);
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/public/index.html'); 
+app.get('/',(req, res) => {
+    res.sendFile(__dirname + '/public/index.html');
+
 });
 
-app.listen(port, () => {
-    console.log('Servidor iniciado en http://localhost:3000');
+app.use('/users', userRoutes);
+app.use('/auth', authRoutes);
+
+app.listen(3000, () => {
+    console.log('Server is running on http://localhost:3000');
 });
+
+exports.server = functions.https.onRequest(app);
 

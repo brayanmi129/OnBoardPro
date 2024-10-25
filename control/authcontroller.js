@@ -1,9 +1,5 @@
 const functions = require('firebase-functions'); // Importar funciones de Firebase
-const { getdb } = require('./externos/firebase/firebaseinit.js'); // Importar la instancia de Firestore
-
-
-
-require('./externos/google/googleproperties.js');
+const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
 
 
 
