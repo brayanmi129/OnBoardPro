@@ -16,7 +16,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 //routes
-const userRoutes = require('./routes/useRoutes.js');
+const userRoutes = require('./routes/userRoutes.js');
 const authRoutes = require('./routes/authRoutes.js');
 
 
