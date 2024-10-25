@@ -29,7 +29,7 @@ app.use(cors({
 
 //routes
 const userRoutes = require('./routes/userroutes.js');
-const authRoutes = require('./routes/authRoutes.js');
+const authRoutes = require('./routes/authroutes.js');
 
 app.use('/users', userRoutes);
 app.use('/auth', authRoutes);
