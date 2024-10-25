@@ -28,7 +28,7 @@ router.get('/google/callback',
         console.log(`Usuario autenticado: ${userEmail}`); // Imprime el correo electrónico en la consola
 
         // Redirige a la página de éxito o envía una respuesta JSON
-        res.status(200).sendFile(path.join(__dirname, '../public/inicio.html'));
+        res.status(200).sendFile(path.join(__dirname, '../public/index.html'));
     }
 );
 
