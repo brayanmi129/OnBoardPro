@@ -16,7 +16,7 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 //routes
-const userRoutes = require('./routes/userroutes.js');
+const userRoutes = require('./routes/useRoutes.js');
 const authRoutes = require('./routes/authRoutes.js');
 
 
@@ -33,12 +33,9 @@ app.use(cors({
     allowedHeaders: ['Content-Type'], // Encabezados permitidos
 }));
 
-app.use('/api/users', userRoutes);
-app.use('/api/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/auth', authRoutes);
 
-app.get('/login', (req, res) => {
-    res.sendFile(__dirname + '/public/inicio.html'); 
-});
 
 app.get('/*', (req, res) => {
     res.sendFile(__dirname + '/public/index.html'); 
