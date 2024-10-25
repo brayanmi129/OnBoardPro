@@ -1,1 +1,64 @@
-<!doctype html><html lang="en"><head><meta charset="utf-8"/><link rel="icon" href="/favicon.ico"/><meta name="viewport" content="width=device-width,initial-scale=1"/><meta name="theme-color" content="#000000"/><meta name="description" content="Web site created using create-react-app"/><link rel="apple-touch-icon" href="/logo192.png"/><link rel="manifest" href="/manifest.json"/><title>Studify</title><script defer="defer" src="/static/js/main.2bc1c331.js"></script><link href="/static/css/main.2976d2b3.css" rel="stylesheet"></head><body><noscript>You need to enable JavaScript to run this app.</noscript><div id="root"></div></body></html>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>studify pruebas</title>
+</head>
+<body>
+
+  <h1>studify pruebas</h1>
+  <input type="text" id="user" placeholder="user">
+  <input type="password" id="password" placeholder="password">
+
+  <button class="boton"> login normal </button>
+
+  <button class="botonGmail"> Gmail </button>
+
+  <script>
+    const boton = document.querySelector('.boton');
+    const gmail = document.querySelector('.botonGmail');
+
+    boton.addEventListener('click', async () => {
+      console.log("hola")
+      const user = document.querySelector('#user').value;
+      const password = document.querySelector('#password').value;
+
+      try {
+      const response = await fetch('http://localhost:3000/auth/localuser', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ user, password })
+      });
+      
+      // Verificar si la respuesta fue exitosa
+      if (response.ok) {
+        const message = await response.text(); // Obtener la respuesta como texto
+        console.log(message); // Puedes mostrar el mensaje en la consola
+        window.location.href = "http://localhost:3000/inicio.html"; // Redirigir a la página de inicio
+      } else {
+        const errorMessage = await response.text(); // Obtener el mensaje de error
+        console.error("Error:", errorMessage);
+        alert("Error: " + errorMessage); // Mostrar error al usuario
+      }
+    } catch (error) {
+      console.error("Error al realizar la petición:", error);
+      alert("Error de conexión. Por favor, intenta nuevamente.");
+    }
+
+
+
+    });
+
+
+    gmail.addEventListener('click', async () => {
+
+        window.location.href = "http://localhost:3000/auth/google";
+    });
+     
+  </script>
+  
+</body>
+</html>
