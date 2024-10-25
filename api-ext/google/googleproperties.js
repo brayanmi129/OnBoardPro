@@ -7,7 +7,7 @@ const User = require('../../entidad/usuario.js'); // Importar la clase User
 passport.use(new GoogleStrategy({
     clientID: '93795014782-iq9pi0sqeei1290k81lugr3nhclhej26.apps.googleusercontent.com',
     clientSecret: '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',
-    callbackURL: 'http://localhost:3000/auth/google/callback'
+    callbackURL: 'https://studifyuc.onrender.com/auth/google/callback'
 }, async (accessToken, refreshToken, profile, done) => {
     try {
         // Intentar encontrar al usuario por su correo
