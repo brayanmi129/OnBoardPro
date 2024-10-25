@@ -15,8 +15,15 @@ app.use(session({ secret: 'studify2024', resave: false, saveUninitialized: true 
 app.use(passport.initialize());
 app.use(passport.session());
 
+//routes
+const userRoutes = require('./routes/userroutes.js');
+const authRoutes = require('./routes/authRoutes.js');
+
+
+//middlewares para poder recibir datos json
 app.use(express.json());
 app.use(express.static('public'));
+
 
 const cors = require('cors');
 
@@ -26,24 +33,14 @@ app.use(cors({
     allowedHeaders: ['Content-Type'], // Encabezados permitidos
 }));
 
+app.use('/api/users', userRoutes);
+app.use('/api/auth', authRoutes);
 
-//routes
-const userRoutes = require('./routes/userroutes.js');
-const authRoutes = require('./routes/authroutes.js');
-
-app.use('/users', userRoutes);
-app.use('/auth', authRoutes);
-
-app.get('/login', (req, res) => {
-    res.sendFile(__dirname + '/public/inicio.html');
-});
-
-
-app.get('/', (req, res) => {
+app.get('/*', (req, res) => {
     res.sendFile(__dirname + '/public/index.html'); 
 });
 
-
 app.listen(port, () => {
-  console.log(`port runing in http://localhost:${port}`);
+    console.log('Servidor iniciado en http://localhost:3000');
 });
+
