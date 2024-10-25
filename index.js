@@ -15,11 +15,24 @@ app.use(session({ secret: 'studify2024', resave: false, saveUninitialized: true 
 app.use(passport.initialize());
 app.use(passport.session());
 
+app.use(express.json());
+app.use(express.static('public'));
+
+const cors = require('cors');
+
+app.use(cors({
+    origin: '*', // Permitir solo este origen
+    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
+    allowedHeaders: ['Content-Type'], // Encabezados permitidos
+}));
+
 
 //routes
 const userRoutes = require('./routes/userroutes.js');
-// const authRoutes = require('./routes/authRoutes.js');
+const authRoutes = require('./routes/authRoutes.js');
 
+app.use('/users', userRoutes);
+app.use('/auth', authRoutes);
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html'); 
