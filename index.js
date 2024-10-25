@@ -2,7 +2,6 @@
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
-require('./externos/google/googleproperties.js');
 const port = process.env.PORT || 3000;
 const app = express();
 
