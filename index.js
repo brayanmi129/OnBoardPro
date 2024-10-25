@@ -28,11 +28,11 @@ app.use(cors({
 
 
 //routes
-// const userRoutes = require('./routes/userroutes.js');
-// const authRoutes = require('./routes/authRoutes.js');
+const userRoutes = require('./routes/userroutes.js');
+const authRoutes = require('./routes/authRoutes.js');
 
-// app.use('/users', userRoutes);
-// app.use('/auth', authRoutes);
+app.use('/users', userRoutes);
+app.use('/auth', authRoutes);
 
 app.get('/login', (req, res) => {
     res.sendFile(__dirname + '/public/inicio.html');
