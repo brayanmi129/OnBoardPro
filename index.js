@@ -6,7 +6,7 @@ const port = process.env.PORT || 3000;
 const app = express();
 
 //firebase
-const { conectfirebase } = require('./control/externos/firebase/firebaseinit.js');
+const { conectfirebase } = require('./api-ext/firebase/firebaseinit.js');
 const functions = require('firebase-functions');
 conectfirebase();
 
