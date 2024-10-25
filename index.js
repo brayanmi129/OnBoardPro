@@ -9,6 +9,17 @@ const app = express();
 const { conectfirebase } = require('./api-ext/firebase/firebaseinit.js');
 conectfirebase();
 
+//google
+app.use(session({ secret: 'studify2024', resave: false, saveUninitialized: true }));
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+
+//routes
+const userRoutes = require('./routes/userroutes.js');
+const authRoutes = require('./routes/authRoutes.js');
+
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html'); 
