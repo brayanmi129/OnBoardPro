@@ -16,8 +16,8 @@ app.use(passport.initialize());
 app.use(passport.session());
 
 //routes
-const userRoutes = require('../routes/userroutes.js');
-const authRoutes = require('../routes/authRoutes.js');
+const userRoutes = require('./routes/userroutes.js');
+const authRoutes = require('./routes/authRoutes.js');
 
 
 //middlewares para poder recibir datos json
