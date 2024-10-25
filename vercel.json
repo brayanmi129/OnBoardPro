@@ -1,10 +1,11 @@
 {
-  "functions": {
-  "index.js": {
-    "runtime": "@now/node@1.6.1"
-  }
-  },
-  "rewrites": [{
-  "source": "/(.*)", "destination": "index.js"
+    "builds": [
+      {
+        "src": "./index.js",
+        "use": "@vercel/node"
+      }
+    ],
+    "rewrites": [{
+    "source": "/api/(.*)", "destination": "/index.js"
   }]
   }

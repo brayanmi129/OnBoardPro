@@ -6,7 +6,7 @@ const port = process.env.PORT || 3000;
 const app = express();
 
 //firebase
-const { conectfirebase } = require('../api-ext/firebase/firebaseinit.js');
+const { conectfirebase } = require('./api-ext/firebase/firebaseinit.js');
 conectfirebase();
 
 //google
@@ -43,6 +43,3 @@ app.get('/*', (req, res) => {
 app.listen(port, () => {
     console.log('Servidor iniciado en http://localhost:3000');
 });
-
-
-module.exports = app; // Exporta la aplicación
