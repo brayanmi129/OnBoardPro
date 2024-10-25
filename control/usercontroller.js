@@ -1,4 +1,4 @@
-const functions = require('firebase-functions'); // Importar funciones de Firebase
+
 const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
 
 class UserController {

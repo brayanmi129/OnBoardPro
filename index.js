@@ -2,6 +2,7 @@
 const express = require('express');
 const session = require('express-session');
 const passport = require('passport');
+require('dotenv').config(); // Importar la configuración de las variables de entorno
 const port = process.env.PORT || 3000;
 const app = express();
 
@@ -10,7 +11,7 @@ const { conectfirebase } = require('./api-ext/firebase/firebaseinit.js');
 conectfirebase();
 
 //google
-app.use(session({ secret: 'studify2024', resave: false, saveUninitialized: true }));
+app.use(session({ secret: 'studify2024', resave: false, saveUninitialized: false }));
 
 app.use(passport.initialize());
 app.use(passport.session());
