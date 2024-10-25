@@ -5,6 +5,10 @@ const passport = require('passport');
 const port = process.env.PORT || 3000;
 const app = express();
 
+//firebase
+const { conectfirebase } = require('./api-ext/firebase/firebaseinit.js');
+conectfirebase();
+
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/public/index.html'); 
