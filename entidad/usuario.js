@@ -4,13 +4,13 @@ class User {
     // Definir el esquema Zod para validar los datos de usuario
     static schema = zod.object({
         username: zod.string().min(1).max(50),
-        fisrtname: zod.string().min(1).max(50),
-        lastname: zod.string().min(1).max(50),
-        phonumber: zod.string().min(1).max(50),
+        fisrtname: zod.string().min(1).max(50).optional(),
+        lastname: zod.string().min(1).max(50).optional(),
+        phonumber: zod.string().min(1).max(50).optional(),
         email: zod.string().email(), // Validar que el correo sea un formato válido
-        level: zod.number().int(),
+        level: zod.number().int().optional(),
         password: zod.string().optional(), // Contraseña opcional
-        courses: zod.array(zod.number().int()),
+        courses: zod.array(zod.number().int()).optional(),
         rol: zod.enum(['Aprendiz', 'SuperAdmin', 'Capacitador']).default('Estudiante'), // Rol por defecto
    });
 
@@ -34,7 +34,6 @@ class User {
     // Método para obtener los datos del usuario
     getUserData() {
         return {
-            id: this.id,
             username: this.username,
             fisrtname: this.fisrtname,
             lastname: this.lastname,

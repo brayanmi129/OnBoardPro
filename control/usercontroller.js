@@ -1,5 +1,6 @@
 
 const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
+const User  = require('../entidad/usuario.js')
 
 class UserController {
 
@@ -50,7 +51,36 @@ class UserController {
             return userData; // Retorna el objeto con los datos del usuario
         } catch (error) {
             console.error("Error al obtener el usuario", email, error);
-            throw new Error("Error al obtener el usuario");
+        }
+    }
+
+    async getUsersByEmailByrequest(req, res) {
+        const email = req.params.email;
+
+        const db = getdb();
+        const collectionReference = db.collection('users');
+    
+        try {
+            const snapshot = await collectionReference.where('email', '==', email).get();
+    
+            if (snapshot.empty) {
+                console.log('No matching documents for email:', email);
+                res.status(404).send('No matching documents for email:', email);
+            }
+    
+            let userData = null; // Variable para almacenar los datos del usuario
+            snapshot.forEach(doc => {
+                console.log('ID del usuario encontrado: ', doc.id);
+                userData = {
+                    id: doc.id, // ID del documento
+                    ...doc.data() // Datos del documento
+                };
+            });
+    
+            res.status(200).send(userData); // Retorna el objeto con los datos del usuario
+        } catch (error) {
+            console.error("Error al obtener el usuario", email, error);
+            res.status(500).send('No matching documents for email:', email);
         }
     }
 
@@ -73,6 +103,41 @@ class UserController {
             throw new Error("Error al crear el usuario");
         }
     }
+
+    async createUserByRequest(req, res) {
+        const db = getdb(); // Obtén la instancia de la base de datos
+        const collectionReference = db.collection('users'); // Referencia a la colección 'users'
+    
+        try {
+            // Obtiene los datos del usuario desde el cuerpo de la solicitud
+            const userData = req.body;
+    
+            // Valida los datos usando el esquema Zod de la clase User
+            const validationResult = User.validate(userData);
+    
+            // Si la validación falla, responde con un error y los detalles de la validación
+            if (!validationResult.success) {
+                return res.status(400).json({
+                    error: 'Datos de usuario no válidos',
+                    details: validationResult.error.errors
+                });
+            }
+    
+            // Si la validación es exitosa, crea el nuevo documento en la colección 'users'
+            const docRef = await collectionReference.add(userData);
+            console.log('Usuario creado con ID:', docRef.id);
+    
+            // Retorna el objeto del usuario creado, incluyendo su ID
+            res.status(201).json({
+                id: docRef.id,
+                ...userData
+            });
+        } catch (error) {
+            console.error("Error al crear el usuario:", error);
+            res.status(500).json({ error: 'Error al crear el usuario' });
+        }
+    }
+    
 }
 
 module.exports = new UserController();

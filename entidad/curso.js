@@ -4,8 +4,8 @@ class Course {
     // Definir el esquema Zod para validar los datos de usuario
     static schema = zod.object({
         name: zod.string().min(1).max(50),
-        capacitador: zod.string().min(1).max(50),
-        aprendices: zod.array(zod.string()), // array de aprendices
+        capacitador: zod.string().email(),
+        aprendices: zod.array(zod.string().email()), // array de aprendices
         material: zod.array(zod.number().int()),
         entregas: zod.array(zod.number().int())
     });
