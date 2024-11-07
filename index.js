@@ -11,15 +11,25 @@ const { conectfirebase } = require('./api-ext/firebase/firebaseinit.js');
 conectfirebase();
 
 //google
-app.use(session({ secret: 'studify2024', resave: false, saveUninitialized: false }));
+app.use(session({
+    secret: 'studify2024', 
+    resave: false, 
+    saveUninitialized: false,
+    cookie: { 
+        secure: false,  // Si estás usando HTTP
+        maxAge: 1000 * 60 * 60 * 24 // 1 día, por ejemplo
+    }
+}));
 
+
+// Inicializar Passport y el middleware de sesión
 app.use(passport.initialize());
 app.use(passport.session());
 
 //routes
 const userRoutes = require('./routes/userRoutes.js');
 const authRoutes = require('./routes/authRoutes.js');
-
+const courseRoutes = require('./routes/coursesRoutes.js');
 
 //middlewares para poder recibir datos json
 app.use(express.json());
@@ -36,6 +46,7 @@ app.use(cors({
 
 app.use('/users', userRoutes);
 app.use('/auth', authRoutes);
+app.use('/courses', courseRoutes);
 
 
 app.get('/*', (req, res) => {

@@ -3,10 +3,10 @@ const express = require('express');
 const router = express.Router();
 
 // Importa el controlador de autenticación
-const UserController = require('../control/usercontroller.js');
+const CourseController = require('../control/coursescontroller.js');
 
 // Definir rutas
-router.get('/get', UserController.getUsers); // Ruta para iniciar sesión
+router.get('/get', CourseController.getCourses); // Ruta para iniciar sesión
 
 
 module.exports = router; // Exporta el router

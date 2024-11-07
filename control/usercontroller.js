@@ -73,8 +73,6 @@ class UserController {
             throw new Error("Error al crear el usuario");
         }
     }
-
-
 }
 
 module.exports = new UserController();

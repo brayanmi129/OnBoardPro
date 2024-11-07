@@ -1,9 +1,10 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const UserController = require('../../control/usercontroller.js');
 const { getdb } = require('../firebase/firebaseinit.js');
+
+const UserController = require('../../control/usercontroller.js');
+const AuthController = require('../../control/authcontroller.js');
 const User = require('../../entidad/usuario.js'); // Importar la clase User
-const {  doc, getDoc, } = require('firebase/firestore'); // Asegúrate de que el path sea correcto
 
 
 passport.use(new GoogleStrategy({
@@ -12,32 +13,8 @@ passport.use(new GoogleStrategy({
     callbackURL: `${process.env.URL}/auth/google/callback`
 }, async (accessToken, refreshToken, profile, done) => {
     try {
-        // Intentar encontrar al usuario por su correo
-        console.log('Perfil de Google:', profile);
-        const existingUser = await UserController.getuserbyemail(profile.emails[0].value);
-
-        if (existingUser) {
-            return done(null, existingUser);
-        } else {
-            // Crear un nuevo usuario usando la clase User
-            const newUser = new User({
-                username: profile.displayName, 
-                email: profile.emails[0].value,
-                rol: 'Estudiante', 
-            });
-
-            // Validar el usuario usando el esquema Zod
-            const validation = User.validate(newUser.getUserData());
-            if (!validation.success) {
-                throw new Error(validation.error.errors[0].message);
-            }else{
-            // Crear el usuario en Firestore
-            const createdUser = await UserController.createUser(newUser.getUserData());
-            console.log('Usuario creado:', createdUser);
-            return done(null, createdUser);
-            }
-
-        }
+        const user = await AuthController.AuthUserByGoogleMethod(profile);
+        return done(null, user);
     } catch (error) {
         console.error('Error en GoogleStrategy:', error);
         done(error);
@@ -46,16 +23,18 @@ passport.use(new GoogleStrategy({
 
 
 passport.serializeUser((user, done) => {
+    console.log('Usuario encontrado serial :', user.id);
     done(null, user.id); // Serializar el usuario por ID
 });
 
 
 passport.deserializeUser(async (id, done) => {
+    console.log("Entrando a deserealizacion");
     try {
         const db = getdb(); // Asegúrate de que esta función obtenga correctamente la instancia de Firestore
         const userRef = db.collection('users').doc(id);
         const userDoc = await userRef.get();
-        console.log('Usuario encontrado:', userDoc.data());
+        console.log('Usuario encontrado deserializacion:', userDoc.data());
 
         if (userDoc.exists) {
             done(null, userDoc.data()); // Si el documento existe, retorna los datos del usuario
@@ -63,7 +42,7 @@ passport.deserializeUser(async (id, done) => {
             done(new Error('Usuario no encontrado')); // Si no existe, lanza error
         }
     } catch (err) {
-        done(err); // Maneja errores
+        done("error en deserealizacion: " , err); // Maneja errores
     }
 });
 
