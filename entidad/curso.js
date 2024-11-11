@@ -4,18 +4,20 @@ class Course {
     // Definir el esquema Zod para validar los datos de usuario
     static schema = zod.object({
         name: zod.string().min(1).max(50),
-        capacitador: zod.string().email(),
+        Instructor: zod.string().email(),
         aprendices: zod.array(zod.string().email()), // array de aprendices
         material: zod.array(zod.number().int()),
-        entregas: zod.array(zod.number().int())
+        entregas: zod.array(zod.number().int()),
+        status: zod.enum(['En curso', 'Cerrado','Abierto']).default('Abierto'), // Rol por defecto
     });
 
-    constructor({ name, capacitador, aprendices = [], material = [], entregas = [] }) {
+    constructor({ name, Instructor, aprendices = [], material = [], entregas = [] , status = 'Abierto'}) {
         this.name = name;
-        this.capacitador = capacitador;
+        this.Instructor = Instructor;
         this.aprendices = aprendices;
         this.material = material;
         this.entregas = entregas;
+        this.status = status
     }
 
     // Método para validar una instancia de usuario usando Zod
@@ -27,7 +29,7 @@ class Course {
     getCourseData() {
         return {
             name: this.name,
-            capacitador: this.capacitador,
+            Instructor: this.Instructor,
             aprendices: this.aprendices,
             material: this.material,
             entregas: this.entregas,

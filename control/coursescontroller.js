@@ -25,6 +25,57 @@ class CourseController {
             res.status(500).send("Error al obtener los usuarios");
         }
     }
+
+    async searchUserById(id) {
+    
+        const db = getdb();
+        const collectionReference = db.collection('courses');
+    
+        try {
+            const doc = await collectionReference.doc(id).get();
+    
+            if (!doc.exists) {
+                console.log('No matching document with ID:', id);
+            }
+    
+            const userData = {
+                id: doc.id, // ID del documento
+                ...doc.data() // Datos del documento
+            };
+    
+            return userData; // Retorna el objeto con los datos del usuario
+        } catch (error) {
+            console.error("Error al obtener el curso con ID", id, error);
+        
+        }
+    }
+
+    async searchUserByIdByRequest(req, res) {
+        const id = req.params.id; // ID del documento a buscar
+    
+        const db = getdb();
+        const collectionReference = db.collection('courses');
+    
+        try {
+            const doc = await collectionReference.doc(id).get();
+    
+            if (!doc.exists) {
+                console.log('No matching document with ID:', id);
+                return res.status(404).send('No matching document with ID: ' + id);
+            }
+    
+            const userData = {
+                id: doc.id, // ID del documento
+                ...doc.data() // Datos del documento
+            };
+    
+            res.status(200).send(userData); // Retorna el objeto con los datos del usuario
+        } catch (error) {
+            console.error("Error al obtener el usuario con ID", id, error);
+            res.status(500).send('Error al obtener el usuario con ID: ' + id);
+        }
+    }
+    
 }
 
 module.exports = new CourseController();

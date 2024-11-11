@@ -11,11 +11,11 @@ class User {
         level: zod.number().int().optional(),
         password: zod.string().optional(), // Contraseña opcional
         courses: zod.array(zod.number().int()).optional(),
-        rol: zod.enum(['Aprendiz', 'SuperAdmin', 'Capacitador']).default('Estudiante'), // Rol por defecto
-        rol: zod.enum(['Active', 'Inactive']).default('Active'), // Rol por defecto
+        rol: zod.enum(['Aprendiz', 'SuperAdmin', 'Instructor']).default('Estudiante'), // Rol por defecto
+        status: zod.enum(['Active', 'Inactive']).default('Active'), // Rol por defecto
    });
 
-    constructor({username, fisrtname = '', lastname = '', phonumber ='', email, level = 0, password = '', courses = [], rol = 'Aprendiz' }) {
+    constructor({username, fisrtname = '', lastname = '', phonumber ='', email, level = 0, password = '', courses = [], rol = 'Aprendiz' , status = 'Active'}) {
         this.username = username;
         this.fisrtname = fisrtname;
         this.lastname = lastname;
@@ -25,6 +25,7 @@ class User {
         this.password = password;
         this.courses = courses;
         this.rol = rol;
+        this.status = status;
     }
 
     // Método para validar una instancia de usuario usando Zod
