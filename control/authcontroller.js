@@ -51,9 +51,8 @@ class AuthController {
         }
     }
 
-    async AuthUserByGoogleMethod(profile) {  
-
-        const existingUser = await UserController.getuserbyemail(profile.emails[0].value);
+    async AuthUserByGoogleMethod(profile) { 
+        const existingUser = await UserController.searchUserbyEmail(profile.emails[0].value);
         if (existingUser) {
             return existingUser
         } else {

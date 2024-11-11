@@ -27,7 +27,7 @@ class UserController {
         }
     }
 
-    async getuserbyemail(email) {
+    async searchUserbyEmail(email) {
         const db = getdb();
         const collectionReference = db.collection('users');
     
@@ -54,7 +54,7 @@ class UserController {
         }
     }
 
-    async getUsersByEmailByrequest(req, res) {
+    async searchUsersByEmailByrequest(req, res) {
         const email = req.params.email;
 
         const db = getdb();
@@ -81,6 +81,111 @@ class UserController {
         } catch (error) {
             console.error("Error al obtener el usuario", email, error);
             res.status(500).send('No matching documents for email:', email);
+        }
+    }
+
+    async searchUserById(userId) {
+    
+        const db = getdb();
+        const collectionReference = db.collection('users');
+    
+        try {
+            const doc = await collectionReference.doc(userId).get();
+    
+            if (!doc.exists) {
+                console.log('No matching document with ID:', userId);
+            }
+    
+            const userData = {
+                id: doc.id, // ID del documento
+                ...doc.data() // Datos del documento
+            };
+    
+            return userData; // Retorna el objeto con los datos del usuario
+        } catch (error) {
+            console.error("Error al obtener el usuario con ID", userId, error);
+        
+        }
+    }
+
+    async searchUserByIdByRequest(req, res) {
+        const userId = req.params.id; // ID del documento a buscar
+    
+        const db = getdb();
+        const collectionReference = db.collection('users');
+    
+        try {
+            const doc = await collectionReference.doc(userId).get();
+    
+            if (!doc.exists) {
+                console.log('No matching document with ID:', userId);
+                return res.status(404).send('No matching document with ID: ' + userId);
+            }
+    
+            const userData = {
+                id: doc.id, // ID del documento
+                ...doc.data() // Datos del documento
+            };
+    
+            res.status(200).send(userData); // Retorna el objeto con los datos del usuario
+        } catch (error) {
+            console.error("Error al obtener el usuario con ID", userId, error);
+            res.status(500).send('Error al obtener el usuario con ID: ' + userId);
+        }
+    }
+
+    async searchUsersByRole(role) {
+    
+        const db = getdb();
+        const collectionReference = db.collection('users');
+    
+        try {
+            const snapshot = await collectionReference.where('rol', '==', rol).get();
+    
+            if (snapshot.empty) {
+                console.log('No matching documents for role:', role);
+            }
+    
+            const usersData = []; // Array para almacenar los datos de todos los usuarios que cumplen el rol
+            snapshot.forEach(doc => {
+                usersData.push({
+                    id: doc.id, // ID del documento
+                    ...doc.data() // Datos del documento
+                });
+            });
+    
+            return usersData; // Retorna un array con los datos de los usuarios
+        } catch (error) {
+            console.error("Error al obtener usuarios con rol", role, error);
+            res.status(500).send('Error al obtener usuarios con rol: ' + role);
+        }
+    }
+
+    async searchUsersByRoleByRequest(req, res) {
+        const role = req.params.role; // El valor de "rol" a buscar
+    
+        const db = getdb();
+        const collectionReference = db.collection('users');
+    
+        try {
+            const snapshot = await collectionReference.where('rol', '==', role).get();
+    
+            if (snapshot.empty) {
+                console.log('No matching documents for role:', role);
+                return res.status(404).send('No matching documents for role: ' + role);
+            }
+    
+            const usersData = []; // Array para almacenar los datos de todos los usuarios que cumplen el rol
+            snapshot.forEach(doc => {
+                usersData.push({
+                    id: doc.id, // ID del documento
+                    ...doc.data() // Datos del documento
+                });
+            });
+    
+            res.status(200).send(usersData); // Retorna un array con los datos de los usuarios
+        } catch (error) {
+            console.error("Error al obtener usuarios con rol", role, error);
         }
     }
 

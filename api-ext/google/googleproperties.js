@@ -23,7 +23,7 @@ passport.use(new GoogleStrategy({
 
 
 passport.serializeUser((user, done) => {
-    console.log('Usuario encontrado serial :', user.id);
+    console.log('Usuario encontrado en serialisacion:', user.id);
     done(null, user.id); // Serializar el usuario por ID
 });
 
@@ -34,7 +34,6 @@ passport.deserializeUser(async (id, done) => {
         const db = getdb(); // Asegúrate de que esta función obtenga correctamente la instancia de Firestore
         const userRef = db.collection('users').doc(id);
         const userDoc = await userRef.get();
-        console.log('Usuario encontrado deserializacion:', userDoc.data());
 
         if (userDoc.exists) {
             done(null, userDoc.data()); // Si el documento existe, retorna los datos del usuario

@@ -12,6 +12,7 @@ class User {
         password: zod.string().optional(), // Contraseña opcional
         courses: zod.array(zod.number().int()).optional(),
         rol: zod.enum(['Aprendiz', 'SuperAdmin', 'Capacitador']).default('Estudiante'), // Rol por defecto
+        rol: zod.enum(['Active', 'Inactive']).default('Active'), // Rol por defecto
    });
 
     constructor({username, fisrtname = '', lastname = '', phonumber ='', email, level = 0, password = '', courses = [], rol = 'Aprendiz' }) {
