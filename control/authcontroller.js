@@ -10,12 +10,12 @@ class AuthController {
 
     async AuthUserByNormalMethod(req, res) {
         const db = getdb();
-        const { user, password } = req.body; // Extraer correctamente user y password
+        const { email, password } = req.body; // Extraer correctamente user y password
         const collectionReference = db.collection('users');
 
         try {
             // Buscar el usuario por nombre
-            const snapshot = await collectionReference.where('name', '==', user).get();
+            const snapshot = await collectionReference.where('email', '==', email).get();
 
             if (snapshot.empty) {
                 res.status(404).send('No matching documents.');
