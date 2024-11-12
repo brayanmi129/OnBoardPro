@@ -18,7 +18,7 @@ class AuthController {
             const snapshot = await collectionReference.where('email', '==', email).get();
 
             if (snapshot.empty) {
-                res.status(404).send('No matching documents.');
+                res.status(404).send('No esiste usuario con ese email.');
                 return;
             }
 
@@ -43,7 +43,7 @@ class AuthController {
                     res.status(401).send('Contraseña incorrecta');
                 }
             } else {
-                res.send('No matching documents.');
+                res.status(400).send('No se encontro documento para el id del email.');
             }
         } catch (error) {
             console.error("Error al obtener los usuarios: ", error);
