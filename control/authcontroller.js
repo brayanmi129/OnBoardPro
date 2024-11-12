@@ -18,7 +18,7 @@ class AuthController {
             const snapshot = await collectionReference.where('name', '==', user).get();
 
             if (snapshot.empty) {
-                res.send('No matching documents.');
+                res.status(404).send('No matching documents.');
                 return;
             }
 
