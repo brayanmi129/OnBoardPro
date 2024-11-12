@@ -18,7 +18,7 @@ class AuthController {
             const snapshot = await collectionReference.where('email', '==', email).get();
 
             if (snapshot.empty) {
-                res.status(404).send('No esiste usuario con ese email.');
+                res.status(404).send('No existe usuario con ese email.');
                 return;
             }
 

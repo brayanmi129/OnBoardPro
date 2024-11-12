@@ -53,4 +53,4 @@ app.get('/*', (req, res) => {
     res.sendFile(__dirname + '/public/index.html'); 
 });
 
-app.listen(port, () => console.log('Server ready on port 3000.'));
+app.listen(port, () => console.log(`Server ready on port ${port}.`));
