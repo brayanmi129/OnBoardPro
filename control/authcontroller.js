@@ -58,9 +58,17 @@ class AuthController {
         } else {
             // Crear un nuevo usuario usando la clase User
             const newUser = new User({
-                username: profile.displayName, 
+                fisrtname: profile.displayName, 
                 email: profile.emails[0].value,
                 rol: 'Estudiante', 
+                lastname: '',
+                phonumber: '',
+                level: 0,
+                password: '',
+                courses: [],
+                group: 'onboarding',
+                status: 'Active',
+                
             });
 
             // Validar el usuario usando el esquema Zod

@@ -5,16 +5,16 @@ class Course {
     static schema = zod.object({
         name: zod.string().min(1).max(50),
         Instructor: zod.string().email(),
-        aprendices: zod.array(zod.string().email()), // array de aprendices
+        grupo : zod.string().min(1).max(50),
         material: zod.array(zod.number().int()),
         entregas: zod.array(zod.number().int()),
         status: zod.enum(['En curso', 'Cerrado','Abierto']).default('Abierto'), // Rol por defecto
     });
 
-    constructor({ name, Instructor, aprendices = [], material = [], entregas = [] , status = 'Abierto'}) {
+    constructor({ name, Instructor, material = [], entregas = [] , status = 'Abierto'}) {
         this.name = name;
         this.Instructor = Instructor;
-        this.aprendices = aprendices;
+        this.grupo = grupo;
         this.material = material;
         this.entregas = entregas;
         this.status = status
@@ -30,7 +30,7 @@ class Course {
         return {
             name: this.name,
             Instructor: this.Instructor,
-            aprendices: this.aprendices,
+            grupo: this.grupo,
             material: this.material,
             entregas: this.entregas,
         };

@@ -3,19 +3,19 @@ const zod = require('zod');
 class User {
     // Definir el esquema Zod para validar los datos de usuario
     static schema = zod.object({
-        username: zod.string().min(1).max(50),
         fisrtname: zod.string().min(1).max(50).optional(),
         lastname: zod.string().min(1).max(50).optional(),
         phonumber: zod.string().min(1).max(50).optional(),
         email: zod.string().email(), // Validar que el correo sea un formato válido
         level: zod.number().int().optional(),
         password: zod.string().optional(), // Contraseña opcional
-        courses: zod.array(zod.number().int()).optional(),
+        courses: zod.array(zod.number().int().default('')),
         rol: zod.enum(['Aprendiz', 'SuperAdmin', 'Instructor']).default('Estudiante'), // Rol por defecto
+        group : zod.string().min(1).max(50).optional(),
         status: zod.enum(['Active', 'Inactive']).default('Active'), // Rol por defecto
    });
 
-    constructor({username, fisrtname = '', lastname = '', phonumber ='', email, level = 0, password = '', courses = [], rol = 'Aprendiz' , status = 'Active'}) {
+    constructor({username, fisrtname = '', lastname = '', phonumber ='', email, level = 0, password = '', courses = [], rol = 'Aprendiz' , status = 'Active' , group = 'onboarding'}) {
         this.username = username;
         this.fisrtname = fisrtname;
         this.lastname = lastname;
@@ -24,6 +24,7 @@ class User {
         this.level = level;
         this.password = password;
         this.courses = courses;
+        this.group = group;
         this.rol = rol;
         this.status = status;
     }
