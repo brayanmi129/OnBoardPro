@@ -11,7 +11,7 @@ class User {
         password: zod.string().optional(), // Contraseña opcional
         courses: zod.array(zod.number().int().default('')),
         rol: zod.enum(['Aprendiz', 'SuperAdmin', 'Instructor']).default('Estudiante'), // Rol por defecto
-        group : zod.string().min(1).max(50).optional(),
+        group : zod.string().min(1).max(50),
         status: zod.enum(['Active', 'Inactive']).default('Active'), // Rol por defecto
    });
 
