@@ -52,7 +52,7 @@ class AuthController {
     }
 
     async AuthUserByGoogleMethod(profile) { 
-        console.log(profile)
+
         const existingUser = await UserController.searchUserbyEmail(profile.emails[0].value);
         if (existingUser) {
             return existingUser
@@ -61,7 +61,7 @@ class AuthController {
             const newUser = new User({
                 fisrtname: profile.displayName, 
                 email: profile.emails[0].value,
-                rol: 'Estudiante', 
+                rol: 'Aprendiz', 
                 lastname: '',
                 phonumber: '',
                 level: 0,
@@ -75,7 +75,8 @@ class AuthController {
             // Validar el usuario usando el esquema Zod
             const validation = User.validate(newUser.getUserData());
             if (!validation.success) {
-                throw new Error(validation.error.errors[0].message);
+                console.log("Error con zod")
+                throw new Error(validation.error);
             }else{
             // Crear el usuario en Firestore
             const createdUser = await UserController.createUser(newUser.getUserData());
