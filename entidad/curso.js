@@ -1,40 +1,34 @@
 const zod = require('zod');
 
 class Course {
-    // Definir el esquema Zod para validar los datos de usuario
     static schema = zod.object({
+        id: zod.string().min(1).max(50),
         name: zod.string().min(1).max(50),
-        Instructor: zod.string().email(),
-        grupo : zod.string().min(1).max(50),
-        material: zod.array(zod.number().int()),
-        entregas: zod.array(zod.number().int()),
-        status: zod.enum(['En curso', 'Cerrado','Abierto']).default('Abierto'), // Rol por defecto
+        instructor: zod.string().email(),
+        grupo: zod.string().min(1).max(50).optional(),
+        status: zod.enum(['En curso', 'Cerrado', 'Abierto']).default('Abierto'),
     });
 
-    constructor({ name, Instructor, material = [], entregas = [] , status = 'Abierto'}) {
+    constructor({ id, name, instructor, grupo, status }) {
+        this.id = id;
         this.name = name;
-        this.Instructor = Instructor;
-        this.grupo = grupo;
-        this.material = material;
-        this.entregas = entregas;
-        this.status = status
+        this.instructor = instructor;
+        this.grupo = grupo || 'Sin grupo';
+        this.status = status || 'Abierto';
     }
 
-    // Método para validar una instancia de usuario usando Zod
-    static validate(cursoData) {
-        return this.schema.safeParse(cursoData);
+    static create(data) {
+        const validation = this.schema.safeParse(data);
+        if (!validation.success) {
+            throw new Error(validation.error);
+        }
+        return new Course(validation.data);
     }
 
-    // Método para obtener los datos del usuario
     getCourseData() {
-        return {
-            name: this.name,
-            Instructor: this.Instructor,
-            grupo: this.grupo,
-            material: this.material,
-            entregas: this.entregas,
-        };
+        return { ...this };
     }
 }
+
 
 module.exports = Course;

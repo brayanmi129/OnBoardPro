@@ -10,6 +10,8 @@ router.get('/get', CourseController.getCourses); // Ruta para iniciar sesión
 
 router.get('/get/id/:id', CourseController.searchUserByIdByRequest); // Ruta para iniciar sesión
 
+router.post('/create/new', CourseController.createCourseByRequest); // Ruta para iniciar sesión
+
 
 module.exports = router; // Exporta el router
 

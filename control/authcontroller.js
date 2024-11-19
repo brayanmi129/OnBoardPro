@@ -1,10 +1,10 @@
+const crypto = require('crypto');
+
 const functions = require('firebase-functions'); // Importar funciones de Firebase
 const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
 
 const UserController = require('./usercontroller.js');
 const User = require('../entidad/usuario.js'); // Importar la clase User
-
-
 
 class AuthController {
 
@@ -12,44 +12,46 @@ class AuthController {
         const db = getdb();
         const { email, password } = req.body; // Extraer correctamente user y password
         const collectionReference = db.collection('users');
-
+    
         try {
-            // Buscar el usuario por nombre
+            // Buscar el usuario por email
             const snapshot = await collectionReference.where('email', '==', email).get();
-
+    
             if (snapshot.empty) {
-                res.status(404).send('No existe usuario con ese email.');
-                return;
+                return res.status(404).send('No existe usuario con ese email.');
             }
-
-            let docId; // Declarar la variable docId
+    
+            let userDoc;
             snapshot.forEach(doc => {
-                docId = doc.id; // Obtener el ID del documento encontrado
-                console.log('ID del usuario encontrado: ', docId);
+                userDoc = { id: doc.id, ...doc.data() }; // Obtén el documento y su ID
             });
-
-            // Ahora que tenemos el ID, buscamos la contraseña
-            const docRef = collectionReference.doc(docId);
-            const docSnapshot = await docRef.get(); // Obtener el documento
-
-            if (docSnapshot.exists) {
-                const userData = docSnapshot.data();
-                console.log('Usuario encontrado login normal: ', userData.name);
-                if (userData.password === password) { // Comparar con la contraseña
-                    console.log('Contraseña correcta');
-                    res.status(200).send('Usuario y contraseña correctos');
-                } else {
-                    console.log('Contraseña enviada por el usuario ', password, 'Contraseña almacenada en la base: ', userData.password);
-                    res.status(401).send('Contraseña incorrecta');
-                }
-            } else {
-                res.status(400).send('No se encontro documento para el id del email.');
+    
+            // Verificar contraseña
+            if (userDoc.password !== password) {
+                return res.status(401).send('Contraseña incorrecta.');
             }
+    
+            console.log('Usuario autenticado:', userDoc);
+    
+            // Llamar a req.login para iniciar sesión
+            req.login(userDoc, (err) => {
+                if (err) {
+                    console.error('Error al iniciar sesión con Passport:', err);
+                    return res.status(500).send('Error al iniciar sesión.');
+                }
+    
+                // Éxito: responder al cliente
+                res.status(200).send({
+                    message: 'Inicio de sesión exitoso.',
+                    user: { id: userDoc.id, email: userDoc.email, rol: userDoc.rol },
+                });
+            });
         } catch (error) {
-            console.error("Error al obtener los usuarios: ", error);
+            console.error("Error en AuthUserByNormalMethod:", error);
             res.status(500).send('Error interno del servidor.');
         }
     }
+    
 
     async AuthUserByGoogleMethod(profile) { 
 
@@ -57,8 +59,15 @@ class AuthController {
         if (existingUser) {
             return existingUser
         } else {
+
+            //const createdUser = await UserController.createUser(profile);
+            
+            let customId = crypto.randomBytes(Math.ceil(10 / 2)).toString('hex').slice(0, 10);
+            console.log('ID generado:', customId);
+
             // Crear un nuevo usuario usando la clase User
             const newUser = new User({
+                id: customId,
                 fisrtname: profile.displayName, 
                 email: profile.emails[0].value,
                 rol: 'Aprendiz', 

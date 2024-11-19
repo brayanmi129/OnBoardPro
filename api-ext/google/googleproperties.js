@@ -23,25 +23,25 @@ passport.use(new GoogleStrategy({
 
 
 passport.serializeUser((user, done) => {
-    console.log('Usuario encontrado en serialisacion:', user.id);
-    done(null, user.id); // Serializar el usuario por ID
+    const sessionUser = { id: user.id, rol: user.rol, email: user.email }; // Incluye el rol si es necesario
+    console.log('Usuario serializado:', sessionUser);
+    done(null, sessionUser);
 });
 
 
-passport.deserializeUser(async (id, done) => {
-    console.log("Entrando a deserealizacion");
+passport.deserializeUser(async (sessionUser, done) => {
     try {
-        const db = getdb(); // Asegúrate de que esta función obtenga correctamente la instancia de Firestore
-        const userRef = db.collection('users').doc(id);
+        const db = getdb();
+        const userRef = db.collection('users').doc(sessionUser.id);
         const userDoc = await userRef.get();
 
         if (userDoc.exists) {
-            done(null, userDoc.data()); // Si el documento existe, retorna los datos del usuario
+            done(null, { id: sessionUser.id, rol: sessionUser.rol, ...userDoc.data() });
         } else {
-            done(new Error('Usuario no encontrado')); // Si no existe, lanza error
+            done(new Error('Usuario no encontrado'));
         }
     } catch (err) {
-        done("error en deserealizacion: " , err); // Maneja errores
+        done(err);
     }
 });
 

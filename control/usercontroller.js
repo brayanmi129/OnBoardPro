@@ -192,10 +192,13 @@ class UserController {
     async createUser(user) {
         const db = getdb(); // Obtén la instancia de la base de datos
         const collectionReference = db.collection('users'); // Referencia a la colección 'users'
+
     
         try {
             // Crea un nuevo documento en la colección con los datos del usuario
-            const docRef = await collectionReference.add(user);
+            const docRef = collectionReference.doc(user.id); // Define el ID personalizado
+            await docRef.set(user); // Guarda los datos del usuario en el documento con el ID definido
+        
             console.log('Usuario creado con ID:', docRef.id);
             
             // Retorna el objeto del usuario creado, incluyendo su ID

@@ -1,5 +1,8 @@
 
+const crypto = require('crypto');
 const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
+const Course = require('../entidad/curso.js'); // Importar la clase User
+
 
 class CourseController {
 
@@ -75,6 +78,36 @@ class CourseController {
             res.status(500).send('Error al obtener el usuario con ID: ' + id);
         }
     }
+
+    async createCourseByRequest(req, res) {
+        const coursedata = req.body;
+    
+        // Generar un ID único
+        const customId = crypto.randomBytes(3).toString('hex'); // 6 caracteres hexadecimales
+        console.log('ID generado:', customId);
+    
+        try {
+            const db = getdb();
+            const collectionReference = db.collection('courses');
+    
+            // Crear y validar el curso
+            const newCourse = Course.create({
+                id: customId,
+                ...coursedata, // Mapea automáticamente los campos del cuerpo de la solicitud
+            });
+    
+            // Guardar en Firestore
+            const docRef = collectionReference.doc(newCourse.id);
+            await docRef.set(newCourse.getCourseData());
+    
+            console.log('Curso creado con ID:', docRef.id);
+            res.status(200).send(newCourse.getCourseData());
+        } catch (error) {
+            console.error('Error al crear el curso:', error);
+            res.status(500).send('Error al crear el curso');
+        }
+    }
+    
     
 }
 

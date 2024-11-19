@@ -32,6 +32,19 @@ router.get('/google/callback',
     }
 );
 
+router.get('/protected', (req, res) => {
+    if (req.isAuthenticated()) {
+        res.json({
+            message: 'Ruta protegida',
+            user: req.user // Incluye el rol y otros datos
+        });
+    } else {
+        res.status(401).send('No autenticado');
+    }
+});
+
+
+
 
 module.exports = router; // Exporta el router
 
