@@ -6,11 +6,11 @@ const router = express.Router();
 const CourseController = require('../control/coursescontroller.js');
 
 // Definir rutas
-router.get('/get', CourseController.getCourses); // Ruta para iniciar sesión
+router.get('/get/all', CourseController.fetchAllCourses); // Ruta para iniciar sesión
 
-router.get('/get/id/:id', CourseController.searchUserByIdByRequest); // Ruta para iniciar sesión
+router.get('/get/id/:id', CourseController.fetchCoursesById); // Ruta para iniciar sesión
 
-router.post('/create/new', CourseController.createCourseByRequest); // Ruta para iniciar sesión
+router.post('/create', CourseController.createCourse); // Ruta para iniciar sesión
 
 
 module.exports = router; // Exporta el router

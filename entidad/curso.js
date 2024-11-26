@@ -1,4 +1,7 @@
 const zod = require('zod');
+const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
+
+const db = getdb()
 
 class Course {
     static schema = zod.object({
@@ -17,6 +20,20 @@ class Course {
         this.status = status || 'Abierto';
     }
 
+    static async getAll() {
+        const snapshot = await db.collection('courses').get();
+        const cursos = [];
+        snapshot.forEach(doc => cursos.push({ id: doc.id, ...doc.data() }));
+        return cursos;
+    }
+
+    static async getById(id) {
+        const collectionReference = db.collection('courses');
+        const doc = await collectionReference.doc(id).get();
+        if (!doc.exists) return null;
+        return { id: doc.id, ...doc.data() };
+    }
+
     static create(data) {
         const validation = this.schema.safeParse(data);
         if (!validation.success) {
@@ -25,7 +42,15 @@ class Course {
         return new Course(validation.data);
     }
 
-    getCourseData() {
+    static async save(curso) {
+        const collectionReference = db.collection('courses');
+        const docRef = collectionReference.doc(curso.id);
+        await docRef.set(curso);
+        return curso;
+    }
+
+
+    getData() {
         return { ...this };
     }
 }

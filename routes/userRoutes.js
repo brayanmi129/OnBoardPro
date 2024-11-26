@@ -6,11 +6,11 @@ const router = express.Router();
 const UserController = require('../control/usercontroller.js');
 
 // Definir rutas
-router.get('/get', UserController.getUsers); // Ruta para iniciar sesión
-router.get('/get/email/:email', UserController.searchUsersByEmailByrequest);
-router.get('/get/id/:id', UserController.searchUserByIdByRequest);
-router.get('/get/type/:rol', UserController.searchUsersByRoleByRequest)
-router.post('/create/new', UserController.createUserByRequest);
+router.get('/get/all', UserController.fetchAllUsers); // Ruta para iniciar sesión
+router.get('/get/email/:email', UserController.fetchUserByEmail);
+router.get('/get/id/:id', UserController.fetchUserById);
+router.get('/get/rol/:rol', UserController.fetchUserByRole)
+router.post('/create', UserController.createUser);
 
 
 module.exports = router; // Exporta el router

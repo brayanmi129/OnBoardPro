@@ -6,41 +6,32 @@ const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la
 const UserController = require('./usercontroller.js');
 const User = require('../entidad/usuario.js'); // Importar la clase User
 
-class AuthController {
+class AuthController{
 
     async AuthUserByNormalMethod(req, res) {
         const db = getdb();
-        const { email, password } = req.body; // Extraer correctamente user y password
-        const collectionReference = db.collection('users');
+        const { email, password } = req.body;
     
         try {
             // Buscar el usuario por email
-            const snapshot = await collectionReference.where('email', '==', email).get();
-    
+            const snapshot = await db.collection('users').where('email', '==', email).get();
             if (snapshot.empty) {
                 return res.status(404).send('No existe usuario con ese email.');
             }
-    
-            let userDoc;
-            snapshot.forEach(doc => {
-                userDoc = { id: doc.id, ...doc.data() }; // Obtén el documento y su ID
-            });
-    
+            // Obtener el primer documento encontrado
+            const userDoc = snapshot.docs[0].data();
+            userDoc.id = snapshot.docs[0].id;
             // Verificar contraseña
             if (userDoc.password !== password) {
                 return res.status(401).send('Contraseña incorrecta.');
             }
-    
             console.log('Usuario autenticado:', userDoc);
-    
-            // Llamar a req.login para iniciar sesión
+            // Iniciar sesión con Passport
             req.login(userDoc, (err) => {
                 if (err) {
                     console.error('Error al iniciar sesión con Passport:', err);
                     return res.status(500).send('Error al iniciar sesión.');
                 }
-    
-                // Éxito: responder al cliente
                 res.status(200).send({
                     message: 'Inicio de sesión exitoso.',
                     user: { id: userDoc.id, email: userDoc.email, rol: userDoc.rol },
@@ -51,6 +42,7 @@ class AuthController {
             res.status(500).send('Error interno del servidor.');
         }
     }
+    
     
 
     async AuthUserByGoogleMethod(profile) { 
@@ -96,12 +88,7 @@ class AuthController {
         }
     }
 
-
-
-   
-  
 }
-//ola
 module.exports = new AuthController();
 
 
