@@ -39,9 +39,9 @@ app.use(express.static('public'));
 const cors = require('cors');
 
 app.use(cors({
-    origin: '*', // Permitir solo este origen
-    methods: ['GET', 'POST', 'PUT', 'DELETE'], // Métodos permitidos
-    allowedHeaders: ['Content-Type'], // Encabezados permitidos
+    origin: '*',  // Cambia esto por el origen correcto
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type'],
 }));
 
 app.use('/api/users', userRoutes);
