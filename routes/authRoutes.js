@@ -32,7 +32,7 @@ router.get('/google/callback',
     }
 );
 
-router.get('/protected', (req, res) => {
+router.get('/cookie', (req, res) => {
     if (req.isAuthenticated()) {
         res.json({
             message: 'Ruta protegida',

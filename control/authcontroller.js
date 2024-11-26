@@ -23,6 +23,7 @@ class AuthController{
             userDoc.id = snapshot.docs[0].id;
             // Verificar contraseña
             if (userDoc.password !== password) {
+                console.log("contraseña incorrecta")
                 return res.status(401).send('Contraseña incorrecta.');
             }
             console.log('Usuario autenticado:', userDoc);
