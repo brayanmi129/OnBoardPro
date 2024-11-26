@@ -20,9 +20,9 @@ class CourseController {
     async fetchCoursesById(req, res) {
         try {
             const { id } = req.params;
-            const user = await Course.getById(id);
-            if (!user) return res.status(404).send("Usuario no encontrado");
-            res.status(200).json(user);
+            const course = await Course.getById(id);
+            if (!course) return res.status(404).send("Usuario no encontrado");
+            res.status(200).json(course);
         } catch (error) {
             console.error("Error al buscar usuario por email:", error);
             res.status(500).send("Error interno");
@@ -40,6 +40,30 @@ class CourseController {
         } catch (error) {
             console.error("Error al crear el usuario:", error);
             res.status(400).send(error.message || "Datos inválidos");
+        }
+    }
+
+    async fetchusersCourse(req, res){
+        try {
+            const { id_user } = req.params;
+            const userCourses = await Course.getUserCourses(id_user);
+            if (!userCourses) return res.status(404).send("usuario no tiene cursos");
+            res.status(200).json(userCourses);
+        } catch (error) {
+            console.error("Error al buscar usuario por email:", error);
+            res.status(500).send("Error interno");
+        }
+    }
+
+    async fetchCoursesUser(req, res){
+        try {
+            const { id_course } = req.params;
+            const userCourses = await Course.getCoursesUsers(id_course);
+            if (!userCourses) return res.status(404).send("El curso no tiene usuarios");
+            res.status(200).json(userCourses);
+        } catch (error) {
+            console.error("Error al buscar usuario por email:", error);
+            res.status(500).send("Error interno");
         }
     }
     

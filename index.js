@@ -30,6 +30,7 @@ app.use(passport.session());
 const userRoutes = require('./routes/userRoutes.js');
 const authRoutes = require('./routes/authRoutes.js');
 const courseRoutes = require('./routes/coursesRoutes.js');
+const seccionRoutes = require('./routes/seccionesRouter.js')
 
 //middlewares para poder recibir datos json
 app.use(express.json());
@@ -47,6 +48,7 @@ app.use(cors({
 app.use('/api/users', userRoutes);
 app.use('/api/auth', authRoutes);
 app.use('/api/courses', courseRoutes);
+app.use('/api/seccions',seccionRoutes)
 
 
 app.get('/*', (req, res) => {

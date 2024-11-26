@@ -1,4 +1,7 @@
 const zod = require('zod');
+const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
+
+const db = getdb()
 
 class Seccion {
     // Definir el esquema Zod para validar los datos de usuario
@@ -8,12 +11,23 @@ class Seccion {
         name: zod.string().min(1).max(50),
     });
 
-    constructor({ id , name, Instructor, material = [], entregas = [] , status = 'Abierto'}) {
+    constructor({ id , IdCourse , name, }) {
         this.id = id;
+        this.IdCourse = IdCourse;
         this.name = name;
-        this.Instructor = Instructor;
-        this.grupo = grupo;
-        this.status = status
+    }
+
+    static async getAll(req , res) {
+        try{
+            
+        const snapshot = await db.collection('secciones').get();
+        const secciones = [];
+        snapshot.forEach(doc => secciones.push({ id: doc.id, ...doc.data() }));
+        res.status(200).json(secciones);
+        }catch(error){
+            console.error("Error al obtener las secciones:", error);
+            res.status(500).send("Error al obtener las secciones");
+        }
     }
 
     // Método para validar una instancia de usuario usando Zod
@@ -22,9 +36,9 @@ class Seccion {
     }
 
     // Método para obtener los datos del usuario
-    getCourseData() {
+    getData() {
         return {...this};
     }
 }
 
-module.exports = Course;
+module.exports = Seccion;

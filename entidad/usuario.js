@@ -76,7 +76,7 @@ class User {
         // Devuelve solo el id y el nombre
         return snapshot.docs.map(doc => ({
             id: doc.id,
-            name: doc.data().email // Asegúrate de usar el campo correcto para el nombre
+            email: doc.data().email // Asegúrate de usar el campo correcto para el nombre
         }));
     }    
 
