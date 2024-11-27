@@ -1,25 +1,11 @@
 const zod = require('zod');
+const crypto = require('crypto');
 const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
+const shcemaCourse = require('../schemas/cursoSchemas.js'); // Importar la clase User
 
 const db = getdb()
 
 class Course {
-    static schema = zod.object({
-        id: zod.string().min(1).max(50),
-        name: zod.string().min(1).max(50),
-        instructor: zod.string().email(),
-        grupo: zod.string().min(1).max(50).optional(),
-        status: zod.enum(['En curso', 'Cerrado', 'Abierto']).default('Abierto'),
-    });
-
-    constructor({ id, name, instructor, grupo, status }) {
-        this.id = id;
-        this.name = name;
-        this.instructor = instructor;
-        this.grupo = grupo || 'Sin grupo';
-        this.status = status || 'Abierto';
-    }
-
     static async getAll(req , res) {
         try{
             
@@ -47,33 +33,50 @@ class Course {
         }
     }
 
-    static create(data) {
-        const validation = this.schema.safeParse(data);
-        if (!validation.success) {
-            throw new Error(validation.error);
+    static async createCourse(req, res) {
+        try {
+            const courseData = req.body;
+    
+            // Generar un ID único para el curso
+            const customId = crypto.randomBytes(Math.ceil(10 / 2)).toString('hex').slice(0, 6);
+            courseData.id = customId;
+    
+            // Validar y crear la instancia del curso
+            const validation = shcemaCourse.schema.safeParse(courseData);
+            if (!validation.success) {
+                // Si la validación falla, lanza un error con los detalles
+                throw new Error(validation.error.errors.map(err => err.message).join(', '));
+            }
+    
+            // Guardar el curso en la base de datos
+            console.log(validation.data)
+            const course = validation.data;
+            const collectionReference = db.collection('courses');
+            console.log(course.id)
+            const docRef = collectionReference.doc(course.id);
+            await docRef.set(course);
+    
+            res.status(201).json(course); // Respuesta con el curso creado
+        } catch (error) {
+            console.error("Error al crear el curso:", error.message);
+            res.status(400).send(error.message || "Datos inválidos");
         }
-        return new Course(validation.data);
     }
 
-    static async save(curso) {
-        const collectionReference = db.collection('courses');
-        const docRef = collectionReference.doc(curso.id);
-        await docRef.set(curso);
-        return curso;
-    }
-
-    static async getUserCourses(id){
+    static async getUserCourses(req, res){
+        
+        const {id_user} = req.params;
+        try{
         const collectionReference = db.collection('users_courses');
-        const snapshot = await collectionReference.where('id_user', '==', id).get();
+        const snapshot = await collectionReference.where('id_user', '==', id_user).get();
 
         if (snapshot.empty) {
             console.log('Este usuario no está inscrito en ningún curso.');
-            return;
+            res.status(404).send("Este usuario no está inscrito en ningún curso.");
         }
     
         // Obtener los IDs de los cursos
         const courseIds = snapshot.docs.map(doc => doc.data().id_course);
-        console.log(courseIds)
     
         // Ahora, obtener los detalles de los cursos
         const coursesPromises = courseIds.map(courseId => 
@@ -85,17 +88,23 @@ class Course {
         const coursesData = coursesSnapshot.map(doc => doc.data())
     
         // Mostrar los detalles de los cursos
-        return coursesData
+        res.status(200).send(coursesData)
+        }catch(error){
+            console.error("Error al obtener los cursos del usuario:", error);
+            res.status(500).send("Error al obtener los cursos del usuario");
+        }
     }
 
-    static async getCoursesUsers(id){
+    static async getCoursesUsers(req , res){
+        const { id_course } = req.params;
+        try{
         const collectionReference = db.collection('users_courses');
     
-        const snapshot = await collectionReference.where('id_course', '==', id).get();
+        const snapshot = await collectionReference.where('id_course', '==', id_course).get();
   
         if (snapshot.empty) {
             console.log('Este usuario no está inscrito en ningún curso.');
-            return;
+            res.status(404).send("Este usuario no está inscrito en ningún curso.");
         }
     
         // Obtener los IDs de los cursos
@@ -111,7 +120,11 @@ class Course {
         const usersData = usersSnapshot.map(doc => doc.data().email)
     
         // Mostrar los detalles de los cursos
-        return usersData
+        res.status(200).send(usersData)
+    }catch(error){
+        console.error("Error al obtener los usuarios del curso:", error);
+        res.status(500).send("Error al obtener los usuarios del curso");
+        }
     }
 
     static async getSeccions(req , res){
@@ -147,12 +160,6 @@ class Course {
         }
         
     }
-    
-    getData() {
-        return { ...this };
-    }
-
 }
-
 
 module.exports = Course;
