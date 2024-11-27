@@ -11,9 +11,9 @@ router.get('/get/all', Course.getAll); // Ruta para iniciar sesión
 
 router.get('/get/id/:id', Course.getById); // Ruta para iniciar sesión
 
-router.get('/get/usersInCourses/:id_user', Course.getUserCourses); // Cursos de un usuario
+router.get('/get/usersCourses/:id_user', Course.getUserCourses); // Cursos de un usuario
 
-router.get('/get/coursesInUsers/:id_course', Course.getCoursesUsers);  //Usuarios de un curso
+router.get('/get/coursesUsers/:id_course', Course.getCoursesUsers);  //Usuarios de un curso
 
 router.get('/get/seccions/:id_course', Course.getSeccions)
 
