@@ -34,7 +34,7 @@ class AuthController{
                 }
                 res.status(200).send({
                     message: 'Inicio de sesión exitoso.',
-                    user: { id: userDoc.id, email: userDoc.email, rol: userDoc.rol },
+                    user,
                 });
             });
         } catch (error) {

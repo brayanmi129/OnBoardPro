@@ -35,7 +35,7 @@ passport.deserializeUser(async (sessionUser, done) => {
         const userDoc = await userRef.get();
 
         if (userDoc.exists) {
-            done(null, { id: sessionUser.id, rol: sessionUser.rol });
+            done(null, { id: sessionUser.id, email: sessionUser.email, rol: sessionUser.rol });
         } else {
             done(new Error('Usuario no encontrado'));
         }
