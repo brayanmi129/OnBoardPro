@@ -11,7 +11,7 @@ class Activities {
         description: zod.string().min(1).max(400).optional(),
         adjunto: zod.string().url()
     });
-
+ 
     constructor({ id, name, id_seccion, description, adjunto }) {
         this.id = id;
         this.name = name;
@@ -33,12 +33,10 @@ class Activities {
         }
     }
 
-    
     getData() {
         return { ...this };
     }
 
 }
-
 
 module.exports = Activities;

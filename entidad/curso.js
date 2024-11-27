@@ -1,10 +1,9 @@
-const zod = require('zod');
 const crypto = require('crypto');
 const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
 const shcemaCourse = require('../schemas/cursoSchemas.js'); // Importar la clase User
 
 const db = getdb()
-
+ 
 class Course {
     static async getAll(req , res) {
         try{

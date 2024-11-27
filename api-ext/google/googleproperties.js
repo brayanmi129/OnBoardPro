@@ -2,7 +2,6 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { getdb } = require('../firebase/firebaseinit.js');
 
-const UserController = require('../../control/usercontroller.js');
 const AuthController = require('../../control/authcontroller.js');
 const User = require('../../entidad/usuario.js'); // Importar la clase User
 
@@ -36,7 +35,7 @@ passport.deserializeUser(async (sessionUser, done) => {
         const userDoc = await userRef.get();
 
         if (userDoc.exists) {
-            done(null, { id: sessionUser.id, rol: sessionUser.rol, ...userDoc.data() });
+            done(null, { id: sessionUser.id, rol: sessionUser.rol });
         } else {
             done(new Error('Usuario no encontrado'));
         }

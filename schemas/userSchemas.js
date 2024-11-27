@@ -1,4 +1,3 @@
-
 const zod = require('zod');
 
 class UserSchema {

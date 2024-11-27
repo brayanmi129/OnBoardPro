@@ -2,9 +2,8 @@ const crypto = require('crypto');
 
 const functions = require('firebase-functions'); // Importar funciones de Firebase
 const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
-
-const UserController = require('./usercontroller.js');
 const User = require('../entidad/usuario.js'); // Importar la clase User
+const userSchema = require('../schemas/userSchemas.js'); // Importar el esquema de validación de usuario
 
 class AuthController{
 
@@ -48,18 +47,16 @@ class AuthController{
 
     async AuthUserByGoogleMethod(profile) { 
 
-        const existingUser = await UserController.searchUserbyEmail(profile.emails[0].value);
+        const existingUser = await User.getByEmail(profile.emails[0].value);
         if (existingUser) {
             return existingUser
         } else {
-
-            //const createdUser = await UserController.createUser(profile);
             
             let customId = crypto.randomBytes(Math.ceil(10 / 2)).toString('hex').slice(0, 10);
             console.log('ID generado:', customId);
 
             // Crear un nuevo usuario usando la clase User
-            const newUser = new User({
+            const newUser =({
                 id: customId,
                 fisrtname: profile.displayName, 
                 email: profile.emails[0].value,
@@ -74,17 +71,8 @@ class AuthController{
                 
             });
 
-            // Validar el usuario usando el esquema Zod
-            const validation = User.validate(newUser.getUserData());
-            if (!validation.success) {
-                console.log("Error con zod")
-                throw new Error(validation.error);
-            }else{
-            // Crear el usuario en Firestore
-            const createdUser = await UserController.createUser(newUser.getUserData());
-            console.log('Usuario creado:', createdUser);
-            return createdUser
-            }
+            respuesta = User.create2(newUser)
+            console.log('Usuario creado:', respuesta);
 
         }
     }
