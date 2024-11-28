@@ -2,13 +2,12 @@ const zod = require('zod');
 
 class entregableSchema{
 
-
 static schema = zod.object({
     id: zod.string().min(1).max(50),
     name: zod.string().min(1).max(50),
     id_seccion: zod.string().min(1).max(50).optional(),
     description: zod.string().min(1).max(400).optional(),
-    adjunto: zod.string().url(),
+    adjunto: zod.string().url().optional(),
     comentario: zod.string().min(1).max(400).optional(),
 });
 
