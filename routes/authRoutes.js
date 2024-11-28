@@ -26,9 +26,6 @@ router.get('/google/callback',
         // Aquí 'req.user' contendrá el perfil del usuario autenticado
         const userEmail = req.user.email; // Obtiene el correo electrónico
         console.log(`Usuario autenticado: ${userEmail}`); // Imprime el correo electrónico en la consola
-
-        // Redirige a la página de éxito o envía una respuesta JSON
-        res.status(200).redirect('/SuperadminGui');
     }
 );
 

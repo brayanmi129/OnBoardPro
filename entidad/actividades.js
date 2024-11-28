@@ -3,6 +3,11 @@ const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la
 const crypto = require('crypto');
 const activitieSchema = require('../schemas/activitieSchema.js'); // Importar la clase User
 const db = getdb()
+const { uploadFileToDrive } = require('../control/driveController.js');
+
+const multer = require("multer");
+const storage = multer.memoryStorage(); // Guardar el archivo en la memoria
+const upload = multer({ storage: storage });
 
 class Activities {
 
@@ -21,34 +26,47 @@ class Activities {
 
     static async create(req, res) {
         try {
-            const Data = req.body;
-    
-            // Generar un ID único para el curso
-            const customId = crypto.randomBytes(Math.ceil(10 / 2)).toString('hex').slice(0, 6);
+          // Usamos multer para manejar la carga del archivo antes de la lógica de negocio
+          upload.single("file")(req, res, async (err) => {
+            if (err) {
+              return res.status(400).send("Error al cargar el archivo");
+            }
+            console.log(req)
+            // Aquí ya tienes el archivo cargado en req.file
+            const { file } = req; // El archivo estará en req.file
+            console.log("Archivo cargado:", file);
+            const Data = req.body; // Obtienes los otros datos del body
+      
+            // Generar un ID único para la actividad
+            const customId = crypto.randomBytes(Math.ceil(10 / 2)).toString("hex").slice(0, 6);
             Data.id = customId;
-    
-            // Validar y crear la instancia del curso
+      
+            // Subir el archivo a Google Drive
+            const fileUrl = await uploadFileToDrive(file.buffer, file.originalname);
+      
+            // Ahora el Data tiene la URL del archivo en Data.adjunto
+            Data.adjunto = fileUrl;
+      
+            // Validación del curso
             const validation = activitieSchema.schema.safeParse(Data);
             if (!validation.success) {
-                // Si la validación falla, lanza un error con los detalles
-                throw new Error(validation.error.errors.map(err => err.message).join(', '));
+              throw new Error(validation.error.errors.map(err => err.message).join(", "));
             }
-    
-            // Guardar el curso en la base de datos
-            console.log(validation.data)
+      
+            // Guardar en Firestore
             const seccion = validation.data;
-            const collectionReference = db.collection('activities');
-            console.log(seccion.id)
+            const collectionReference = db.collection("activities");
             const docRef = collectionReference.doc(seccion.id);
             await docRef.set(seccion);
-    
-            res.status(201).json(seccion); // Respuesta con el curso creado
+      
+            // Respuesta con la actividad creada
+            res.status(201).json(seccion);
+          });
         } catch (error) {
-            console.error("Error al crear la actividad:", error.message);
-            res.status(400).send(error.message || "Datos inválidos");
+          console.error("Error al crear la actividad:", error.message);
+          res.status(400).send(error.message || "Datos inválidos");
         }
-    }
-
+      }
 }
 
 module.exports = Activities;

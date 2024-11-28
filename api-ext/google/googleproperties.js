@@ -3,7 +3,6 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { getdb } = require('../firebase/firebaseinit.js');
 
 const AuthController = require('../../control/authcontroller.js');
-const User = require('../../entidad/usuario.js'); // Importar la clase User
 
 
 passport.use(new GoogleStrategy({

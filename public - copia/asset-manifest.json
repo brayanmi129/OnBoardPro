@@ -1,16 +1,16 @@
 {
   "files": {
-    "main.css": "/static/css/main.86d12f8b.css",
-    "main.js": "/static/js/main.0332077e.js",
+    "main.css": "/static/css/main.8335503f.css",
+    "main.js": "/static/js/main.6a434dfb.js",
     "static/media/ucentral.jpg": "/static/media/ucentral.3cecb0612d626f81b59f.jpg",
     "static/media/back.png": "/static/media/back.6ed206a02421ad7ace83.png",
     "static/media/check.png": "/static/media/check.e8397ed5a337c049110b.png",
     "index.html": "/index.html",
-    "main.86d12f8b.css.map": "/static/css/main.86d12f8b.css.map",
-    "main.0332077e.js.map": "/static/js/main.0332077e.js.map"
+    "main.8335503f.css.map": "/static/css/main.8335503f.css.map",
+    "main.6a434dfb.js.map": "/static/js/main.6a434dfb.js.map"
   },
   "entrypoints": [
-    "static/css/main.86d12f8b.css",
-    "static/js/main.0332077e.js"
+    "static/css/main.8335503f.css",
+    "static/js/main.6a434dfb.js"
   ]
 }
