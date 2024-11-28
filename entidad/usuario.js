@@ -69,6 +69,7 @@ class User {
         const snapshot = await db.collection('users').get();
         const users = [];
         snapshot.forEach(doc => users.push({ id: doc.id, ...doc.data() }));
+        users.forEach(user => delete user.password);
         res.status(200).json(users);
     } catch (error) {
         console.error("Error al obtener los usuarios:", error);
@@ -86,6 +87,7 @@ class User {
 
         const userDocs = [];
         snapshot.forEach(doc => userDocs.push({ id: doc.id, ...doc.data() }));
+        userDocs.forEach(user => delete user.password);
         res.status(200).json(userDocs);
     }catch (error) {
         console.error("Error al buscar usuario por email:", error);
@@ -100,6 +102,7 @@ class User {
         const doc = await collectionReference.doc(id).get();
         if (!doc.exists) return res.status(404).send("Usuario no encontrado");;
         const user = { id: doc.id, ...doc.data() };
+        delete user.password;
         res.status(200).json(user);
         }catch (error) {
             console.error("Error al buscar usuario por email:", error);
