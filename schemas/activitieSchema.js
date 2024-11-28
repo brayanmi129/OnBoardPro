@@ -6,7 +6,7 @@ class activitieSchema{
 static schema = zod.object({
     id: zod.string().min(1).max(50),
     name: zod.string().min(1).max(50),
-    id_seccion: zod.string().min(1).max(50).optional(),
+    id_seccion: zod.string().min(1).max(50),
     description: zod.string().min(1).max(400).optional(),
     adjunto: zod.string().url()
 });

@@ -31,12 +31,10 @@ class Activities {
             if (err) {
               return res.status(400).send("Error al cargar el archivo");
             }
-            console.log(req)
             // Aquí ya tienes el archivo cargado en req.file
-            const { file } = req; // El archivo estará en req.file
-            console.log("Archivo cargado:", file);
-            const Data = req.body; // Obtienes los otros datos del body
-      
+            
+            const file = req.file; // El archivo estará en req.file
+            const Data = JSON.parse(req.body.data);
             // Generar un ID único para la actividad
             const customId = crypto.randomBytes(Math.ceil(10 / 2)).toString("hex").slice(0, 6);
             Data.id = customId;
@@ -46,6 +44,8 @@ class Activities {
       
             // Ahora el Data tiene la URL del archivo en Data.adjunto
             Data.adjunto = fileUrl;
+            console.log("Archivo subido a Google Drive:", fileUrl);
+            console.log(Data)
       
             // Validación del curso
             const validation = activitieSchema.schema.safeParse(Data);

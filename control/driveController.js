@@ -1,5 +1,6 @@
 // Importar el módulo de Google Drive
 const { google } = require("googleapis");
+const { Readable } = require('stream');
 
 // Configuración de Google Drive API
 const oAuth2Client = new google.auth.OAuth2(
@@ -7,7 +8,6 @@ const oAuth2Client = new google.auth.OAuth2(
   "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",  // Tu client_secret
 );
 
-// Asegúrate de que `REFRESH_TOKEN` esté configurado en tu .env o en el entorno
 oAuth2Client.setCredentials({
   refresh_token: `${process.env.REFRESH_TOKEN}`,
 });
@@ -46,6 +46,7 @@ const getMimeType = (fileName) => {
   };
   
   const uploadFileToDrive = async (fileBuffer, fileName) => {
+    const fileStream = Readable.from(fileBuffer);
     try {
       const mimeType = getMimeType(fileName); // Obtener el mimeType según la extensión del archivo
   
@@ -57,7 +58,7 @@ const getMimeType = (fileName) => {
   
       const media = {
         mimeType: mimeType, // Usar el mimeType dinámico
-        body: fileBuffer,
+        body: fileStream,
       };
   
       const response = await drive.files.create({
@@ -85,5 +86,5 @@ const getMimeType = (fileName) => {
     }
   };
 
-module.exports = uploadFileToDrive;
+module.exports = {uploadFileToDrive};
 
