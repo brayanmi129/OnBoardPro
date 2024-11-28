@@ -62,39 +62,7 @@ class Course {
         }
     }
 
-    static async getUserCourses(req, res){
-        
-        const {id_user} = req.params;
-        try{
-        const collectionReference = db.collection('users_courses');
-        const snapshot = await collectionReference.where('id_user', '==', id_user).get();
-
-        if (snapshot.empty) {
-            console.log('Este usuario no está inscrito en ningún curso.');
-            res.status(404).send("Este usuario no está inscrito en ningún curso.");
-        }
-    
-        // Obtener los IDs de los cursos
-        const courseIds = snapshot.docs.map(doc => doc.data().id_course);
-    
-        // Ahora, obtener los detalles de los cursos
-        const coursesPromises = courseIds.map(courseId => 
-            db.collection('courses').doc(courseId).get()
-        );
-    
-        const coursesSnapshot = await Promise.all(coursesPromises);
-
-        const coursesData = coursesSnapshot.map(doc => doc.data())
-    
-        // Mostrar los detalles de los cursos
-        res.status(200).send(coursesData)
-        }catch(error){
-            console.error("Error al obtener los cursos del usuario:", error);
-            res.status(500).send("Error al obtener los cursos del usuario");
-        }
-    }
-
-    static async getCoursesUsers(req , res){
+    static async getCoursesUsers(req , res){  //Usuarios de un curso
         const { id_course } = req.params;
         try{
         const collectionReference = db.collection('users_courses');
@@ -126,39 +94,34 @@ class Course {
         }
     }
 
-    static async getSeccions(req , res){
-        try{
-            const { id_course } = req.params
-            const collectionReference = db.collection('secciones');
-        
-            const snapshot = await collectionReference.where('id_course', '==', id_course).get();
-      
+    static async getSeccions(req, res) {
+        try {
+            const { id_course } = req.params;
+            const snapshot = await db.collection('seccions').where('id_course', '==', id_course).get();
+            console.log(snapshot.docs)
             if (snapshot.empty) {
-                console.log('No hay secciones para este curso.');
-                return;
+                return res.status(404).send('No hay secciones para este curso.');
             }
-        
-            // Obtener los IDs de las secciones
-            const seccionesIds = snapshot.docs.map(doc => doc.data().id);
-            console.log(seccionesIds)
-        
-            // Ahora, obtener los detalles de los usuarios
-            const seccionsPromises = seccionesIds.map(id => 
-                db.collection('secciones').doc(id).get()
-            );
-        
-            const seccionsSnapshot = await Promise.all(seccionsPromises);
     
-            const seccionsData = seccionsSnapshot.map(doc => doc.data())
-        
-            // Mostrar los detalles de los cursos
-            res.status(200).send(seccionsData)
-        }catch(error){
-            console.error("Error al obtener las secciones del curso:", error);
+            const seccionsPromises = snapshot.docs.map(async (doc) => {
+                const seccionDoc = await db.collection('seccions').doc(doc.id).get();
+                return seccionDoc.exists ? seccionDoc.data() : null;
+            });
+    
+            const seccionsData = (await Promise.all(seccionsPromises)).filter(data => data !== null);
+    
+            if (seccionsData.length === 0) {
+                return res.status(404).send('No hay datos válidos para las secciones.');
+            }
+    
+            res.status(200).send(seccionsData);
+        } catch (error) {
             res.status(500).send("Error al obtener las secciones del curso");
         }
-        
     }
+    
+    
+    
 }
 
 module.exports = Course;

@@ -35,7 +35,6 @@ router.get('/google/callback',
 router.get('/cookie', (req, res) => {
     if (req.isAuthenticated()) {
         res.json({
-            message: 'Ruta protegida',
             user: req.user // Incluye el rol y otros datos
         });
     } else {

@@ -12,6 +12,8 @@ router.get('/get/id/:id', User.getById);
 router.get('/get/rol/:rol', User.getByRole)
 router.post('/create', User.create);
 
+router.get('/get/courses/:id_user', User.getUserCourses); // Cursos de un usuario
+
 
 module.exports = router; // Exporta el router
 

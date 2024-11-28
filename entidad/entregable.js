@@ -1,7 +1,7 @@
 const zod = require('zod');
 const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
 const crypto = require('crypto');
-const activitieSchema = require('../schemas/activitieSchema.js'); // Importar la clase User
+const entregableSchema = require('../schemas/entregableSchema.js'); // Importar la clase User
 const db = getdb()
 
 class Activities {
@@ -9,7 +9,7 @@ class Activities {
     static async getAll(req , res) {
         try{
             
-        const snapshot = await db.collection('activities').get();
+        const snapshot = await db.collection('entregable').get();
         const actividades = [];
         snapshot.forEach(doc => actividades.push({ id: doc.id, ...doc.data() }));
         res.status(200).json(actividades);
@@ -28,7 +28,7 @@ class Activities {
             Data.id = customId;
     
             // Validar y crear la instancia del curso
-            const validation = activitieSchema.schema.safeParse(Data);
+            const validation = entregableSchema.schema.safeParse(Data);
             if (!validation.success) {
                 // Si la validación falla, lanza un error con los detalles
                 throw new Error(validation.error.errors.map(err => err.message).join(', '));

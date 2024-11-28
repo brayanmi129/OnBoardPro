@@ -126,6 +126,38 @@ class User {
         }
     } 
 
+    static async getUserCourses(req, res){ //Cursos De un usuario
+        
+        const {id_user} = req.params;
+        try{
+        const collectionReference = db.collection('users_courses');
+        const snapshot = await collectionReference.where('id_user', '==', id_user).get();
+
+        if (snapshot.empty) {
+            console.log('Este usuario no está inscrito en ningún curso.');
+            res.status(404).send("Este usuario no está inscrito en ningún curso.");
+        }
+    
+        // Obtener los IDs de los cursos
+        const courseIds = snapshot.docs.map(doc => doc.data().id_course);
+    
+        // Ahora, obtener los detalles de los cursos
+        const coursesPromises = courseIds.map(courseId => 
+            db.collection('courses').doc(courseId).get()
+        );
+    
+        const coursesSnapshot = await Promise.all(coursesPromises);
+
+        const coursesData = coursesSnapshot.map(doc => doc.data())
+    
+        // Mostrar los detalles de los cursos
+        res.status(200).send(coursesData)
+        }catch(error){
+            console.error("Error al obtener los cursos del usuario:", error);
+            res.status(500).send("Error al obtener los cursos del usuario");
+        }
+    }
+
     static async deleteById(id) {
         await this.collection.doc(id).delete();
         return id;

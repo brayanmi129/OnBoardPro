@@ -1,6 +1,6 @@
 const zod = require('zod');
 
-class SchemaCourse{
+class courseSchema{
 static schema = zod.object({
     id: zod.string().min(1).max(50),
     name: zod.string().min(1).max(50),
@@ -21,4 +21,4 @@ constructor({ id, name, instructor, grupo, status }) {
     }
 }
 
-module.exports = SchemaCourse;
+module.exports = courseSchema;
