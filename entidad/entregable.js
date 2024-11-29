@@ -30,6 +30,7 @@ class entregable {
             // Generar un ID único para la actividad
             const customId = crypto.randomBytes(Math.ceil(10 / 2)).toString("hex").slice(0, 6);
             Data.id = customId;
+            console.log(Data);
             // Validación del curso
             const validation = entregableSchema.schema.safeParse(Data);
             if (!validation.success) {
