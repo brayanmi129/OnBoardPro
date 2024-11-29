@@ -54,7 +54,7 @@ class entregable {
 
       static async deleteById(req, res) {
         try {
-            const { id } = req.body; // Asegúrate de enviar { id: "valor_del_id" } en el cuerpo de la solicitud
+            const { id } = req.body; 
             if (!id) {
                 return res.status(400).json({ error: "El ID es requerido" });
             }
@@ -79,7 +79,6 @@ class entregable {
         }
     }
     
-
 }
 
 module.exports = entregable; // Exporta la clase
