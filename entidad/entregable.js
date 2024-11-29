@@ -46,7 +46,7 @@ class entregable {
             // Respuesta con la actividad creada
             res.status(201).json(entregable);
           }catch (error) {
-          console.error("Error al crear el entregable:", error.message);
+          console.error("Error al crear el entregable:", error);
           res.status(400).send(error.message || "Datos inválidos");
         }
       }
