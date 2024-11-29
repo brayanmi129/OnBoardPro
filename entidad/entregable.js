@@ -26,14 +26,10 @@ class entregable {
     static async create(req, res) {
         try {
             const Data = req.body;
+            console.log(Data);
             // Generar un ID único para la actividad
             const customId = crypto.randomBytes(Math.ceil(10 / 2)).toString("hex").slice(0, 6);
             Data.id = customId;
-      
-            // Subir el archivo a Google Driv
-            
-            console.log("asdasdsad" , Data)
-      
             // Validación del curso
             const validation = entregableSchema.schema.safeParse(Data);
             if (!validation.success) {
@@ -42,6 +38,7 @@ class entregable {
       
             // Guardar en Firestore
             const entregable = validation.data;
+            console.log(entregable);
             const collectionReference = db.collection("entregables");
             const docRef = collectionReference.doc(entregable.id);
             await docRef.set(entregable);
