@@ -9,5 +9,7 @@ router.get('/get/all', entregables.getAll);
 
 router.post('/create', entregables.create); // Ruta para iniciar sesión
 
+router.post('/delete', entregables.deleteById);
+
 
 module.exports = router; // Exporta el router

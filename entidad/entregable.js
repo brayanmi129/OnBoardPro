@@ -52,6 +52,34 @@ class entregable {
         }
       }
 
+      static async deleteById(req, res) {
+        try {
+            const { id } = req.body; // Asegúrate de enviar { id: "valor_del_id" } en el cuerpo de la solicitud
+            if (!id) {
+                return res.status(400).json({ error: "El ID es requerido" });
+            }
+    
+            const collectionReference = db.collection("entregables");
+            const docRef = collectionReference.doc(id);
+    
+            // Verifica si el documento existe antes de intentar eliminarlo
+            const doc = await docRef.get();
+            if (!doc.exists) {
+                return res.status(404).json({ error: "El documento no existe" });
+            }
+    
+            // Elimina el documento
+            await docRef.delete();
+    
+            // Respuesta exitosa
+            res.status(200).json({ message: "Entregable eliminado", id });
+        } catch (error) {
+            console.error("Error eliminando el entregable:", error);
+            res.status(500).json({ error: "Error eliminando el entregable" });
+        }
+    }
+    
+
 }
 
 module.exports = entregable; // Exporta la clase
