@@ -1,8 +1,8 @@
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-const { getdb } = require('../firebase/firebaseinit.js');
+const { getdb } = require('./firebaseController.js');
 
-const AuthController = require('../../control/authcontroller.js');
+const AuthController = require('./authcontroller.js');
 
 
 passport.use(new GoogleStrategy({

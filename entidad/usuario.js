@@ -1,4 +1,4 @@
-const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
+const { getdb } = require('../control/firebaseController.js'); // Importar la instancia de Firestore
 const UserSchema = require('../schemas/userSchemas.js'); // Importar la clase User
 const crypto = require('crypto');
 const db = getdb()
@@ -9,11 +9,11 @@ class User {
         try {
             const userData = req.body;
     
-            // Generar un ID único para el curso
+            // Generar un ID único para 
             const customId = crypto.randomBytes(Math.ceil(10 / 2)).toString('hex').slice(0, 6);
             userData.id = customId;
     
-            // Validar y crear la instancia del curso
+            // Validar y crear la instancia 
             const validation = UserSchema.schema.safeParse(userData);
             if (!validation.success) {
                 // Si la validación falla, lanza un error con los detalles

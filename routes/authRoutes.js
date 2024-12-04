@@ -4,7 +4,7 @@ const passport = require('passport');
 const router = express.Router();
 const path = require('path');
 
-require('../api-ext/google/googleproperties.js');
+require('../control/passportController.js'); // Importa la configuración de Passport
 
 
 // Importa el controlador de autenticación

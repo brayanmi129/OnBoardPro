@@ -1,9 +1,7 @@
 const crypto = require('crypto');
-
 const functions = require('firebase-functions'); // Importar funciones de Firebase
-const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
+const { getdb } = require('./firebaseController.js'); // Importar la instancia de Firestore
 const User = require('../entidad/usuario.js'); // Importar la clase User
-const userSchema = require('../schemas/userSchemas.js'); // Importar el esquema de validación de usuario
 
 class AuthController{
 
@@ -41,8 +39,6 @@ class AuthController{
             res.status(500).send('Error interno del servidor.');
         }
     }
-    
-    
 
     async AuthUserByGoogleMethod(profile) { 
 
@@ -50,8 +46,7 @@ class AuthController{
         if (existingUser) {
             return existingUser
         } else {
-            
-            let customId = crypto.randomBytes(Math.ceil(10 / 2)).toString('hex').slice(0, 10);
+            let customId = crypto.randomBytes(Math.ceil(10 / 2)).toString('hex').slice(0, 6);
             console.log('ID generado:', customId);
 
             // Crear un nuevo usuario usando la clase User

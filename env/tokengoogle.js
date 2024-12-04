@@ -23,7 +23,7 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-rl.question("Introduce el código de autenticación que obtuviste de la URL: ", (code) => {
+rl.question("Introdute ce el código de autenticación que obtuvisde la URL: ", (code) => {
   rl.close();
   oAuth2Client.getToken(code, (err, tokens) => {
     if (err) {

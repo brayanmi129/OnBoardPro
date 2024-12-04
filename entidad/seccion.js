@@ -1,4 +1,4 @@
-const { getdb } = require('../api-ext/firebase/firebaseinit.js'); // Importar la instancia de Firestore
+const { getdb } = require('../control/firebaseController.js'); // Importar la instancia de Firestore
 const db = getdb()
 const crypto = require('crypto');
 const seccionShecma = require('../schemas/seccionSchema.js');

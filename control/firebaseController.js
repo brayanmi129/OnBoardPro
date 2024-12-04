@@ -1,6 +1,6 @@
 const { initializeApp, cert } = require('firebase-admin/app');
 const { getFirestore } = require('firebase-admin/firestore');
-const serviceAccount = require('./firebaseconfig.json');
+const serviceAccount = require('../env/firebaseconfig.json');
 
 function conectfirebase() {
   try {
