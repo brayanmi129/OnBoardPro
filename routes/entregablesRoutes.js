@@ -1,15 +1,14 @@
 // routes/authRoutes.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const entregables = require('../entidad/entregable.js')
+const entregables = require("../services/entregable.js");
 
 // Definir rutas
-router.get('/get/all', entregables.getAll);
+router.get("/get/all", entregables.getAll);
 
-router.post('/create', entregables.create); // Ruta para iniciar sesión
+router.post("/create", entregables.create); // Ruta para iniciar sesión
 
-router.post('/delete', entregables.deleteById);
-
+router.post("/delete", entregables.deleteById);
 
 module.exports = router; // Exporta el router
