@@ -1,3 +1,4 @@
+// services/entregable.js
 const zod = require("zod");
 const { getdb } = require("../controllers/firebaseController.js"); // Importar la instancia de Firestore
 const crypto = require("crypto");
