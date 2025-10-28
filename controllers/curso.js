@@ -1,6 +1,6 @@
 // services/curso.js
 const crypto = require("crypto");
-const { getdb } = require("../helpers/firebaseHelper.js"); // Importar la instancia de Firestore
+const { getdb } = require("../helpers/firebaseController.js"); // Importar la instancia de Firestore
 const shcemaCourse = require("../schemas/cursoSchemas.js"); // Importar la clase User
 
 const db = getdb();

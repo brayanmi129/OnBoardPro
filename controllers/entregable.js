@@ -1,6 +1,6 @@
 // services/entregable.js
 const zod = require("zod");
-const { getdb } = require("../helpers/firebaseHelper.js"); // Importar la instancia de Firestore
+const { getdb } = require("../helpers/firebaseController.js"); // Importar la instancia de Firestore
 const crypto = require("crypto");
 const entregableSchema = require("../schemas/entregableSchema.js"); // Importar la clase User
 const db = getdb();

@@ -1,7 +1,7 @@
 const express = require("express");
 const passport = require("passport");
 const router = express.Router();
-const AuthController = require("../controllers/authcontroller.js");
+const AuthService = require("../services/authService.js");
 
 /**
  * @swagger
@@ -38,40 +38,49 @@ const AuthController = require("../controllers/authcontroller.js");
  *       401:
  *         description: Credenciales inválidas
  */
-router.post("/localuser", AuthController.AuthUserByNormalMethod);
+router.post("/localuser", AuthService.local);
 
-/**
- * @swagger
- * /api/auth/google:
- *   get:
- *     summary: Redirige al login de Google
- *     tags: [Autenticación]
- *     responses:
- *       302:
- *         description: Redirige al login de Google
- */
-router.get("/google", passport.authenticate("google", { scope: ["profile", "email"] }));
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account",
+  })
+);
 
-/**
- * @swagger
- * /api/auth/google/callback:
- *   get:
- *     summary: Callback de Google OAuth
- *     tags: [Autenticación]
- *     responses:
- *       200:
- *         description: Usuario autenticado correctamente mediante Google
- *       401:
- *         description: Error de autenticación
- */
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: "/" }),
+  passport.authenticate("google", {
+    failureRedirect: `${process.env.URL_FRONT}/?token=Fail`,
+    session: false,
+  }),
   (req, res) => {
-    if (!req.user) {
-      return res.status(401).json({ message: "Error de autenticación. Intenta de nuevo." });
-    }
-    res.status(200).json({ message: "Usuario autenticado con Google", user: req.user });
+    const user = req.user;
+    if (!user) return res.redirect(`${process.env.URL_FRONT}/?token=fail`);
+
+    res.redirect(`${process.env.URL_FRONT}/?token=${user.token}`);
+  }
+);
+
+router.get(
+  "/microsoft",
+  passport.authenticate("microsoft", {
+    scope: ["user.read"],
+    prompt: "select_account",
+  })
+);
+
+router.get(
+  "/microsoft/callback",
+  passport.authenticate("microsoft", {
+    session: false,
+    failureRedirect: `${process.env.URL_FRONT}/?token=Fail`,
+  }),
+  (req, res) => {
+    const user = req.user;
+    if (!user) return res.redirect(`${process.env.URL_FRONT}/?token=fail`);
+
+    res.redirect(`${process.env.URL_FRONT}/?token=${user.token}`);
   }
 );
 

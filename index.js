@@ -3,13 +3,16 @@ const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const { swaggerUi, swaggerSpec } = require("./config/swagger");
-require("dotenv").config(); // Importar la configuración de las variables de entorno
+require("dotenv").config();
 const port = process.env.PORT || 3000;
 const app = express();
 
 //firebase
-const { conectfirebase } = require("./controllers/firebaseController.js");
+const { conectfirebase } = require("./helpers/firebaseHelper.js");
 conectfirebase();
+
+//passport strategies
+require("./helpers/passportHelper.js");
 
 //google
 app.use(
@@ -38,7 +41,6 @@ const entregableRoutes = require("./routes/entregablesRoutes.js");
 
 //middlewares para poder recibir datos json
 app.use(express.json());
-app.use(express.static("public"));
 
 const cors = require("cors");
 
@@ -61,7 +63,7 @@ app.use("/api/entregables", entregableRoutes);
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get("/*", (req, res) => {
-  res.sendFile(__dirname + "/public/index.html");
+  res.send("Welcome to OnBoardPro API");
 });
 
 app.listen(port, () => console.log(`Server ready on port ${port}.`));

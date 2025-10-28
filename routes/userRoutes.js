@@ -1,7 +1,7 @@
 // routes/userRoutes.js
 const express = require("express");
 const router = express.Router();
-const User = require("../services/usuario.js");
+const UserController = require("../controllers/userController");
 
 /**
  * @swagger
@@ -20,7 +20,7 @@ const User = require("../services/usuario.js");
  *       200:
  *         description: Lista de todos los usuarios sin contraseñas
  */
-router.get("/get/all", User.getAll);
+router.get("/get/all", UserController.getAll);
 
 /**
  * @swagger
@@ -41,7 +41,7 @@ router.get("/get/all", User.getAll);
  *       404:
  *         description: Usuario no encontrado
  */
-router.get("/get/email/:email", User.getByEmail);
+router.get("/get/email/:email", UserController.getByEmail);
 
 /**
  * @swagger
@@ -62,7 +62,7 @@ router.get("/get/email/:email", User.getByEmail);
  *       404:
  *         description: Usuario no encontrado
  */
-router.get("/get/id/:id", User.getById);
+router.get("/get/id/:id", UserController.getById);
 
 /**
  * @swagger
@@ -83,7 +83,7 @@ router.get("/get/id/:id", User.getById);
  *       404:
  *         description: No se encontraron usuarios con ese rol
  */
-router.get("/get/rol/:rol", User.getByRole);
+router.get("/get/rol/:rol", UserController.getByRole);
 
 /**
  * @swagger
@@ -121,7 +121,7 @@ router.get("/get/rol/:rol", User.getByRole);
  *       400:
  *         description: Error en los datos o validación fallida
  */
-router.post("/create", User.create);
+router.post("/create", UserController.create);
 
 /**
  * @swagger
@@ -142,6 +142,10 @@ router.post("/create", User.create);
  *       404:
  *         description: El usuario no está inscrito en ningún curso
  */
-router.get("/get/courses/:id_user", User.getUserCourses);
+router.get("/get/courses/:id_user", UserController.getUserCourses);
+
+router.delete("/delete/:id", UserController.deleteUser);
+
+router.put("/update/:id", UserController.updateUser);
 
 module.exports = router;
