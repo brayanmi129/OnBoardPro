@@ -1,7 +1,7 @@
 const passport = require("passport");
 const GoogleStrategy = require("passport-google-oauth20").Strategy;
 const MicrosoftStrategy = require("passport-microsoft").Strategy;
-const AuthRoutes = require("../routes/authRoutes.js");
+const AuthService = require("../services/authService.js");
 
 passport.use(
   new GoogleStrategy(
@@ -12,7 +12,7 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        const token = await AuthRoutes.OAuth(profile);
+        const token = await AuthService.OAuth(profile);
         if (!token) return done(null, false);
         return done(null, { token });
       } catch (error) {
