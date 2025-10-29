@@ -35,9 +35,7 @@ app.use(passport.session());
 const userRoutes = require("./routes/userRoutes.js");
 const authRoutes = require("./routes/authRoutes.js");
 const courseRoutes = require("./routes/coursesRoutes.js");
-const seccionRoutes = require("./routes/seccionesRouter.js");
 const activitiesRoutes = require("./routes/activitiesRoutes.js");
-const entregableRoutes = require("./routes/entregablesRoutes.js");
 
 //middlewares para poder recibir datos json
 app.use(express.json());
@@ -55,9 +53,7 @@ app.use(
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
-app.use("/api/seccions", seccionRoutes);
 app.use("/api/activities", activitiesRoutes);
-app.use("/api/entregables", entregableRoutes);
 
 // Documentación Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));

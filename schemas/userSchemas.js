@@ -13,8 +13,9 @@ class UserSchema {
       xp: zod.number().int().min(0).default(0),
       password: zod.string().optional(), // Contraseña opcional
       rol: zod.enum(["Aprendiz", "Administrador", "Instructor"]).default("Aprendiz"), // Rol por defecto
-      group: zod.string().default("onboarding"), // Valor predeterminado si no se define
+      groups: zod.array(zod.string()).default(["onboarding"]), // Valor predeterminado si no se define
       status: zod.enum(["Active", "Inactive"]).default("Active"), // Rol por defecto
+      courses: zod.array(zod.string()).optional(),
     })
     .strict();
 
@@ -28,7 +29,7 @@ class UserSchema {
     password = "",
     rol = "Aprendiz",
     status = "Active",
-    group = "onboarding",
+    groups = ["onboarding"],
   }) {
     this.id = id;
     this.fisrtname = fisrtname;
@@ -37,7 +38,7 @@ class UserSchema {
     this.email = email;
     this.level = level;
     this.password = password;
-    this.group = group;
+    this.groups = groups;
     this.rol = rol;
     this.status = status;
   }
