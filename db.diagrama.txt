@@ -1,0 +1,90 @@
+Table User {
+  id string [pk]
+  firstname string
+  lastname string
+  phonenumber number
+  email string
+  level number
+  password string
+  role string
+  status string
+  xp number
+}
+
+Table Group {
+  id string [pk]
+  name string
+}
+
+Table Course {
+  id string [pk]
+  name string
+  instructor_id string [ref: > User.id]
+  status string
+}
+
+Table Activity {
+  id string [pk]
+  course_id string [ref: > Course.id]
+  title string
+  description string
+  attachment url
+  deliverable boolean
+  type string
+  xp number
+}
+
+/* 📘 Evaluaciones asociadas a cursos */
+Table Assessment {
+  id string [pk]
+  course_id string [ref: > Course.id]
+  title string
+  description string
+  xp number
+}
+
+/* 📘 Preguntas de selección múltiple */
+Table Question {
+  id string [pk]
+  assessment_id string [ref: > Assessment.id]
+  text string
+  xp number
+}
+
+/* 📘 Opciones de respuesta */
+Table Option {
+  id string [pk]
+  question_id string [ref: > Question.id]
+  text string
+  is_correct boolean // Solo una por pregunta debe ser TRUE
+}
+
+/* 📘 Respuestas de los usuarios */
+Table UserAnswer {
+  id string [pk]
+  user_id string [ref: > User.id]
+  question_id string [ref: > Question.id]
+  option_id string [ref: > Option.id] // Opción elegida (una sola)
+  is_correct boolean
+  created_at datetime
+}
+
+/* 📚 Relaciones muchos a muchos */
+
+// Un usuario puede pertenecer a varios grupos
+Table user_group {
+  user_id string [ref: > User.id]
+  group_id string [ref: > Group.id]
+}
+
+// Un grupo puede tener varios cursos
+Table group_course {
+  group_id string [ref: > Group.id]
+  course_id string [ref: > Course.id]
+}
+
+// Un usuario puede estar inscrito en varios cursos
+Table user_course {
+  user_id string [ref: > User.id]
+  course_id string [ref: > Course.id]
+}
