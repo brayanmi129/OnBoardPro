@@ -36,6 +36,7 @@ const userRoutes = require("./routes/userRoutes.js");
 const authRoutes = require("./routes/authRoutes.js");
 const courseRoutes = require("./routes/coursesRoutes.js");
 const activitiesRoutes = require("./routes/activitiesRoutes.js");
+const groupRoutes = require("./routes/groupsRoutes.js");
 
 //middlewares para poder recibir datos json
 app.use(express.json());
@@ -54,6 +55,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/activities", activitiesRoutes);
+app.use("/api/groups", groupRoutes);
 
 // Documentación Swagger
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
