@@ -11,8 +11,6 @@
 # production
 /build
 /env
-/env/firebaseconfig.json
-/env/google-services.json
 
 # misc
 .env
