@@ -62,19 +62,6 @@ class UserController {
     }
   }
 
-  static async getUserCourses(req, res) {
-    try {
-      const { id_user } = req.params;
-      const courses = await UserService.getUserCourses(id_user);
-      if (!courses.length)
-        return res.status(404).send("Este usuario no está inscrito en ningún curso.");
-      res.status(200).json(courses);
-    } catch (error) {
-      console.error("Error al obtener los cursos del usuario:", error);
-      res.status(500).send("Error al obtener los cursos del usuario");
-    }
-  }
-
   //eliminar un usuario
   static async deleteUser(req, res) {
     try {

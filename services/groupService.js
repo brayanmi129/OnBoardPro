@@ -11,7 +11,6 @@ class GroupService {
     const customId = crypto.randomBytes(3).toString("hex");
     groupData.id = customId;
 
-    // Validar datos del grupo
     const validation = GroupSchema.schema.safeParse(groupData);
     if (!validation.success) {
       const errorMessages = validation.error.errors.map((err) => err.message);
@@ -34,6 +33,7 @@ class GroupService {
     return group;
   }
 
+  // ✅ Obtener todos los grupos
   static async getAll() {
     const snapshot = await db.collection("groups").get();
     const groups = [];
@@ -41,7 +41,7 @@ class GroupService {
     for (const doc of snapshot.docs) {
       const group = { id: doc.id, ...doc.data() };
 
-      // --- 🔹 Buscar usuarios del grupo ---
+      // --- Usuarios del grupo ---
       const userGroupSnap = await db
         .collection("users_groups")
         .where("id_group", "==", group.id)
@@ -63,6 +63,7 @@ class GroupService {
           role: u.data().role,
         }));
 
+      // --- Cursos del grupo ---
       const groupCoursesSnap = await db
         .collection("groups_courses")
         .where("id_group", "==", group.id)
@@ -82,14 +83,13 @@ class GroupService {
     return groups;
   }
 
-  // ✅ Obtener un grupo por ID con usuarios y cursos incluidos
+  // ✅ Obtener grupo por ID
   static async getById(id) {
     const doc = await db.collection("groups").doc(id).get();
     if (!doc.exists) return null;
 
     const group = { id: doc.id, ...doc.data() };
 
-    // --- 🔹 Buscar usuarios relacionados ---
     const userGroupSnap = await db.collection("users_groups").where("id_group", "==", id).get();
     const userIds = userGroupSnap.docs.map((d) => d.data().id_user);
 
@@ -105,7 +105,6 @@ class GroupService {
         role: u.data().role,
       }));
 
-    // --- 🔹 Buscar cursos del grupo (groups_courses) ---
     const groupCoursesSnap = await db
       .collection("groups_courses")
       .where("id_group", "==", id)
@@ -122,7 +121,7 @@ class GroupService {
     return group;
   }
 
-  // ✅ Asignar usuarios a un grupo ya existente
+  // ✅ Agregar usuarios a un grupo
   static async addUsersToGroup(groupId, userIds) {
     const groupDoc = await db.collection("groups").doc(groupId).get();
     if (!groupDoc.exists) throw new Error("Grupo no encontrado");
@@ -137,7 +136,27 @@ class GroupService {
     return { message: "Usuarios agregados al grupo correctamente" };
   }
 
-  // ✅ Actualizar grupo
+  // ✅ Eliminar usuarios específicos de un grupo
+  static async removeUsersFromGroup(groupId, userIds) {
+    console.log("Eliminando usuarios del grupo:", groupId);
+
+    // Buscar las relaciones que coincidan
+    const relSnap = await db
+      .collection("users_groups")
+      .where("id_group", "==", groupId)
+      .where("id_user", "in", userIds)
+      .get();
+
+    if (relSnap.empty) return { message: "No se encontraron usuarios en el grupo" };
+
+    const batch = db.batch();
+    relSnap.forEach((doc) => batch.delete(doc.ref));
+    await batch.commit();
+
+    return { message: "Usuarios eliminados del grupo correctamente" };
+  }
+
+  // ✅ Actualizar datos del grupo
   static async updateGroup(id, updateData) {
     console.log("Actualizando grupo con ID:", id);
     const groupDoc = await db.collection("groups").doc(id).get();
@@ -159,19 +178,19 @@ class GroupService {
     };
   }
 
-  // ✅ Eliminar grupo y sus relaciones
+  // ✅ Eliminar grupo y todas sus relaciones
   static async deleteGroup(id) {
     console.log("Eliminando grupo con ID:", id);
     const groupDoc = await db.collection("groups").doc(id).get();
     if (!groupDoc.exists) throw new Error("Grupo no encontrado");
 
-    // Eliminar relaciones users_groups
+    // Eliminar users_groups
     const relSnap = await db.collection("users_groups").where("id_group", "==", id).get();
     const batch = db.batch();
     relSnap.forEach((doc) => batch.delete(doc.ref));
     await batch.commit();
 
-    // Eliminar relaciones groups_courses
+    // Eliminar groups_courses
     const groupCoursesSnap = await db
       .collection("groups_courses")
       .where("id_group", "==", id)
@@ -180,9 +199,9 @@ class GroupService {
     groupCoursesSnap.forEach((doc) => batch2.delete(doc.ref));
     await batch2.commit();
 
-    // Eliminar grupo
+    // Eliminar el grupo
     await db.collection("groups").doc(id).delete();
-    return id;
+    return { message: `Grupo ${id} eliminado correctamente` };
   }
 }
 

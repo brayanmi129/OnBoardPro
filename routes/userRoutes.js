@@ -131,11 +131,6 @@ router.get("/get/rol/:rol", UserController.getByRole);
  *               xp:
  *                 type: integer
  *                 example: 100
- *               groups:
- *                 type: array
- *                 items:
- *                   type: string
- *                 example: ["onboarding"]
  *     responses:
  *       201:
  *         description: Usuario creado correctamente
@@ -143,27 +138,6 @@ router.get("/get/rol/:rol", UserController.getByRole);
  *         description: Error en los datos o validación fallida
  */
 router.post("/create", UserController.create);
-
-/**
- * @swagger
- * /api/users/get/courses/{id_user}:
- *   get:
- *     summary: Obtiene los cursos en los que está inscrito un usuario
- *     tags: [Usuarios]
- *     parameters:
- *       - in: path
- *         name: id_user
- *         required: true
- *         schema:
- *           type: string
- *         description: ID del usuario
- *     responses:
- *       200:
- *         description: Lista de cursos del usuario
- *       404:
- *         description: El usuario no está inscrito en ningún curso
- */
-router.get("/get/courses/:id_user", UserController.getUserCourses);
 
 /**
  * @swagger

@@ -2,7 +2,7 @@ const GroupService = require("../services/groupService.js");
 const zod = require("zod");
 
 class GroupController {
-  // Crear grupo
+  // 🟢 Crear grupo
   static async create(req, res) {
     try {
       const group = await GroupService.create(req.body);
@@ -17,7 +17,7 @@ class GroupController {
     }
   }
 
-  // Obtener todos los grupos
+  // 🟢 Obtener todos los grupos
   static async getAll(req, res) {
     try {
       const groups = await GroupService.getAll();
@@ -28,7 +28,7 @@ class GroupController {
     }
   }
 
-  // Obtener grupo por ID
+  // 🟢 Obtener grupo por ID
   static async getById(req, res) {
     try {
       const { id } = req.params;
@@ -41,7 +41,7 @@ class GroupController {
     }
   }
 
-  // Agregar usuarios a un grupo existente
+  // 🟢 Agregar usuarios a un grupo
   static async addUsers(req, res) {
     try {
       const { id } = req.params;
@@ -54,17 +54,30 @@ class GroupController {
     }
   }
 
-  // Actualizar grupo
+  // 🟡 Eliminar usuarios de un grupo
+  static async removeUsers(req, res) {
+    try {
+      const { id } = req.params;
+      const { userIds } = req.body;
+      if (!Array.isArray(userIds) || userIds.length === 0)
+        return res.status(400).json({ error: "Debe enviar una lista de userIds" });
+
+      const result = await GroupService.removeUsersFromGroup(id, userIds);
+      res.status(200).json(result);
+    } catch (error) {
+      console.error("Error al eliminar usuarios del grupo:", error);
+      res.status(400).json({ error: error.message });
+    }
+  }
+
+  // 🟠 Actualizar grupo
   static async update(req, res) {
     try {
       const { id } = req.params;
       const updateData = req.body;
       const response = await GroupService.updateGroup(id, updateData);
 
-      if (response.error) {
-        return res.status(400).json(response);
-      }
-
+      if (response.error) return res.status(400).json(response);
       res.status(200).json(response);
     } catch (error) {
       console.error("Error al actualizar el grupo:", error);
@@ -76,7 +89,7 @@ class GroupController {
     }
   }
 
-  // Eliminar grupo
+  // 🔴 Eliminar grupo
   static async delete(req, res) {
     try {
       const { id } = req.params;
