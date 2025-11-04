@@ -1,9 +1,7 @@
 const crypto = require("crypto");
-const { getdb } = require("../helpers/firebaseHelper.js");
+const { db } = require("../helpers/firebaseHelper.js");
 const { uploadFileToDrive } = require("../helpers/driveController.js");
 const activitieSchema = require("../schemas/activitieSchema.js");
-
-const db = getdb();
 
 class ActivitiesService {
   static async getAll() {

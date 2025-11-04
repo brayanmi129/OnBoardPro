@@ -1,21 +1,15 @@
-const { initializeApp, cert } = require("firebase-admin/app");
-const { getFirestore } = require("firebase-admin/firestore");
-const serviceAccount = require("../env/firebaseconfig.json");
+const admin = require("firebase-admin");
 
-function conectfirebase() {
-  try {
-    initializeApp({
-      credential: cert(serviceAccount),
-    });
-    console.log("Conexión con Firebase exitosa");
-  } catch (error) {
-    console.error("Error al conectar con Firebase: ", error);
-  }
+if (!admin.apps.length) {
+  const serviceAccount = JSON.parse(process.env.FIREBASE_CONFIG);
+  serviceAccount.private_key = serviceAccount.private_key.replace(/\\n/g, "\n");
+
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+
+  console.log("✅ Firebase inicializado:", serviceAccount.project_id);
 }
 
-function getdb() {
-  let db = getFirestore(); // Guarda la instancia de Firestore
-  return db;
-}
-
-module.exports = { getdb, conectfirebase }; // Exporta la instancia de Firestore directamente
+const db = admin.firestore();
+module.exports = { db, admin };

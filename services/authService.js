@@ -1,11 +1,10 @@
 const crypto = require("crypto");
-const { getdb } = require("../helpers/firebaseHelper.js"); // Importar la instancia de Firestore
+const { db } = require("../helpers/firebaseHelper.js"); // Importar la instancia de Firestore
 const UserService = require("./userService.js"); // Importar la clase User
 const jwt = require("jsonwebtoken");
 
 class AuthService {
   async local(req, res) {
-    const db = getdb();
     const { email, password } = req.body;
 
     try {

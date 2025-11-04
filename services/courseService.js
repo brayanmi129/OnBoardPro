@@ -1,8 +1,6 @@
 const crypto = require("crypto");
-const { getdb } = require("../helpers/firebaseHelper.js");
+const { db } = require("../helpers/firebaseHelper.js");
 const CourseSchema = require("../schemas/courseSchemas.js");
-
-const db = getdb();
 
 class CourseService {
   // Obtener todos los cursos

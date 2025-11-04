@@ -1,9 +1,7 @@
 // services/userService.js
-const { getdb } = require("../helpers/firebaseHelper.js");
+const { db } = require("../helpers/firebaseHelper.js");
 const UserSchema = require("../schemas/userSchemas.js");
 const crypto = require("crypto");
-
-const db = getdb();
 
 class UserService {
   static async create(userData) {

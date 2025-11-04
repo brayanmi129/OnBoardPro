@@ -1,9 +1,7 @@
 // services/groupService.js
-const { getdb } = require("../helpers/firebaseHelper.js");
+const { db } = require("../helpers/firebaseHelper.js");
 const GroupSchema = require("../schemas/groupSchema.js");
 const crypto = require("crypto");
-
-const db = getdb();
 
 class GroupService {
   // ✅ Crear un grupo y opcionalmente asignar usuarios
