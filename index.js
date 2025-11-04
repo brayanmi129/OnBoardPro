@@ -44,7 +44,11 @@ const cors = require("cors");
 
 app.use(
   cors({
-    origin: "*", // Cambia esto por el origen correcto
+    origin: [
+      "http://localhost:3000",
+      "https://on-board-pro-iqg3.vercel.app",
+      "http://localhost:7777",
+    ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],
   })
