@@ -10,6 +10,20 @@ const options = {
       version: "1.0.0",
       description: "Documentación de la app de OnBoardPro",
     },
+    components: {
+      securitySchemes: {
+        bearerAuth: {
+          type: "http",
+          scheme: "bearer",
+          bearerFormat: "JWT", // 👈 hace que Swagger muestre el campo para el token
+        },
+      },
+    },
+    security: [
+      {
+        bearerAuth: [], // 👈 aplica bearer por defecto si lo deseas
+      },
+    ],
   },
   apis: ["./routes/*.js"], // 👈 aquí Swagger buscará tus comentarios
 };

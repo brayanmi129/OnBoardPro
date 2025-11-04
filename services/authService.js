@@ -76,6 +76,26 @@ class AuthService {
       return null;
     }
   }
+
+  async me(id) {
+    console.log("Me:", id);
+
+    try {
+      // Buscar usuario por ID
+      const userinfo = await UserService.getById(id);
+      console.log("Userinfo obtenido:", userinfo);
+
+      // Si no hay resultados o es undefined/null
+      if (!userinfo || userinfo.length === 0) {
+        console.warn("Usuario no encontrado:", id);
+        return null;
+      }
+      return userinfo;
+    } catch (error) {
+      console.error("Error al obtener información del usuario:", error);
+      throw new Error("Error al consultar el usuario en la base de datos.");
+    }
+  }
 }
 
 module.exports = new AuthService();

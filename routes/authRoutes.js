@@ -2,6 +2,8 @@ const express = require("express");
 const passport = require("passport");
 const router = express.Router();
 const AuthController = require("../controllers/authController.js");
+const verifyJWT = require("../middlewares/jwt.js");
+const { Auth } = require("googleapis");
 
 /**
  * @swagger
@@ -162,33 +164,35 @@ router.get(
 
 /**
  * @swagger
- * /api/auth/cookie:
+ * /api/auth/me:
  *   get:
- *     summary: Verifica si el usuario está autenticado mediante cookie de sesión
+ *     summary: Obtiene la información del usuario autenticado
  *     tags: [Autenticación]
+ *     description: >
+ *       Devuelve los datos del usuario autenticado usando su token JWT.
+ *       Usa el botón **Authorize** de Swagger e ingresa el token con el prefijo `Bearer`.
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Devuelve los datos del usuario autenticado
+ *         description: Información del usuario autenticado
  *         content:
  *           application/json:
  *             schema:
  *               type: object
  *               properties:
- *                 user:
- *                   type: object
- *                   properties:
- *                     id:
- *                       type: string
- *                       example: a1b2c3
- *                     email:
- *                       type: string
- *                       example: ejemplo@correo.com
- *                     rol:
- *                       type: string
- *                       example: Instructor
+ *                 id:
+ *                   type: string
+ *                   example: "abc123"
+ *                 email:
+ *                   type: string
+ *                   example: "usuario@correo.com"
+ *                 rol:
+ *                   type: string
+ *                   example: "Instructor"
  *       401:
- *         description: No hay una sesión activa o el usuario no está autenticado
+ *         description: Token inválido o no autenticado
  */
-router.get("/cookie", (req, res) => AuthController.checkSession(req, res));
+router.get("/me", verifyJWT, AuthController.me);
 
 module.exports = router;

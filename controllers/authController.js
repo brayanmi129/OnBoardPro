@@ -34,18 +34,36 @@ class AuthController {
     }
   }
 
-  /**
-   * Verifica si el usuario tiene una sesión activa (cookie)
-   */
-  async checkSession(req, res) {
+  async me(req, res) {
+    // Verificar si el token fue decodificado correctamente
+    if (!req.user) {
+      console.warn("Token ausente o inválido.");
+      return res.status(401).json({
+        message: "Acceso no autorizado. Token inválido o ausente.",
+      });
+    }
+
     try {
-      if (req.isAuthenticated()) {
-        return res.json({ user: req.user });
+      const id = req.user.id;
+      console.log("ID del usuario autenticado:", id);
+
+      const user = await AuthService.me(id);
+
+      if (!user) {
+        return res.status(404).json({
+          message: "Usuario no encontrado o no registrado en el sistema.",
+        });
       }
-      res.status(401).send("No autenticado");
+
+      return res.status(200).json({
+        message: "Usuario autenticado correctamente.",
+        user,
+      });
     } catch (error) {
-      console.error("Error en AuthController.checkSession:", error);
-      res.status(500).send("Error del servidor.");
+      console.error("Error en AuthController.me:", error);
+      return res.status(500).json({
+        message: "Error interno del servidor al obtener la información del usuario.",
+      });
     }
   }
 }
