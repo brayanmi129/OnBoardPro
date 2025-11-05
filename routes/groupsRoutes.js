@@ -191,4 +191,41 @@ router.delete("/:id/remove-users", GroupController.removeUsers);
  */
 router.delete("/delete/:id", GroupController.delete);
 
+/**
+ * @swagger
+ * /api/groups/me:
+ *   get:
+ *     summary: Obtiene los grupos del usuario autenticado
+ *     tags: [Grupos]
+ *     security:
+ *       - bearerAuth: []   # Requiere token JWT
+ *     responses:
+ *       200:
+ *         description: Lista de grupos asociados al usuario autenticado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id:
+ *                     type: string
+ *                     example: "abc123"
+ *                   name:
+ *                     type: string
+ *                     example: "Introducción a la programación"
+ *                   description:
+ *                     type: string
+ *                     example: "Curso básico de fundamentos de programación"
+ *                   image:
+ *                     type: string
+ *                     example: "https://example.com/course-image.jpg"
+ *       401:
+ *         description: No autorizado. El token JWT es inválido o no fue enviado
+ *       500:
+ *         description: Error interno del servidor
+ */
+router.get("/me", GroupController.getMyGroups);
+
 module.exports = router;
