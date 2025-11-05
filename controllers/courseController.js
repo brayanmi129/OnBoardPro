@@ -40,6 +40,18 @@ class CourseController {
       res.status(500).send("Error interno");
     }
   }
+
+  //mis cursos
+  static async getMyCourses(req, res) {
+    try {
+      const id = req.user.id;
+      const courses = await CourseService.getByUser(id);
+      res.status(200).json(courses);
+    } catch (error) {
+      console.error("Error al obtener los cursos del usuario:", error);
+      res.status(500).send("Error al obtener los cursos del usuario");
+    }
+  }
 }
 
 module.exports = CourseController;

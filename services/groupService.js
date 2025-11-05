@@ -201,6 +201,23 @@ class GroupService {
     await db.collection("groups").doc(id).delete();
     return { message: `Grupo ${id} eliminado correctamente` };
   }
+
+  // ✅ Obtener los grupos de un usuario
+  static async getByUser(userId) {
+    const userGroupSnap = await db.collection("users_groups").where("id_user", "==", userId).get();
+
+    if (userGroupSnap.empty) return [];
+
+    const groupIds = userGroupSnap.docs.map((doc) => doc.data().id_group);
+
+    const groupDocs = await Promise.all(
+      groupIds.map((gid) => db.collection("groups").doc(gid).get())
+    );
+
+    const groups = groupDocs.filter((g) => g.exists).map((g) => ({ id: g.id, ...g.data() }));
+
+    return groups;
+  }
 }
 
 module.exports = GroupService;

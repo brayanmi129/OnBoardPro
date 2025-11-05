@@ -32,16 +32,13 @@ class AuthService {
 
       console.log("Usuario autenticado:", userData.email);
 
-      // Obtener información del servicio de usuarios
-      const user = await UserService.getByEmail(userData.email);
-
       // Generar token
       const token = jwt.sign({ id: userData.id }, process.env.JWT_SECRET, {
         expiresIn: "3h",
       });
 
       // Devolver el mismo formato que OAuth
-      return res.json({ ...user, token });
+      return res.json({ token });
     } catch (error) {
       console.error("Error durante la autenticación local:", error);
       return res.status(500).send("Error del servidor.");

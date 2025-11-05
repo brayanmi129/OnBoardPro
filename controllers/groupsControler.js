@@ -102,6 +102,21 @@ class GroupController {
       res.status(500).send("Error al eliminar el grupo");
     }
   }
+
+  static async getMyGroups(req, res) {
+    try {
+      if (!req.user || !req.user.id) {
+        return res.status(401).json({ error: "No autenticado" });
+      }
+
+      const userId = req.user.id;
+      const groups = await GroupService.getByUser(userId);
+      res.status(200).json(groups);
+    } catch (error) {
+      console.error("Error al obtener los grupos del usuario:", error);
+      res.status(500).json({ error: "Error al obtener los grupos del usuario" });
+    }
+  }
 }
 
 module.exports = GroupController;
