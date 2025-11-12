@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const Activities = require("../services/actividades.js");
+const ActivitiesController = require("../services/actividades.js");
 
 /**
  * @swagger
@@ -19,7 +19,7 @@ const Activities = require("../services/actividades.js");
  *       200:
  *         description: Lista de todas las actividades
  */
-router.get("/get/all", Activities.getAll);
+router.get("/get/all", ActivitiesController.getAll);
 
 /**
  * @swagger
@@ -51,6 +51,6 @@ router.get("/get/all", Activities.getAll);
  *       400:
  *         description: Error en los datos o validación fallida
  */
-router.post("/create", Activities.create);
+router.post("/create", ActivitiesController.create);
 
 module.exports = router;
