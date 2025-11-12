@@ -38,7 +38,7 @@ class AuthService {
       });
 
       // Devolver el mismo formato que OAuth
-      return res.json({ token });
+      return res.json({ userData , token });
     } catch (error) {
       console.error("Error durante la autenticación local:", error);
       return res.status(500).send("Error del servidor.");
