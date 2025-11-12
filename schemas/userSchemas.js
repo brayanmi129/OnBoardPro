@@ -12,7 +12,7 @@ class UserSchema {
       level: zod.number().int().min(0).default(0),
       xp: zod.number().int().min(0).default(0),
       password: zod.string().optional(), // Contraseña opcional
-      rol: zod.enum(["Aprendiz", "Administrador", "Instructor"]).default("Aprendiz"), // Rol por defecto
+      role: zod.enum(["student", "admin", "instructor"]).default("student"), // Rol por defecto
       status: zod.enum(["Active", "Inactive"]).default("Active"), // Rol por defecto
       average: zod.number().min(0).max(5).optional(),
       missions: zod.string().optional(),
