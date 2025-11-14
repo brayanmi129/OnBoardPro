@@ -58,9 +58,9 @@ class AuthController {
       const id = req.user.id;
       console.log("ID del usuario autenticado:", id);
 
-      const user = await AuthService.me(id);
+      const userData = await AuthService.me(id);
 
-      if (!user) {
+      if (!userData) {
         return res.status(404).json({
           message: "Usuario no encontrado o no registrado en el sistema.",
         });
