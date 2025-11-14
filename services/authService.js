@@ -57,19 +57,19 @@ class AuthService {
       console.log(email);
       if (!email) throw new Error("No se encontró el email en el perfil.");
 
-      const user = await UserService.getByEmail(email);
-      if (!user) {
+      const userData = await UserService.getByEmail(email);
+      if (!userData) {
         console.log("Usuario no registrado:", email);
         return null;
       }
-      console.log(user);
+      console.log(userData);
       // Generar token
-      const token = jwt.sign({ id: user[0].id }, process.env.JWT_SECRET, {
+      const token = jwt.sign({ id: userData[0].id }, process.env.JWT_SECRET, {
         expiresIn: "3h",
       });
 
       // Devolver el mismo formato que local
-      return { ...user, token };
+      return { ...userData, token };
     } catch (error) {
       console.error("Error en autenticación OAuth:", error);
       return null;
@@ -85,8 +85,8 @@ class AuthService {
       console.log(email);
       if (!email) throw new Error("No se encontró el email en el perfil.");
 
-      const user = await UserService.getByEmail(email);
-      if (!user) {
+      const userData = await UserService.getByEmail(email);
+      if (!userData) {
         console.log("Usuario no registrado:", email);
         return null;
       }
@@ -97,7 +97,7 @@ class AuthService {
       });
 
       // Devolver el mismo formato que local
-      return { ...user, token };
+      return { ...userData, token };
     } catch (error) {
       console.error("Error en autenticación OAuth:", error);
       return null;
