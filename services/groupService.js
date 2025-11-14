@@ -4,7 +4,7 @@ const GroupSchema = require("../schemas/groupSchema.js");
 const crypto = require("crypto");
 
 class GroupService {
-  // ✅ Crear un grupo y opcionalmente asignar usuarios
+  // ✅ Crear un grupo
   static async create(groupData) {
     const customId = crypto.randomBytes(3).toString("hex");
     groupData.id = customId;
@@ -126,7 +126,8 @@ class GroupService {
 
     const batch = db.batch();
     userIds.forEach((userId) => {
-      const relRef = db.collection("users_groups").doc();
+      const customId = crypto.randomBytes(3).toString("hex");
+      const relRef = db.collection("users_groups").doc(customId);
       batch.set(relRef, { id_user: userId, id_group: groupId });
     });
 

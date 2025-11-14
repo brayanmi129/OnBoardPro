@@ -28,7 +28,7 @@ class UserSchema {
     email,
     level = 0,
     password = "",
-    rol = "Aprendiz",
+    role = "Aprendiz",
     status = "Active",
     average = 0,
     missions = "0/0",
@@ -41,7 +41,7 @@ class UserSchema {
     this.email = email;
     this.level = level;
     this.password = password;
-    this.rol = rol;
+    this.role = role;
     this.status = status;
     this.average = average;
     this.missions = missions;

@@ -72,11 +72,11 @@ router.get("/get/id/:id", UserController.getById);
  *     tags: [Usuarios]
  *     parameters:
  *       - in: path
- *         name: rol
+ *         name: role
  *         required: true
  *         schema:
  *           type: string
- *           enum: [Aprendiz, Administrador, Instructor]
+ *           enum: [instructor, admin, student]
  *         description: Rol del usuario
  *     responses:
  *       200:
@@ -84,7 +84,7 @@ router.get("/get/id/:id", UserController.getById);
  *       404:
  *         description: No se encontraron usuarios con ese rol
  */
-router.get("/get/rol/:rol", UserController.getByRole);
+router.get("/get/role/:role", UserController.getByRole);
 
 /**
  * @swagger
