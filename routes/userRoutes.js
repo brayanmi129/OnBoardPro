@@ -102,7 +102,7 @@ router.get("/get/role/:role", UserController.getByRole);
  *               - email
  *               - rol
  *             properties:
- *               fisrtname:
+ *               firstname:
  *                 type: string
  *                 example: Juan
  *               lastname:
@@ -119,8 +119,8 @@ router.get("/get/role/:role", UserController.getByRole);
  *                 example: 123456
  *               rol:
  *                 type: string
- *                 enum: [Aprendiz, Administrador, Instructor]
- *                 example: Aprendiz
+ *                 enum: [student, admin, instructor]
+ *                 example: admin
  *               status:
  *                 type: string
  *                 enum: [Active, Inactive]
@@ -180,7 +180,7 @@ router.delete("/delete/:id", UserController.deleteUser);
  *           schema:
  *             type: object
  *             properties:
- *               fisrtname:
+ *               firstname:
  *                 type: string
  *                 example: Carlos
  *               lastname:
@@ -191,7 +191,7 @@ router.delete("/delete/:id", UserController.deleteUser);
  *                 example: "3109876543"
  *               rol:
  *                 type: string
- *                 enum: [Aprendiz, Administrador, Instructor]
+ *                 enum: [student, admin, instructor]
  *                 example: Instructor
  *               status:
  *                 type: string

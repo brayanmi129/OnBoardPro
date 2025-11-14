@@ -38,7 +38,7 @@ class AuthService {
       });
 
       // Devolver el mismo formato que OAuth
-      return res.json({ userData , token });
+      return res.json({ userData, token });
     } catch (error) {
       console.error("Error durante la autenticación local:", error);
       return res.status(500).send("Error del servidor.");
@@ -48,11 +48,41 @@ class AuthService {
   /**
    * Autenticación con OAuth (Google, Facebook, etc.)
    */
-  async OAuth(profile) {
+  async OAuthGoogle(profile) {
+    console.log(profile.emails);
     try {
       console.log("Callback de autenticación OAuth");
 
       const email = profile?.emails?.[0]?.value;
+      console.log(email);
+      if (!email) throw new Error("No se encontró el email en el perfil.");
+
+      const user = await UserService.getByEmail(email);
+      if (!user) {
+        console.log("Usuario no registrado:", email);
+        return null;
+      }
+
+      // Generar token
+      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+        expiresIn: "3h",
+      });
+
+      // Devolver el mismo formato que local
+      return { ...user, token };
+    } catch (error) {
+      console.error("Error en autenticación OAuth:", error);
+      return null;
+    }
+  }
+
+  async OAuthMicrosoft(profile) {
+    console.log(profile.emails);
+    try {
+      console.log("Callback de autenticación OAuth");
+
+      const email = profile._json.mail || profile._json.userPrincipalName;
+      console.log(email);
       if (!email) throw new Error("No se encontró el email en el perfil.");
 
       const user = await UserService.getByEmail(email);

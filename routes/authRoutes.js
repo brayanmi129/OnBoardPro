@@ -105,11 +105,8 @@ router.get(
  */
 router.get(
   "/google/callback",
-  passport.authenticate("google", {
-    failureRedirect: `${process.env.URL_FRONT}/?token=Fail`,
-    session: false,
-  }),
-  (req, res) => AuthController.oauthCallback(req, res)
+  passport.authenticate("google", { failureRedirect: "...", session: false }),
+  (req, res) => AuthController.google(req, res)
 );
 
 /**
@@ -155,11 +152,8 @@ router.get(
  */
 router.get(
   "/microsoft/callback",
-  passport.authenticate("microsoft", {
-    session: false,
-    failureRedirect: `${process.env.URL_FRONT}/?token=Fail`,
-  }),
-  (req, res) => AuthController.oauthCallback(req, res)
+  passport.authenticate("microsoft", { session: false, failureRedirect: "..." }),
+  (req, res) => AuthController.microsoft(req, res)
 );
 
 /**

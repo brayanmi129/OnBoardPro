@@ -10,15 +10,8 @@ passport.use(
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: `${process.env.URL_BACKEND}/api/auth/google/callback`,
     },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const token = await AuthService.OAuth(profile);
-        if (!token) return done(null, false);
-        return done(null, { token });
-      } catch (error) {
-        console.error("Error en GoogleStrategy:", error);
-        done(error);
-      }
+    (accessToken, refreshToken, profile, done) => {
+      done(null, profile);
     }
   )
 );
@@ -28,17 +21,11 @@ passport.use(
     {
       clientID: process.env.MICROSOFT_CLIENT_ID,
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
-      callbackURL: `${process.env.URL_BACKEND}/auth/microsoft/callback`,
+      callbackURL: `${process.env.URL_BACKEND}/api/auth/microsoft/callback`,
       scope: ["user.read"],
     },
-    async (accessToken, refreshToken, profile, done) => {
-      try {
-        const user = await Auth.OAuth(profile);
-        return done(null, user);
-      } catch (error) {
-        console.error("Error en MicrosoftStrategy:", error);
-        done(error);
-      }
+    (accessToken, refreshToken, profile, done) => {
+      done(null, profile);
     }
   )
 );

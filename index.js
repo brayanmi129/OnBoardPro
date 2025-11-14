@@ -49,6 +49,7 @@ app.use(
       "http://localhost:3000",
       "https://on-board-pro-iqg3.vercel.app",
       "http://localhost:7777",
+      "https://onboardpro-back.azurewebsites.net",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type"],

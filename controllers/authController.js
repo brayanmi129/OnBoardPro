@@ -17,20 +17,31 @@ class AuthController {
   /**
    * Controlador para autenticación OAuth (Google, Microsoft, etc.)
    */
-  async oauthCallback(req, res) {
+  async google(req, res) {
     try {
-      const profile = req.user; // Passport guarda el perfil autenticado aquí
-      const result = await AuthService.OAuth(profile);
+      const profile = req.user;
+      const result = await AuthService.OAuthGoogle(profile);
 
-      if (!result) {
-        return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
-      }
+      if (!result) return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
 
-      // Redirigir al frontend con el token
-      res.redirect(`${process.env.URL_FRONT}/?token=${result.token}`);
-    } catch (error) {
-      console.error("Error en AuthController.oauthCallback:", error);
-      res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
+      return res.redirect(`${process.env.URL_FRONT}/?token=${result.token}`);
+    } catch (err) {
+      console.log(err);
+      return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
+    }
+  }
+
+  async microsoft(req, res) {
+    try {
+      const profile = req.user;
+      const result = await AuthService.OAuthMicrosoft(profile);
+
+      if (!result) return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
+
+      return res.redirect(`${process.env.URL_FRONT}/?token=${result.token}`);
+    } catch (err) {
+      console.log(err);
+      return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
     }
   }
 
