@@ -52,9 +52,10 @@ app.use(
       "https://onboardpro-back.azurewebsites.net",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type"],
+    allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+app.options("*", cors());
 
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
