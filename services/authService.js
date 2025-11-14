@@ -81,7 +81,7 @@ class AuthService {
     try {
       console.log("Callback de autenticación OAuth");
 
-      const email = profile._json.mail || profile._json.userPrincipalName;
+      const email = profile._json.mail.value || profile._json.userPrincipalName;
       console.log(email);
       if (!email) throw new Error("No se encontró el email en el perfil.");
 
