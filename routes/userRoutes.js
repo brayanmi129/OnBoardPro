@@ -100,7 +100,7 @@ router.get("/get/role/:role", UserController.getByRole);
  *             type: object
  *             required:
  *               - email
- *               - rol
+ *               - role
  *             properties:
  *               firstname:
  *                 type: string
@@ -117,7 +117,7 @@ router.get("/get/role/:role", UserController.getByRole);
  *               password:
  *                 type: string
  *                 example: 123456
- *               rol:
+ *               role:
  *                 type: string
  *                 enum: [student, admin, instructor]
  *                 example: admin

@@ -82,17 +82,15 @@ class AuthService {
       console.log("Callback de autenticación OAuth");
 
       const email = profile._json.mail.value || profile._json.userPrincipalName;
-      console.log(email);
+      console.log("Email:", email);
       if (!email) throw new Error("No se encontró el email en el perfil.");
 
       const userData = await UserService.getByEmail(email);
-      if (!userData) {
+      if (!userData || userData.length === 0) {
         console.log("Usuario no registrado:", email);
-        return null;
-      }
-
-      // Generar token
-      const token = jwt.sign({ id: userData.id }, process.env.JWT_SECRET, {
+        return { message: "Usuario no registrado" };
+      } // Generar token
+      const token = jwt.sign({ id: userData[0].id }, process.env.JWT_SECRET, {
         expiresIn: "3h",
       });
 

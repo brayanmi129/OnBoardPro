@@ -55,6 +55,7 @@ class AuthController {
     }
 
     try {
+      console.log(req.user);
       const id = req.user.id;
       console.log("ID del usuario autenticado:", id);
 
