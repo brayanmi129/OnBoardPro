@@ -1,59 +1,42 @@
-name: Deploy OnBoardPro Backend
+name: Deploy to Azure App Service
 
 on:
   push:
     branches:
-      - main
+      - main  # O la rama que uses
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
-      contents: read
+      id-token: write      
+      contents: read  
 
     steps:
-      - name: Checkout code
+      - name: Checkout código
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Configurar Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 22
+          node-version: 22  # Ajusta según tu versión
 
-      # 1️⃣ Crear carpeta dist limpia
-      - name: Prepare dist folder
-        run: |
-          mkdir dist
-          cp -r controllers dist/
-          cp -r routes dist/
-          cp -r helpers dist/
-          cp -r middlewares dist/
-          cp -r schemas dist/
-          cp -r services dist/
-          cp -r env dist/
-          cp index.js dist/
-          cp package.json dist/
-          cp web.config dist/
+      - name: Instalar dependencias
+        run: npm install
 
-      # 2️⃣ Instalar solo dependencias necesarias (PRODUCCIÓN)
-      - name: Install production dependencies
-        run: |
-          cd dist
-          npm install --omit=dev
+      - name: Compilar proyecto (si aplica)
+        run: npm run build --if-present
 
-      # 3️⃣ Login Azure
-      - name: Azure Login
+      - name: Login en Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F03ED0023F5740549A67DE23711F8DC5 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0840C376808044E39E0DCD275DCE0B70 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_DF41BB6450434B3699F8DDBDACF26921 }}
 
-      # 4️⃣ Deploy SOLO carpeta dist (no toda la raíz)
-      - name: Deploy to Azure Web App
+      - name: Deploy a Azure App Service
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "onboardpro-back"
-          package: "dist"
+          app-name: "onboardpro-back" # Reemplaza con el nombre real de tu App Service
+          package: "."
 
