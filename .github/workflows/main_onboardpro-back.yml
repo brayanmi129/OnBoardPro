@@ -1,4 +1,4 @@
-name: Deploy to Azure App Service
+name: Deploy OnBoardPro Backend
 
 on:
   push:
@@ -13,30 +13,47 @@ jobs:
       contents: read
 
     steps:
+      # 1. Checkout del repo
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Setup Node
+      # 2. Configurar Node
+      - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 22
-      
-      - name: Instalar dependencias
-        run: npm install
+          node-version: 22   # La versión que estés usando
+          cache: 'npm'
 
-      - name: Login to Azure
+      # 3. Instalar dependencias (solo prod)
+      - name: Install dependencies
+        run: npm install --omit=dev
+
+      # 5. Eliminar node_modules antes de empacar
+      - name: Remove node_modules
+        run: rm -rf node_modules
+
+      # 6. Crear ZIP limpio excluyendo carpetas basura
+      - name: Create deploy package
+        run: |
+          zip -r release.zip . \
+          -x "node_modules/*" \
+             ".git/*" \
+             ".github/*" \
+             "*.log" \
+             "logs/*" \
+             "env/*"
+
+      # 7. Login en Azure
+      - name: Azure Login
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F03ED0023F5740549A67DE23711F8DC5 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0840C376808044E39E0DCD275DCE0B70 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_DF41BB6450434B3699F8DDBDACF26921 }}
 
-      # 👉 SOLO ENVIAR ARCHIVOS NECESARIOS
-      - name: Create artifact zip
-        run: zip -r release.zip . -x "node_modules/*" ".git/*"
-
-      - name: Deploy a App Service
-        uses: azure/webapps-deploy@v2
+      # 8. Deploy en App Service
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
         with:
           app-name: "onboardpro-back"
-          package: "./"
+          package: "release.zip"
