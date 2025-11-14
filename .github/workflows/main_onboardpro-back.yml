@@ -21,29 +21,14 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 22   # La versión que estés usando
+          node-version: 22
           cache: 'npm'
 
-      # 3. Instalar dependencias (solo prod)
+      # 3. Instalar dependencias (PRODUCCIÓN)
       - name: Install dependencies
         run: npm install --omit=dev
 
-      # 5. Eliminar node_modules antes de empacar
-      - name: Remove node_modules
-        run: rm -rf node_modules
-
-      # 6. Crear ZIP limpio excluyendo carpetas basura
-      - name: Create deploy package
-        run: |
-          zip -r release.zip . \
-          -x "node_modules/*" \
-             ".git/*" \
-             ".github/*" \
-             "*.log" \
-             "logs/*" \
-             "env/*"
-
-      # 7. Login en Azure
+      # 4. Login en Azure
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -51,9 +36,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0840C376808044E39E0DCD275DCE0B70 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_DF41BB6450434B3699F8DDBDACF26921 }}
 
-      # 8. Deploy en App Service
+      # 5. Deploy directo del proyecto completo
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: "onboardpro-back"
-          package: "release.zip"
+          package: "."
