@@ -3,40 +3,40 @@ name: Deploy to Azure App Service
 on:
   push:
     branches:
-      - main  # O la rama que uses
+      - main
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     permissions:
-      id-token: write      
-      contents: read  
+      id-token: write
+      contents: read
 
     steps:
-      - name: Checkout código
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Configurar Node.js
+      - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 22  # Ajusta según tu versión
-
+          node-version: 22
+      
       - name: Instalar dependencias
         run: npm install
 
-      - name: Compilar proyecto (si aplica)
-        run: npm run build --if-present
-
-      - name: Login en Azure
+      - name: Login to Azure
         uses: azure/login@v2
         with:
           client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_F03ED0023F5740549A67DE23711F8DC5 }}
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0840C376808044E39E0DCD275DCE0B70 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_DF41BB6450434B3699F8DDBDACF26921 }}
 
-      - name: Deploy a Azure App Service
-        uses: azure/webapps-deploy@v3
-        with:
-          app-name: "onboardpro-back" # Reemplaza con el nombre real de tu App Service
-          package: "."
+      # 👉 SOLO ENVIAR ARCHIVOS NECESARIOS
+      - name: Create artifact zip
+        run: zip -r release.zip . -x "node_modules/*" ".git/*"
 
+      - name: Deploy a App Service
+        uses: azure/webapps-deploy@v2
+        with:
+          app-name: "onboardpro-back"
+          package: "./"
