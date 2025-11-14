@@ -62,9 +62,9 @@ class AuthService {
         console.log("Usuario no registrado:", email);
         return null;
       }
-
+      console.log(user);
       // Generar token
-      const token = jwt.sign({ id: user.id }, process.env.JWT_SECRET, {
+      const token = jwt.sign({ id: user[0].id }, process.env.JWT_SECRET, {
         expiresIn: "3h",
       });
 

@@ -68,7 +68,7 @@ class AuthController {
 
       return res.status(200).json({
         message: "Usuario autenticado correctamente.",
-        user,
+        userData,
       });
     } catch (error) {
       console.error("Error en AuthController.me:", error);
