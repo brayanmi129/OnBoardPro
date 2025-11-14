@@ -13,22 +13,35 @@ jobs:
       contents: read
 
     steps:
-      # 1. Checkout del repo
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2. Configurar Node
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
           node-version: 22
-          cache: 'npm'
 
-      # 3. Instalar dependencias (PRODUCCIÓN)
-      - name: Install dependencies
-        run: npm install --omit=dev
+      # 1️⃣ Crear carpeta dist limpia
+      - name: Prepare dist folder
+        run: |
+          mkdir dist
+          cp -r controllers dist/
+          cp -r routes dist/
+          cp -r helpers dist/
+          cp -r middlewares dist/
+          cp -r schemas dist/
+          cp -r services dist/
+          cp index.js dist/
+          cp package.json dist/
+          cp web.config dist/
 
-      # 4. Login en Azure
+      # 2️⃣ Instalar solo dependencias necesarias (PRODUCCIÓN)
+      - name: Install production dependencies
+        run: |
+          cd dist
+          npm install --omit=dev
+
+      # 3️⃣ Login Azure
       - name: Azure Login
         uses: azure/login@v2
         with:
@@ -36,9 +49,9 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_0840C376808044E39E0DCD275DCE0B70 }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_DF41BB6450434B3699F8DDBDACF26921 }}
 
-      # 5. Deploy directo del proyecto completo
+      # 4️⃣ Deploy SOLO carpeta dist (no toda la raíz)
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
           app-name: "onboardpro-back"
-          package: "."
+          package: "dist"
