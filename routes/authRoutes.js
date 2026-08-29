@@ -3,7 +3,6 @@ const passport = require("passport");
 const router = express.Router();
 const AuthController = require("../controllers/authController.js");
 const verifyJWT = require("../middlewares/jwt.js");
-const { Auth } = require("googleapis");
 
 /**
  * @swagger

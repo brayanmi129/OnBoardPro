@@ -1,123 +1,116 @@
-const { db } = require("../helpers/firebaseHelper.js");
 const UserService = require("./userService.js");
+const TenantService = require("./tenantService.js");
 const jwt = require("jsonwebtoken");
+const bcrypt = require("bcrypt");
+
+function generateToken(user) {
+  return jwt.sign(
+    { id: user.id, tenantId: user.tenantId || null, role: user.role },
+    process.env.JWT_SECRET,
+    { expiresIn: "3h" }
+  );
+}
 
 class AuthService {
-  /**
-   * Autenticación local (email y contraseña)
-   */
   async local(req, res) {
     const { email, password } = req.body;
 
     try {
       if (!email || !password) {
-        return res.status(400).send("Debe ingresar un email y una contraseña.");
+        return res.status(400).json({ message: "Debe ingresar un email y una contraseña." });
       }
 
-      // Buscar el usuario por email
-      const snapshot = await db.collection("users").where("email", "==", email).get();
-      if (snapshot.empty) {
-        return res.status(404).send("No existe usuario con ese email.");
+      const userData = await UserService._getForAuth(email);
+      if (!userData) {
+        return res.status(404).json({ message: "No existe usuario con ese email." });
       }
 
-      // Obtener el primer documento encontrado
-      const userDoc = snapshot.docs[0];
-      const userData = { id: userDoc.id, ...userDoc.data() };
-
-      // Verificar contraseña (⚠️ idealmente usar hash)
-      if (userData.password !== password) {
-        console.log("Contraseña incorrecta para:", email);
-        return res.status(401).send("Contraseña incorrecta.");
+      if (!userData.password) {
+        return res.status(401).json({
+          message: "Este usuario no tiene contraseña configurada. Usa Google o Microsoft.",
+        });
       }
 
-      console.log("Usuario autenticado:", userData.email);
+      const isValid = await bcrypt.compare(password, userData.password);
+      if (!isValid) {
+        return res.status(401).json({ message: "Contraseña incorrecta." });
+      }
 
-      // Generar token
-      const token = jwt.sign({ id: userData.id }, process.env.JWT_SECRET, {
-        expiresIn: "3h",
-      });
-
-      // Devolver el mismo formato que OAuth
-      return res.json({ userData, token });
+      const token = generateToken(userData);
+      const { password: _, ...safeUser } = userData;
+      return res.json({ userData: safeUser, token });
     } catch (error) {
       console.error("Error durante la autenticación local:", error);
-      return res.status(500).send("Error del servidor.");
+      return res.status(500).json({ message: "Error del servidor." });
     }
   }
 
-  /**
-   * Autenticación con OAuth (Google, Facebook, etc.)
-   */
   async OAuthGoogle(profile) {
-    console.log(profile.emails);
     try {
-      console.log("Callback de autenticación OAuth");
-
       const email = profile?.emails?.[0]?.value;
-      console.log(email);
-      if (!email) throw new Error("No se encontró el email en el perfil.");
+      if (!email) throw new Error("No se encontró el email en el perfil de Google.");
 
-      const userData = await UserService.getByEmail(email);
-      if (!userData) {
-        console.log("Usuario no registrado:", email);
-        return null;
+      const domain = email.split("@")[1];
+      const tenant = await TenantService.getByDomain(domain);
+      if (!tenant) {
+        return { error: "Dominio no registrado en la plataforma." };
       }
-      console.log(userData);
-      // Generar token
-      const token = jwt.sign({ id: userData[0].id }, process.env.JWT_SECRET, {
-        expiresIn: "3h",
-      });
 
-      // Devolver el mismo formato que local
-      return { ...userData, token };
+      let user = await UserService._getForAuth(email);
+      if (!user) {
+        user = await UserService._createOAuthUser({
+          email,
+          firstname: profile.name?.givenName || "",
+          lastname: profile.name?.familyName || "",
+          tenantId: tenant.id,
+        });
+      }
+
+      const token = generateToken(user);
+      const { password: _, ...safeUser } = user;
+      return { userData: safeUser, token };
     } catch (error) {
-      console.error("Error en autenticación OAuth:", error);
+      console.error("Error en OAuth Google:", error);
       return null;
     }
   }
 
   async OAuthMicrosoft(profile) {
-    console.log(profile.emails);
     try {
-      console.log("Callback de autenticación OAuth");
+      const email = profile._json.mail || profile._json.userPrincipalName;
+      if (!email) throw new Error("No se encontró el email en el perfil de Microsoft.");
 
-      const email = profile._json.mail.value || profile._json.userPrincipalName;
-      console.log("Email:", email);
-      if (!email) throw new Error("No se encontró el email en el perfil.");
+      const domain = email.split("@")[1];
+      const tenant = await TenantService.getByDomain(domain);
+      if (!tenant) {
+        return { error: "Dominio no registrado en la plataforma." };
+      }
 
-      const userData = await UserService.getByEmail(email);
-      if (!userData || userData.length === 0) {
-        console.log("Usuario no registrado:", email);
-        return { message: "Usuario no registrado" };
-      } // Generar token
-      const token = jwt.sign({ id: userData[0].id }, process.env.JWT_SECRET, {
-        expiresIn: "3h",
-      });
+      let user = await UserService._getForAuth(email);
+      if (!user) {
+        user = await UserService._createOAuthUser({
+          email,
+          firstname: profile._json.givenName || "",
+          lastname: profile._json.surname || "",
+          tenantId: tenant.id,
+        });
+      }
 
-      // Devolver el mismo formato que local
-      return { ...userData, token };
+      const token = generateToken(user);
+      const { password: _, ...safeUser } = user;
+      return { userData: safeUser, token };
     } catch (error) {
-      console.error("Error en autenticación OAuth:", error);
+      console.error("Error en OAuth Microsoft:", error);
       return null;
     }
   }
 
   async me(id) {
-    console.log("Me:", id);
-
     try {
-      // Buscar usuario por ID
       const userinfo = await UserService.getById(id);
-      console.log("Userinfo obtenido:", userinfo);
-
-      // Si no hay resultados o es undefined/null
-      if (!userinfo || userinfo.length === 0) {
-        console.warn("Usuario no encontrado:", id);
-        return null;
-      }
+      if (!userinfo) return null;
       return userinfo;
     } catch (error) {
-      console.error("Error al obtener información del usuario:", error);
       throw new Error("Error al consultar el usuario en la base de datos.");
     }
   }

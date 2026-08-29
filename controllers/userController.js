@@ -1,41 +1,46 @@
-//controllers/userController.js
 const UserService = require("../services/userService.js");
 const zod = require("zod");
 
 class UserController {
   static async create(req, res) {
     try {
-      const user = await UserService.create(req.body);
-      res.status(201).json(user);
-    } catch (error) {
-      console.error("Error al crear el usuario:", error.message);
-      if (error instanceof zod.ZodError) {
-        res.status(400).json({ error: "Datos inválidos", details: error.errors });
-      } else {
-        res.status(500).json({ error: error.message });
+      // Admin solo puede crear usuarios en su tenant; superadmin puede especificar tenantId
+      if (req.body.role === "superadmin" && req.user.role !== "superadmin") {
+        return res.status(403).json({ message: "Solo un superadmin puede crear otros superadmins" });
       }
+
+      const tenantId =
+        req.user.role === "superadmin" ? req.body.tenantId || req.user.tenantId : req.user.tenantId;
+
+      const user = await UserService.create({ ...req.body, tenantId });
+      return res.status(201).json(user);
+    } catch (error) {
+      if (error instanceof zod.ZodError) {
+        return res.status(400).json({ error: "Datos inválidos", details: error.errors });
+      }
+      return res.status(500).json({ error: error.message });
     }
   }
 
   static async getAll(req, res) {
     try {
-      const users = await UserService.getAll();
-      res.status(200).json(users);
+      const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
+      const users = await UserService.getAll(tenantId);
+      return res.status(200).json(users);
     } catch (error) {
-      console.error("Error al obtener los usuarios:", error);
-      res.status(500).send("Error al obtener los usuarios");
+      return res.status(500).json({ message: "Error al obtener los usuarios" });
     }
   }
 
   static async getByEmail(req, res) {
     try {
       const { email } = req.params;
-      const user = await UserService.getByEmail(email);
-      if (!user.length) return res.status(404).send("Usuario no encontrado");
-      res.status(200).json(user);
+      const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
+      const user = await UserService.getByEmail(email, tenantId);
+      if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(200).json(user);
     } catch (error) {
-      console.error("Error al buscar usuario por email:", error);
-      res.status(500).send("Error interno");
+      return res.status(500).json({ message: "Error interno" });
     }
   }
 
@@ -43,60 +48,52 @@ class UserController {
     try {
       const { id } = req.params;
       const user = await UserService.getById(id);
-      if (!user) return res.status(404).send("Usuario no encontrado");
-      res.status(200).json(user);
+      if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+      return res.status(200).json(user);
     } catch (error) {
-      console.error("Error al buscar usuario por ID:", error);
-      res.status(500).send("Error interno");
+      return res.status(500).json({ message: "Error interno" });
     }
   }
 
   static async getByRole(req, res) {
     try {
-      const { rol } = req.params;
-      const users = await UserService.getByRole(rol);
-      res.status(200).json(users);
+      const { role } = req.params;
+      const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
+      const users = await UserService.getByRole(role, tenantId);
+      return res.status(200).json(users);
     } catch (error) {
-      console.error("Error al buscar usuario por rol:", error);
-      res.status(500).send("Error interno");
+      return res.status(500).json({ message: "Error interno" });
     }
   }
 
-  //eliminar un usuario
   static async deleteUser(req, res) {
     try {
       const { id } = req.params;
-      if (!id) {
-        return res.status(400).send("ID de usuario es requerido");
-      }
       await UserService.deleteUser(id);
-      res.status(200).send(`Usuario eliminado ${id} correctamente`);
+      return res.status(200).json({ message: `Usuario ${id} eliminado correctamente` });
     } catch (error) {
-      console.error("Error al eliminar el usuario:", error);
-      res.status(500).send("Error al eliminar el usuario");
+      return res.status(500).json({ message: error.message });
     }
   }
 
-  //actualizar un usuario
   static async updateUser(req, res) {
     try {
       const { id } = req.params;
       const updateData = req.body;
 
+      // Admin no puede escalar roles a superadmin
+      if (updateData.role === "superadmin" && req.user.role !== "superadmin") {
+        return res.status(403).json({ message: "No puedes asignar el rol superadmin" });
+      }
+
       const response = await UserService.updateUser(id, updateData);
-
-      if (response.error) {
-        return res.status(400).json(response);
-      }
-
-      res.status(200).json(response);
+      if (response.error) return res.status(400).json(response);
+      return res.status(200).json(response);
     } catch (error) {
-      console.error("Error al actualizar el usuario:", error);
       if (error instanceof zod.ZodError) {
-        res.status(400).json({ error: "Datos inválidos", details: error.errors });
-      } else {
-        res.status(500).json({ error: error.message });
+        return res.status(400).json({ error: "Datos inválidos", details: error.errors });
       }
+      return res.status(500).json({ error: error.message });
     }
   }
 }

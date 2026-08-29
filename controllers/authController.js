@@ -22,11 +22,14 @@ class AuthController {
       const profile = req.user;
       const result = await AuthService.OAuthGoogle(profile);
 
-      if (!result) return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
+      if (!result || result.error || !result.token) {
+        const reason = result?.error ? encodeURIComponent(result.error) : "Fail";
+        return res.redirect(`${process.env.URL_FRONT}/?token=Fail&reason=${reason}`);
+      }
 
       return res.redirect(`${process.env.URL_FRONT}/?token=${result.token}`);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
     }
   }
@@ -36,11 +39,14 @@ class AuthController {
       const profile = req.user;
       const result = await AuthService.OAuthMicrosoft(profile);
 
-      if (!result) return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
+      if (!result || result.error || !result.token) {
+        const reason = result?.error ? encodeURIComponent(result.error) : "Fail";
+        return res.redirect(`${process.env.URL_FRONT}/?token=Fail&reason=${reason}`);
+      }
 
       return res.redirect(`${process.env.URL_FRONT}/?token=${result.token}`);
     } catch (err) {
-      console.log(err);
+      console.error(err);
       return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
     }
   }

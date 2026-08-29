@@ -1,37 +1,31 @@
 const crypto = require("crypto");
-const { db } = require("../helpers/firebaseHelper.js");
+const { supabase } = require("../helpers/supabaseHelper.js");
 const { uploadFileToDrive } = require("../helpers/driveController.js");
 const activitieSchema = require("../schemas/activitieSchema.js");
 
 class ActivitiesService {
   static async getAll() {
-    const snapshot = await db.collection("activities").get();
-    const activities = [];
-    snapshot.forEach((doc) => activities.push({ id: doc.id, ...doc.data() }));
-    return activities;
+    const { data, error } = await supabase.from("activities").select("*");
+    if (error) throw new Error(error.message);
+    return data || [];
   }
 
   static async create(data, file) {
-    // Generar un ID único
     const customId = crypto.randomBytes(3).toString("hex");
     data.id = customId;
 
-    // Subir archivo a Drive (si existe)
     if (file) {
       const fileUrl = await uploadFileToDrive(file.buffer, file.originalname);
       data.adjunto = fileUrl;
-      console.log("Archivo subido a Google Drive:", fileUrl);
     }
 
-    // Validar datos
     const validation = activitieSchema.schema.safeParse(data);
     if (!validation.success) {
       throw new Error(validation.error.errors.map((err) => err.message).join(", "));
     }
 
-    // Guardar en Firestore
-    const collection = db.collection("activities");
-    await collection.doc(data.id).set(validation.data);
+    const { error } = await supabase.from("activities").insert(validation.data);
+    if (error) throw new Error(error.message);
 
     return validation.data;
   }

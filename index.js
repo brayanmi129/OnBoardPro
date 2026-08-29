@@ -1,47 +1,32 @@
-// express
+require("dotenv").config();
 const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
+const cors = require("cors");
 const { swaggerUi, swaggerSpec } = require("./config/swagger");
-require("dotenv").config();
-const port = process.env.PORT || 3000;
+
 const app = express();
+const port = process.env.PORT || 3000;
 
-//firebase
+// Passport strategies (una sola vez)
 require("./helpers/passportHelper.js");
 
-//passport strategies
-require("./helpers/passportHelper.js");
-
-//google
 app.use(
   session({
-    secret: "studify2024",
+    secret: process.env.SESSION_SECRET || "fallback-dev-secret",
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: false, // Si estás usando HTTP
-      maxAge: 1000 * 60 * 60 * 24, // 1 día, por ejemplo
+      secure: process.env.NODE_ENV === "production",
+      maxAge: 1000 * 60 * 60 * 24,
     },
   })
 );
 
-// Inicializar Passport y el middleware de sesión
 app.use(passport.initialize());
 app.use(passport.session());
-
-//routes
-const userRoutes = require("./routes/userRoutes.js");
-const authRoutes = require("./routes/authRoutes.js");
-const courseRoutes = require("./routes/coursesRoutes.js");
-const activitiesRoutes = require("./routes/activitiesRoutes.js");
-const groupRoutes = require("./routes/groupsRoutes.js");
-const gamificationRoutes = require("./routes/gamificationRoutes.js");
-
-//middlewares para poder recibir datos json
 app.use(express.json());
-
-const cors = require("cors");
+app.use(express.static("public"));
 
 app.use(
   cors({
@@ -57,13 +42,23 @@ app.use(
 );
 app.options("*", cors());
 
+// Routes
+const userRoutes = require("./routes/userRoutes.js");
+const authRoutes = require("./routes/authRoutes.js");
+const courseRoutes = require("./routes/coursesRoutes.js");
+const activitiesRoutes = require("./routes/activitiesRoutes.js");
+const groupRoutes = require("./routes/groupsRoutes.js");
+const gamificationRoutes = require("./routes/gamificationRoutes.js");
+const tenantRoutes = require("./routes/tenantRoutes.js");
+
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
 app.use("/api/courses", courseRoutes);
 app.use("/api/activities", activitiesRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/gamification", gamificationRoutes);
-// Documentación Swagger
+app.use("/api/tenants", tenantRoutes);
+
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get("/*", (req, res) => {

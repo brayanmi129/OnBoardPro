@@ -10,7 +10,14 @@
 
 # production
 /build
+
+# credenciales y variables de entorno sensibles
 ./env/firebaseconfig.js
+env/googlesecret.json
+env/tokengoogle.js
+
+# seed output
+scripts/seed-data.txt
 
 # misc
 .env

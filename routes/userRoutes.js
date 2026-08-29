@@ -1,7 +1,8 @@
-// routes/userRoutes.js
 const express = require("express");
 const router = express.Router();
 const UserController = require("../controllers/userController");
+const verifyJWT = require("../middlewares/jwt.js");
+const requireRole = require("../middlewares/requireRole.js");
 
 /**
  * @swagger
@@ -14,13 +15,17 @@ const UserController = require("../controllers/userController");
  * @swagger
  * /api/users/get/all:
  *   get:
- *     summary: Obtiene todos los usuarios
+ *     summary: Obtiene todos los usuarios del tenant
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lista de todos los usuarios sin contraseñas
+ *         description: Lista de usuarios sin contraseñas
+ *       403:
+ *         description: Sin permisos
  */
-router.get("/get/all", UserController.getAll);
+router.get("/get/all", verifyJWT, requireRole("admin", "superadmin"), UserController.getAll);
 
 /**
  * @swagger
@@ -28,20 +33,26 @@ router.get("/get/all", UserController.getAll);
  *   get:
  *     summary: Obtiene un usuario por su correo electrónico
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: email
  *         required: true
  *         schema:
  *           type: string
- *         description: Correo electrónico del usuario
  *     responses:
  *       200:
  *         description: Usuario encontrado
  *       404:
  *         description: Usuario no encontrado
  */
-router.get("/get/email/:email", UserController.getByEmail);
+router.get(
+  "/get/email/:email",
+  verifyJWT,
+  requireRole("admin", "superadmin"),
+  UserController.getByEmail
+);
 
 /**
  * @swagger
@@ -49,49 +60,58 @@ router.get("/get/email/:email", UserController.getByEmail);
  *   get:
  *     summary: Obtiene un usuario por su ID
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID del usuario
  *     responses:
  *       200:
  *         description: Usuario encontrado
  *       404:
  *         description: Usuario no encontrado
  */
-router.get("/get/id/:id", UserController.getById);
+router.get("/get/id/:id", verifyJWT, UserController.getById);
 
 /**
  * @swagger
- * /api/users/get/rol/{rol}:
+ * /api/users/get/role/{role}:
  *   get:
  *     summary: Obtiene todos los usuarios con un rol específico
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: role
  *         required: true
  *         schema:
  *           type: string
- *           enum: [instructor, admin, student]
- *         description: Rol del usuario
+ *           enum: [student, instructor, admin, superadmin]
  *     responses:
  *       200:
  *         description: Lista de usuarios con ese rol
  *       404:
  *         description: No se encontraron usuarios con ese rol
  */
-router.get("/get/role/:role", UserController.getByRole);
+router.get(
+  "/get/role/:role",
+  verifyJWT,
+  requireRole("admin", "superadmin"),
+  UserController.getByRole
+);
 
 /**
  * @swagger
  * /api/users/create:
  *   post:
- *     summary: Crea un nuevo usuario
+ *     summary: Crea un nuevo usuario en el tenant
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -100,7 +120,6 @@ router.get("/get/role/:role", UserController.getByRole);
  *             type: object
  *             required:
  *               - email
- *               - role
  *             properties:
  *               firstname:
  *                 type: string
@@ -108,36 +127,25 @@ router.get("/get/role/:role", UserController.getByRole);
  *               lastname:
  *                 type: string
  *                 example: Pérez
- *               phonumber:
- *                 type: string
- *                 example: "3001234567"
  *               email:
  *                 type: string
- *                 example: juan@example.com
+ *                 example: juan@ucentral.edu.co
  *               password:
  *                 type: string
- *                 example: 123456
+ *                 example: contraseña123
  *               role:
  *                 type: string
  *                 enum: [student, admin, instructor]
- *                 example: admin
- *               status:
- *                 type: string
- *                 enum: [Active, Inactive]
- *                 example: Active
- *               level:
- *                 type: integer
- *                 example: 1
- *               xp:
- *                 type: integer
- *                 example: 100
+ *                 example: student
  *     responses:
  *       201:
  *         description: Usuario creado correctamente
  *       400:
- *         description: Error en los datos o validación fallida
+ *         description: Error de validación
+ *       403:
+ *         description: Sin permisos
  */
-router.post("/create", UserController.create);
+router.post("/create", verifyJWT, requireRole("admin", "superadmin"), UserController.create);
 
 /**
  * @swagger
@@ -145,20 +153,21 @@ router.post("/create", UserController.create);
  *   delete:
  *     summary: Elimina un usuario por su ID
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID del usuario a eliminar
  *     responses:
  *       200:
  *         description: Usuario eliminado correctamente
  *       404:
  *         description: Usuario no encontrado
  */
-router.delete("/delete/:id", UserController.deleteUser);
+router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), UserController.deleteUser);
 
 /**
  * @swagger
@@ -166,13 +175,14 @@ router.delete("/delete/:id", UserController.deleteUser);
  *   put:
  *     summary: Actualiza los datos de un usuario
  *     tags: [Usuarios]
+ *     security:
+ *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
  *         schema:
  *           type: string
- *         description: ID del usuario a actualizar
  *     requestBody:
  *       required: true
  *       content:
@@ -182,35 +192,20 @@ router.delete("/delete/:id", UserController.deleteUser);
  *             properties:
  *               firstname:
  *                 type: string
- *                 example: Carlos
  *               lastname:
  *                 type: string
- *                 example: López
- *               phonumber:
- *                 type: string
- *                 example: "3109876543"
- *               rol:
+ *               role:
  *                 type: string
  *                 enum: [student, admin, instructor]
- *                 example: Instructor
  *               status:
  *                 type: string
  *                 enum: [Active, Inactive]
- *                 example: Active
- *               level:
- *                 type: integer
- *                 example: 3
- *               xp:
- *                 type: integer
- *                 example: 250
  *     responses:
  *       200:
  *         description: Usuario actualizado correctamente
  *       400:
- *         description: Error en los datos de actualización
- *       404:
- *         description: Usuario no encontrado
+ *         description: Error de validación
  */
-router.put("/update/:id", UserController.updateUser);
+router.put("/update/:id", verifyJWT, requireRole("admin", "superadmin"), UserController.updateUser);
 
 module.exports = router;

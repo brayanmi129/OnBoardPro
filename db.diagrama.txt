@@ -1,90 +1,120 @@
-Table User {
-  id string [pk]
-  firstname string
-  lastname string
-  phonenumber number
-  email string
-  level number
-  password string
-  role string
-  status string
-  xp number
+// OnBoardPro — Diagrama de base de datos (Firestore)
+// Pegar en: https://dbdiagram.io
+// Actualizado: 2025
+
+// ─── MULTI-TENANT ─────────────────────────────────────────────────────────────
+
+Table Tenant {
+  id       string [pk]
+  name     string           // "Universidad Central"
+  domain   string           // "ucentral.edu.co"
+  active   boolean
+  createdAt datetime
 }
+
+// ─── USUARIOS ─────────────────────────────────────────────────────────────────
+
+Table User {
+  id         string [pk]
+  tenantId   string [ref: > Tenant.id, null]  // null solo para superadmin
+  firstname  string
+  lastname   string
+  phonumber  string
+  email      string
+  password   string         // bcrypt hash; null si es usuario OAuth
+  role       string         // student | instructor | admin | superadmin
+  status     string         // Active | Inactive
+  level      number
+  xp         number
+  streak     number
+  average    number
+  missions   string         // "completadas/total" ej: "3/10"
+}
+
+// ─── GRUPOS ───────────────────────────────────────────────────────────────────
 
 Table Group {
-  id string [pk]
-  name string
+  id       string [pk]
+  tenantId string [ref: > Tenant.id]
+  name     string
 }
+
+// ─── CURSOS ───────────────────────────────────────────────────────────────────
 
 Table Course {
-  id string [pk]
-  name string
+  id            string [pk]
+  tenantId      string [ref: > Tenant.id]
+  name          string
   instructor_id string [ref: > User.id]
-  status string
+  status        string         // Active | Inactive
 }
+
+// ─── ACTIVIDADES ──────────────────────────────────────────────────────────────
 
 Table Activity {
-  id string [pk]
-  course_id string [ref: > Course.id]
-  title string
-  description string
-  attachment url
-  deliverable boolean
-  type string
-  xp number
+  id           string [pk]
+  course_id    string [ref: > Course.id]
+  title        string
+  description  string
+  attachment   string         // URL de Google Drive
+  deliverable  boolean
+  type         string
+  xp           number
 }
 
-/* 📘 Evaluaciones asociadas a cursos */
+// ─── EVALUACIONES (pendiente de implementar) ──────────────────────────────────
+
+/* 📘 Evaluación de opción múltiple asociada a un curso */
 Table Assessment {
-  id string [pk]
-  course_id string [ref: > Course.id]
-  title string
+  id          string [pk]
+  course_id   string [ref: > Course.id]
+  title       string
   description string
-  xp number
+  xp          number
 }
 
-/* 📘 Preguntas de selección múltiple */
+/* 📘 Preguntas de la evaluación */
 Table Question {
-  id string [pk]
+  id            string [pk]
   assessment_id string [ref: > Assessment.id]
-  text string
-  xp number
+  text          string
+  xp            number
 }
 
 /* 📘 Opciones de respuesta */
 Table Option {
-  id string [pk]
+  id          string [pk]
   question_id string [ref: > Question.id]
-  text string
-  is_correct boolean // Solo una por pregunta debe ser TRUE
+  text        string
+  is_correct  boolean    // Solo una por pregunta debe ser true
 }
 
 /* 📘 Respuestas de los usuarios */
 Table UserAnswer {
-  id string [pk]
-  user_id string [ref: > User.id]
+  id          string [pk]
+  user_id     string [ref: > User.id]
   question_id string [ref: > Question.id]
-  option_id string [ref: > Option.id] // Opción elegida (una sola)
-  is_correct boolean
-  created_at datetime
+  option_id   string [ref: > Option.id]
+  is_correct  boolean
+  created_at  datetime
 }
 
-/* 📚 Relaciones muchos a muchos */
+// ─── RELACIONES MUCHOS A MUCHOS ───────────────────────────────────────────────
 
 // Un usuario puede pertenecer a varios grupos
 Table user_group {
-  user_id string [ref: > User.id]
+  user_id  string [ref: > User.id]
   group_id string [ref: > Group.id]
 }
 
-// Un grupo puede tener varios cursos
+// Un grupo puede tener varios cursos asignados
 Table group_course {
-  group_id string [ref: > Group.id]
+  group_id  string [ref: > Group.id]
   course_id string [ref: > Course.id]
 }
 
-// Un usuario puede estar inscrito en varios cursos
+// Un usuario puede estar inscrito directamente en varios cursos
 Table user_course {
-  user_id string [ref: > User.id]
+  user_id   string [ref: > User.id]
   course_id string [ref: > Course.id]
 }

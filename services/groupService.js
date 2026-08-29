@@ -1,223 +1,163 @@
-// services/groupService.js
-const { db } = require("../helpers/firebaseHelper.js");
+const { supabase } = require("../helpers/supabaseHelper.js");
 const GroupSchema = require("../schemas/groupSchema.js");
 const crypto = require("crypto");
 
 class GroupService {
-  // ✅ Crear un grupo
   static async create(groupData) {
     const customId = crypto.randomBytes(3).toString("hex");
     groupData.id = customId;
 
     const validation = GroupSchema.schema.safeParse(groupData);
     if (!validation.success) {
-      const errorMessages = validation.error.errors.map((err) => err.message);
-      throw new Error(errorMessages.join(", "));
+      throw new Error(validation.error.errors.map((err) => err.message).join(", "));
     }
 
     const group = validation.data;
-    await db.collection("groups").doc(group.id).set(group);
+    const { error } = await supabase.from("groups").insert(group);
+    if (error) throw new Error(error.message);
 
-    // 🔗 Si se incluyen usuarios al crearlo
     if (Array.isArray(groupData.userIds) && groupData.userIds.length > 0) {
-      const batch = db.batch();
-      groupData.userIds.forEach((userId) => {
-        const relRef = db.collection("users_groups").doc();
-        batch.set(relRef, { id_user: userId, id_group: group.id });
-      });
-      await batch.commit();
+      const records = groupData.userIds.map((userId) => ({ id_user: userId, id_group: group.id }));
+      await supabase.from("users_groups").insert(records);
     }
 
     return group;
   }
 
-  // ✅ Obtener todos los grupos
   static async getAll() {
-    const snapshot = await db.collection("groups").get();
-    const groups = [];
+    const { data: groups, error } = await supabase.from("groups").select("*");
+    if (error) throw new Error(error.message);
+    if (!groups?.length) return [];
 
-    for (const doc of snapshot.docs) {
-      const group = { id: doc.id, ...doc.data() };
+    const groupIds = groups.map((g) => g.id);
 
-      // --- Usuarios del grupo ---
-      const userGroupSnap = await db
-        .collection("users_groups")
-        .where("id_group", "==", group.id)
-        .get();
+    const [{ data: userGroups }, { data: groupCourses }] = await Promise.all([
+      supabase.from("users_groups").select("id_group, id_user").in("id_group", groupIds),
+      supabase.from("groups_courses").select("id_group, id_course").in("id_group", groupIds),
+    ]);
 
-      const userIds = userGroupSnap.docs.map((d) => d.data().id_user);
+    const userIds = [...new Set((userGroups || []).map((ug) => ug.id_user))];
+    const courseIds = [...new Set((groupCourses || []).map((gc) => gc.id_course))];
 
-      const userDocs = await Promise.all(
-        userIds.map((uid) => db.collection("users").doc(uid).get())
-      );
+    const [{ data: users }, { data: courses }] = await Promise.all([
+      userIds.length
+        ? supabase.from("users").select("id, firstname, lastname, email, role").in("id", userIds)
+        : Promise.resolve({ data: [] }),
+      courseIds.length
+        ? supabase.from("courses").select("*").in("id", courseIds)
+        : Promise.resolve({ data: [] }),
+    ]);
 
-      group.users = userDocs
-        .filter((u) => u.exists)
-        .map((u) => ({
-          id: u.id,
-          firstname: u.data().firstname,
-          lastname: u.data().lastname,
-          email: u.data().email,
-          role: u.data().role,
-        }));
-
-      // --- Cursos del grupo ---
-      const groupCoursesSnap = await db
-        .collection("groups_courses")
-        .where("id_group", "==", group.id)
-        .get();
-
-      const courseIds = groupCoursesSnap.docs.map((gc) => gc.data().id_course);
-
-      const courseDocs = await Promise.all(
-        courseIds.map((cid) => db.collection("courses").doc(cid).get())
-      );
-
-      group.courses = courseDocs.filter((c) => c.exists).map((c) => ({ id: c.id, ...c.data() }));
-
-      groups.push(group);
-    }
-
-    return groups;
+    return groups.map((group) => ({
+      ...group,
+      users: (userGroups || [])
+        .filter((ug) => ug.id_group === group.id)
+        .map((ug) => (users || []).find((u) => u.id === ug.id_user))
+        .filter(Boolean),
+      courses: (groupCourses || [])
+        .filter((gc) => gc.id_group === group.id)
+        .map((gc) => (courses || []).find((c) => c.id === gc.id_course))
+        .filter(Boolean),
+    }));
   }
 
-  // ✅ Obtener grupo por ID
   static async getById(id) {
-    const doc = await db.collection("groups").doc(id).get();
-    if (!doc.exists) return null;
+    const { data: group } = await supabase.from("groups").select("*").eq("id", id).maybeSingle();
+    if (!group) return null;
 
-    const group = { id: doc.id, ...doc.data() };
+    const [{ data: userGroups }, { data: groupCourses }] = await Promise.all([
+      supabase.from("users_groups").select("id_user").eq("id_group", id),
+      supabase.from("groups_courses").select("id_course").eq("id_group", id),
+    ]);
 
-    const userGroupSnap = await db.collection("users_groups").where("id_group", "==", id).get();
-    const userIds = userGroupSnap.docs.map((d) => d.data().id_user);
+    const userIds = (userGroups || []).map((ug) => ug.id_user);
+    const courseIds = (groupCourses || []).map((gc) => gc.id_course);
 
-    const userDocs = await Promise.all(userIds.map((uid) => db.collection("users").doc(uid).get()));
+    const [{ data: users }, { data: courses }] = await Promise.all([
+      userIds.length
+        ? supabase.from("users").select("id, firstname, lastname, email, role").in("id", userIds)
+        : Promise.resolve({ data: [] }),
+      courseIds.length
+        ? supabase.from("courses").select("*").in("id", courseIds)
+        : Promise.resolve({ data: [] }),
+    ]);
 
-    group.users = userDocs
-      .filter((u) => u.exists)
-      .map((u) => ({
-        id: u.id,
-        firstname: u.data().firstname,
-        lastname: u.data().lastname,
-        email: u.data().email,
-        role: u.data().role,
-      }));
-
-    const groupCoursesSnap = await db
-      .collection("groups_courses")
-      .where("id_group", "==", id)
-      .get();
-
-    const courseIds = groupCoursesSnap.docs.map((gc) => gc.data().id_course);
-
-    const courseDocs = await Promise.all(
-      courseIds.map((cid) => db.collection("courses").doc(cid).get())
-    );
-
-    group.courses = courseDocs.filter((c) => c.exists).map((c) => ({ id: c.id, ...c.data() }));
-
-    return group;
+    return { ...group, users: users || [], courses: courses || [] };
   }
 
-  // ✅ Agregar usuarios a un grupo
   static async addUsersToGroup(groupId, userIds) {
-    const groupDoc = await db.collection("groups").doc(groupId).get();
-    if (!groupDoc.exists) throw new Error("Grupo no encontrado");
+    const { data: groupCheck } = await supabase
+      .from("groups")
+      .select("id")
+      .eq("id", groupId)
+      .maybeSingle();
+    if (!groupCheck) throw new Error("Grupo no encontrado");
 
-    const batch = db.batch();
-    userIds.forEach((userId) => {
-      const customId = crypto.randomBytes(3).toString("hex");
-      const relRef = db.collection("users_groups").doc(customId);
-      batch.set(relRef, { id_user: userId, id_group: groupId });
-    });
+    const records = userIds.map((userId) => ({ id_user: userId, id_group: groupId }));
+    const { error } = await supabase
+      .from("users_groups")
+      .upsert(records, { onConflict: "id_user,id_group" });
+    if (error) throw new Error(error.message);
 
-    await batch.commit();
     return { message: "Usuarios agregados al grupo correctamente" };
   }
 
-  // ✅ Eliminar usuarios específicos de un grupo
   static async removeUsersFromGroup(groupId, userIds) {
-    console.log("Eliminando usuarios del grupo:", groupId);
-
-    // Buscar las relaciones que coincidan
-    const relSnap = await db
-      .collection("users_groups")
-      .where("id_group", "==", groupId)
-      .where("id_user", "in", userIds)
-      .get();
-
-    if (relSnap.empty) return { message: "No se encontraron usuarios en el grupo" };
-
-    const batch = db.batch();
-    relSnap.forEach((doc) => batch.delete(doc.ref));
-    await batch.commit();
-
+    const { error } = await supabase
+      .from("users_groups")
+      .delete()
+      .eq("id_group", groupId)
+      .in("id_user", userIds);
+    if (error) throw new Error(error.message);
     return { message: "Usuarios eliminados del grupo correctamente" };
   }
 
-  // ✅ Actualizar datos del grupo
   static async updateGroup(id, updateData) {
-    console.log("Actualizando grupo con ID:", id);
-    const groupDoc = await db.collection("groups").doc(id).get();
-    if (!groupDoc.exists) return { error: "Grupo no encontrado" };
+    const { data: existing } = await supabase
+      .from("groups")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!existing) return { error: "Grupo no encontrado" };
 
     const validation = GroupSchema.schema.partial().safeParse(updateData);
     if (!validation.success) {
-      const errorMessages = validation.error.errors.map((err) => err.message);
-      return { error: "Datos inválidos", details: errorMessages };
+      return { error: "Datos inválidos", details: validation.error.errors.map((e) => e.message) };
     }
 
-    const validatedUpdate = validation.data;
-    await db.collection("groups").doc(id).update(validatedUpdate);
+    const { error } = await supabase.from("groups").update(validation.data).eq("id", id);
+    if (error) return { error: error.message };
 
-    console.log(`Grupo ${id} actualizado correctamente`);
-    return {
-      message: `Grupo ${id} actualizado correctamente`,
-      updatedData: validatedUpdate,
-    };
+    return { message: `Grupo ${id} actualizado correctamente`, updatedData: validation.data };
   }
 
-  // ✅ Eliminar grupo y todas sus relaciones
   static async deleteGroup(id) {
-    console.log("Eliminando grupo con ID:", id);
-    const groupDoc = await db.collection("groups").doc(id).get();
-    if (!groupDoc.exists) throw new Error("Grupo no encontrado");
+    const { data: existing } = await supabase
+      .from("groups")
+      .select("id")
+      .eq("id", id)
+      .maybeSingle();
+    if (!existing) throw new Error("Grupo no encontrado");
 
-    // Eliminar users_groups
-    const relSnap = await db.collection("users_groups").where("id_group", "==", id).get();
-    const batch = db.batch();
-    relSnap.forEach((doc) => batch.delete(doc.ref));
-    await batch.commit();
+    // ON DELETE CASCADE elimina users_groups y groups_courses automáticamente
+    const { error } = await supabase.from("groups").delete().eq("id", id);
+    if (error) throw new Error(error.message);
 
-    // Eliminar groups_courses
-    const groupCoursesSnap = await db
-      .collection("groups_courses")
-      .where("id_group", "==", id)
-      .get();
-    const batch2 = db.batch();
-    groupCoursesSnap.forEach((doc) => batch2.delete(doc.ref));
-    await batch2.commit();
-
-    // Eliminar el grupo
-    await db.collection("groups").doc(id).delete();
     return { message: `Grupo ${id} eliminado correctamente` };
   }
 
-  // ✅ Obtener los grupos de un usuario
   static async getByUser(userId) {
-    const userGroupSnap = await db.collection("users_groups").where("id_user", "==", userId).get();
+    const { data: userGroups } = await supabase
+      .from("users_groups")
+      .select("id_group")
+      .eq("id_user", userId);
 
-    if (userGroupSnap.empty) return [];
+    if (!userGroups?.length) return [];
 
-    const groupIds = userGroupSnap.docs.map((doc) => doc.data().id_group);
+    const groupIds = userGroups.map((ug) => ug.id_group);
+    const { data: groups } = await supabase.from("groups").select("*").in("id", groupIds);
 
-    const groupDocs = await Promise.all(
-      groupIds.map((gid) => db.collection("groups").doc(gid).get())
-    );
-
-    const groups = groupDocs.filter((g) => g.exists).map((g) => ({ id: g.id, ...g.data() }));
-
-    return groups;
+    return groups || [];
   }
 }
 
