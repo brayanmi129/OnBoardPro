@@ -1,0 +1,1128 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>OnBoardPro — Requerimientos Funcionales</title>
+<style>
+:root{
+  --bg:#fbfaf8;--card:#fff;--ink:#1a1a1a;--muted:#6b6b6b;--line:#e4e1dc;
+  --accent:#1f3864;--accent-soft:#eef2f9;--ok:#2f6f4e;--ok-soft:#e6f2ec;
+  --warn:#8a5a00;--warn-soft:#fdf3dd;--bad:#a4262c;--bad-soft:#fbeaea;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme=light]){
+  --bg:#14151a;--card:#1c1e25;--ink:#e9e7e3;--muted:#9a9791;--line:#2e313a;
+  --accent:#8fb0e8;--accent-soft:#1e2634;--ok:#7dc9a2;--ok-soft:#16281f;
+  --warn:#e5b768;--warn-soft:#2b2415;--bad:#e88a8f;--bad-soft:#2c1a1c;
+}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.65 ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:48px 28px 96px}
+header.top{border-bottom:3px solid var(--accent);padding-bottom:22px}
+.doc-id{font-family:var(--mono);font-size:12px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase}
+h1{font-size:31px;margin:8px 0 6px;letter-spacing:-.02em}
+.lead{color:var(--muted);font-size:16px;margin:0}
+h2{font-size:21px;margin:54px 0 4px;letter-spacing:-.01em;scroll-margin-top:16px;
+   padding-bottom:7px;border-bottom:1px solid var(--line)}
+h2 .n{color:var(--accent);font-variant-numeric:tabular-nums;margin-right:10px}
+h3{font-size:16px;margin:30px 0 8px;color:var(--accent)}
+p{margin:12px 0}
+.sec-lead{color:var(--muted);margin:12px 0 18px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin:14px 0}
+.grid{display:grid;gap:13px}
+.g4{grid-template-columns:repeat(auto-fit,minmax(180px,1fr))}
+.kpi{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:15px 17px}
+.kpi .v{font-size:28px;font-weight:650;letter-spacing:-.02em;line-height:1.1;color:var(--accent)}
+.kpi .l{color:var(--muted);font-size:12.5px;margin-top:3px}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;background:var(--card);margin:14px 0}
+th{background:var(--accent-soft);text-align:left;font-weight:650;font-size:11.5px;text-transform:uppercase;
+   letter-spacing:.04em;padding:10px 12px;border-bottom:1px solid var(--line)}
+td{padding:10px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+tbody tr:last-child td,table tr:last-child td{border-bottom:0}
+.num{text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+.mono{font-family:var(--mono);font-size:12px;white-space:nowrap}
+.b{display:inline-block;padding:2px 9px;border-radius:99px;font-size:11px;font-weight:600;white-space:nowrap}
+.must{background:var(--bad-soft);color:var(--bad)}
+.should{background:var(--warn-soft);color:var(--warn)}
+.could{background:var(--accent-soft);color:var(--accent)}
+.ok{background:var(--ok-soft);color:var(--ok)}
+.rf{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:0 11px 11px 0;padding:14px 18px;margin:11px 0}
+.rf-h{display:flex;flex-wrap:wrap;gap:10px;align-items:baseline}
+.rf-c{font-family:var(--mono);font-size:12px;font-weight:700;color:var(--accent);min-width:74px}
+.rf-e{flex:1 1 320px;font-weight:600}
+.rf-b{margin-left:auto;display:flex;gap:5px}
+.rf-m{color:var(--muted);font-size:13px;margin:5px 0 0 84px}
+ol.rf-r{margin:9px 0 0 84px;padding-left:17px;font-size:13.5px}
+ol.rf-r li{margin:3px 0}
+.rf-t{margin:9px 0 0 84px;font-family:var(--mono);font-size:11px;color:var(--muted)}
+.nota{margin:9px 0 0 84px;padding:7px 11px;background:var(--warn-soft);border-left:3px solid var(--warn);
+      border-radius:0 5px 5px 0;font-size:12.5px}
+.new{background:var(--ok-soft);color:var(--ok);font-size:10px;padding:1px 7px;border-radius:99px;
+     font-weight:700;margin-left:6px;vertical-align:middle}
+.callout{border-left:4px solid var(--accent);background:var(--accent-soft);padding:14px 18px;
+         border-radius:0 10px 10px 0;margin:18px 0}
+.callout.w{border-color:var(--warn);background:var(--warn-soft)}
+.callout b{display:block;margin-bottom:4px}
+nav.toc{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 20px;margin:26px 0}
+nav.toc ol{margin:0;padding-left:20px;columns:2;column-gap:30px}
+nav.toc li{margin:4px 0;break-inside:avoid}
+nav.toc a{color:var(--ink);text-decoration:none}
+nav.toc a:hover{color:var(--accent);text-decoration:underline}
+.spr{display:flex;gap:12px;align-items:baseline;padding:9px 0;border-bottom:1px dashed var(--line)}
+.spr:last-child{border-bottom:0}
+.spr .t{font-weight:650;color:var(--accent);min-width:78px}
+.spr .d{color:var(--muted);font-size:12.5px;min-width:110px;font-variant-numeric:tabular-nums}
+.spr .sp{margin-left:auto;font-size:12.5px;font-weight:650;white-space:nowrap}
+footer{margin-top:70px;padding-top:18px;border-top:1px solid var(--line);color:var(--muted);font-size:13px}
+@media print{body{background:#fff}.wrap{max-width:100%;padding:0}nav.toc{display:none}
+  h2{page-break-after:avoid}.rf,.card,tr{page-break-inside:avoid}}
+@media(max-width:760px){.wrap{padding:26px 14px 60px}h1{font-size:24px}nav.toc ol{columns:1}
+  .rf-m,ol.rf-r,.rf-t,.nota{margin-left:0}}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="doc-id">Documento de Requerimientos Funcionales · v2.0 · 3 de septiembre de 2026</div>
+  <h1>OnBoardPro</h1>
+  <p class="lead">Plataforma multi-organización de formación con gamificación · Entrega del MVP: viernes 20 de noviembre de 2026</p>
+</header>
+
+<nav class="toc">
+  <ol>
+    <li><a href="#alcance">Alcance del sistema</a></li>
+    <li><a href="#actores">Actores y roles</a></li>
+    <li><a href="#permisos">Matriz de permisos</a></li>
+    <li><a href="#reglas">Reglas de negocio</a></li>
+    <li><a href="#actividades">Tipos de actividad</a></li>
+    <li><a href="#puntos">Economía de puntos y niveles</a></li>
+    <li><a href="#medallas">Sistema de medallas</a></li>
+    <li><a href="#modelo">Modelo de dominio</a></li>
+    <li><a href="#rf">Requerimientos funcionales</a></li>
+    <li><a href="#rnf">Requerimientos no funcionales</a></li>
+    <li><a href="#entrega">Plan de entrega</a></li>
+  </ol>
+</nav>
+
+<h2 id="alcance"><span class="n">1</span>Alcance del sistema</h2>
+<p>OnBoardPro es una plataforma de formación en la que <b>varias organizaciones conviven en una misma instalación
+sin verse entre sí</b>. Cada organización administra sus propias personas, las agrupa, les asigna cursos y mide su avance.</p>
+<p>El contenido de un curso se organiza en <b>secciones</b> ordenadas. Dentro de cada sección hay actividades, que pueden ser
+material de consulta, tareas que el aprendiz entrega y el instructor califica, exámenes, o juegos que el sistema genera solo
+a partir del contenido que el instructor carga.</p>
+<p>Sobre todo eso funciona una capa de gamificación: cada acción completada acredita puntos, los puntos determinan un nivel,
+y ciertas conductas desbloquean medallas. Hay un ranking por organización.</p>
+<div class="grid g4">
+  <div class="kpi"><div class="v">79</div><div class="l">requerimientos funcionales</div></div>
+  <div class="kpi"><div class="v">13</div><div class="l">reglas de negocio</div></div>
+  <div class="kpi"><div class="v">11</div><div class="l">requerimientos no funcionales</div></div>
+  <div class="kpi"><div class="v">17</div><div class="l">medallas definidas</div></div>
+</div>
+
+<h2 id="actores"><span class="n">2</span>Actores y roles</h2>
+<div class="scroll"><table>
+<tr><th style="width:18%">Rol</th><th>Descripción</th></tr>
+<tr><td><b>Superadmin</b></td><td>Administra la plataforma completa. Es el único que ve y opera sobre todas las organizaciones.</td></tr><tr><td><b>Administrador</b></td><td>Gestiona una organización: sus personas, grupos, cursos y configuración de gamificación.</td></tr><tr><td><b>Instructor</b></td><td>Dicta cursos. Solo opera sobre los cursos que tiene asignados.</td></tr><tr><td><b>Aprendiz</b></td><td>Consume el contenido de los cursos que le fueron asignados y acumula progreso.</td></tr>
+</table></div>
+
+<h2 id="permisos"><span class="n">3</span>Matriz de permisos</h2>
+<p class="sec-lead">Qué puede hacer cada rol sobre cada módulo. Las pruebas de acceso se verifican contra esta tabla.</p>
+<div class="scroll"><table>
+<tr><th style="width:19%">Módulo</th><th>Superadmin</th><th>Administrador</th><th>Instructor</th><th>Aprendiz</th></tr>
+<tr><td><b>Organizaciones</b></td><td>Crear, ver, editar, eliminar</td><td>—</td><td>—</td><td>—</td></tr><tr><td><b>Usuarios</b></td><td>Todas las organizaciones</td><td>Solo su organización</td><td>—</td><td>Solo su propio perfil</td></tr><tr><td><b>Grupos</b></td><td>Todas</td><td>Crear y gestionar los de su organización</td><td>Ver los de sus cursos</td><td>Ver los suyos</td></tr><tr><td><b>Cursos</b></td><td>Todos</td><td>Crear y gestionar los de su organización</td><td>Editar los asignados a él</td><td>Ver los asignados a él o a su grupo</td></tr><tr><td><b>Secciones y actividades</b></td><td>—</td><td>Los de su organización</td><td>Los de sus cursos</td><td>Consumir y completar</td></tr><tr><td><b>Evaluaciones y juegos</b></td><td>—</td><td>Los de su organización</td><td>Crear y configurar en sus cursos</td><td>Presentar y jugar</td></tr><tr><td><b>Entregas</b></td><td>—</td><td>Ver las de su organización</td><td>Calificar las de sus cursos</td><td>Subir y ver las suyas</td></tr><tr><td><b>Medallas</b></td><td>—</td><td>Definir las de su organización</td><td>Definir y asignar en sus cursos</td><td>Ver las suyas</td></tr><tr><td><b>Ranking</b></td><td>Todos</td><td>El de su organización</td><td>El de su organización</td><td>El de su organización</td></tr><tr><td><b>Reportes</b></td><td>Globales</td><td>Los de su organización</td><td>Los de sus cursos</td><td>Solo su propio avance</td></tr>
+</table></div>
+
+<h2 id="reglas"><span class="n">4</span>Reglas de negocio</h2>
+<p class="sec-lead">Restricciones que el sistema respeta siempre, con independencia de la operación que se ejecute.</p>
+<div class="scroll"><table>
+<tr><th style="width:9%">Código</th><th>Regla</th></tr>
+<tr><td class="mono"><b>RN-01</b></td><td>Todo registro pertenece a una organización. Ninguna consulta devuelve datos de otra, con la única excepción del superadmin.</td></tr><tr><td class="mono"><b>RN-02</b></td><td>En el acceso con Google o Microsoft, el dominio del correo determina a qué organización entra la persona. Si el dominio no corresponde a una organización activa, el acceso se rechaza.</td></tr><tr><td class="mono"><b>RN-03</b></td><td>Un aprendiz accede a un curso solo si le fue asignado directamente o a través de alguno de sus grupos.</td></tr><tr><td class="mono"><b>RN-04</b></td><td>Un instructor solo puede crear, editar o calificar dentro de los cursos que tiene asignados.</td></tr><tr><td class="mono"><b>RN-05</b></td><td>Los puntos de una entrega se acreditan cuando el instructor la califica, nunca al momento de subir el archivo.</td></tr><tr><td class="mono"><b>RN-06</b></td><td>Una actividad otorga puntaje completo una sola vez. Las repeticiones otorgan un porcentaje reducido o ninguno, según la configuración de la organización.</td></tr><tr><td class="mono"><b>RN-07</b></td><td>El nivel se recalcula en la misma operación que acredita puntos, y nunca disminuye aunque se ajuste la tabla de niveles a la baja.</td></tr><tr><td class="mono"><b>RN-08</b></td><td>Una medalla se otorga una única vez por persona y no puede perderse una vez obtenida.</td></tr><tr><td class="mono"><b>RN-09</b></td><td>El ranking se calcula siempre dentro de una organización y excluye a instructores y administradores.</td></tr><tr><td class="mono"><b>RN-10</b></td><td>Las contraseñas se almacenan cifradas y no se devuelven en ninguna respuesta del sistema.</td></tr><tr><td class="mono"><b>RN-11</b></td><td>Eliminar una organización elimina sus grupos y cursos. Sus usuarios se conservan, pero quedan sin organización asignada.</td></tr><tr><td class="mono"><b>RN-12</b></td><td>Una sección se considera completada cuando todas sus actividades lo están. Un curso, cuando todas sus secciones lo están.</td></tr><tr><td class="mono"><b>RN-13</b></td><td>Un curso en borrador solo es visible para quienes lo administran. Despublicarlo no borra el progreso ya registrado.</td></tr>
+</table></div>
+
+<h2 id="actividades"><span class="n">5</span>Tipos de actividad</h2>
+<p class="sec-lead">El instructor crea una actividad dentro de una sección y elige su tipo. El formulario le pide exactamente los datos que ese tipo necesita, y el sistema la genera e inserta.</p>
+<div class="scroll"><table>
+<tr><th style="width:16%">Tipo</th><th style="width:26%">Qué le pide al instructor</th><th style="width:32%">Qué hace el sistema</th><th>Cuándo otorga puntos</th></tr>
+<tr><td><b>Recurso</b></td><td>Un archivo o enlace y una descripción</td><td>Se consulta y el aprendiz la marca como completada</td><td>Al marcarla completada</td></tr><tr><td><b>Tarea entregable</b></td><td>Enunciado, formatos aceptados y fecha límite</td><td>El aprendiz sube un archivo y el instructor lo califica</td><td>Al calificarla el instructor</td></tr><tr><td><b>Examen calificado</b><span class="new">BASE</span></td><td>Preguntas con opciones y cuál es la correcta, puntaje, tiempo e intentos</td><td>Se presenta con cronómetro y se califica automáticamente</td><td>En proporción a la nota</td></tr><tr><td><b>Concurso de preguntas</b></td><td>Preguntas con opciones y cuál es la correcta, tiempo por pregunta</td><td>Rondas con dificultad creciente</td><td>Según desempeño en la partida</td></tr><tr><td><b>Sopa de letras</b></td><td>Lista de términos y tamaño de la cuadrícula</td><td>Genera la cuadrícula con los términos ocultos</td><td>Según desempeño en la partida</td></tr><tr><td><b>Crucigrama</b></td><td>Términos con su definición</td><td>Cruza las palabras y usa la definición como pista</td><td>Según desempeño en la partida</td></tr><tr><td><b>Parejas o memoria</b></td><td>Términos con su definición</td><td>Tablero de pares que mide tiempo e intentos</td><td>Según desempeño en la partida</td></tr>
+</table></div>
+<div class="callout">
+  <b>El examen y el concurso comparten motor</b>
+  Los dos presentan preguntas, recogen respuestas, controlan tiempo e intentos y calculan una nota. Cambia la presentación,
+  no la mecánica. Por eso el examen se construye completo primero y el concurso queda como una capa encima.
+  Los otros tres juegos van por costo creciente: parejas es el más simple, sopa de letras necesita un algoritmo de
+  colocación en cuadrícula, y crucigrama es el único con complejidad real, porque cruzar palabras respetando
+  intersecciones es un problema no trivial.
+</div>
+
+<h2 id="puntos"><span class="n">6</span>Economía de puntos y niveles</h2>
+<p class="sec-lead">Cómo se ganan puntos, cómo se traducen en nivel y qué impide abusar del sistema.</p>
+<h3>Cuándo se acreditan puntos</h3>
+<div class="scroll"><table>
+<tr><th style="width:30%">Situación</th><th>Comportamiento</th></tr>
+<tr><td><b>Recurso consultado</b></td><td>Se acreditan al marcarlo como completado. Desmarcarlo después no retira los puntos ya otorgados.</td></tr>
+<tr><td><b>Tarea entregable</b></td><td>Se acreditan cuando el instructor la califica, nunca al subir el archivo. Es la regla RN-05.</td></tr>
+<tr><td><b>Examen o juego</b></td><td>Se acreditan en proporción al resultado obtenido, no por el simple hecho de participar.</td></tr>
+<tr><td><b>Repetición</b></td><td>El puntaje completo se otorga solo la primera vez. Las repeticiones dan un porcentaje reducido o nada, según configure la organización.</td></tr>
+<tr><td><b>Tope diario</b></td><td>Existe un máximo de puntos por día configurable. Al alcanzarlo, el sistema lo informa de forma explícita al aprendiz.</td></tr>
+</table></div>
+<h3>Niveles</h3>
+<p>Cada organización define sus propios umbrales de puntos y el nombre de cada nivel. El nivel se recalcula en la misma
+operación que acredita los puntos, para que la subida se sienta inmediata, y <b>nunca disminuye</b>, aunque después se
+ajuste la tabla a la baja.</p>
+<div class="callout w">
+  <b>Por qué el tope importa más de lo que parece</b>
+  Los juegos son rejugables por naturaleza. Sin la regla de puntaje completo solo en el primer intento, cualquier aprendiz
+  puede repetir la misma sopa de letras cincuenta veces y encabezar el ranking sin haber aprendido nada.
+  La regla del primer intento no es un detalle de configuración: es lo que hace que el ranking signifique algo.
+</div>
+
+<h2 id="medallas"><span class="n">7</span>Sistema de medallas</h2>
+<p class="sec-lead">Las medallas (o logros) son metas desbloqueables. El sistema las evalúa en momentos concretos y las otorga automáticamente.</p>
+
+<h3>Cuándo evalúa el sistema</h3>
+<p>La evaluación no es continua. Ocurre únicamente en estos cinco momentos, lo que hace el mecanismo barato y predecible:</p>
+<div class="scroll"><table>
+<tr><th style="width:34%">Momento</th><th>Qué se evalúa entonces</th></tr>
+<tr><td><b>Se completa una actividad</b></td><td>Medallas de conteo de actividades, secciones y cursos, y de racha de días.</td></tr><tr><td><b>Se califica una entrega o evaluación</b></td><td>Medallas de desempeño (notas) y de entregas a tiempo.</td></tr><tr><td><b>Se acreditan puntos</b></td><td>Medallas de nivel alcanzado.</td></tr><tr><td><b>Termina una partida de un juego</b></td><td>Medallas de juegos jugados y de puntaje perfecto.</td></tr><tr><td><b>Cierra un periodo (semana o mes)</b></td><td>Medallas de posición en el ranking. Es el único disparador programado, no inmediato.</td></tr>
+</table></div>
+
+<h3>Tipos de condición disponibles</h3>
+<p>Al crear una medalla, el administrador o instructor elige una de estas nueve condiciones y completa sus valores.
+Es un catálogo cerrado a propósito: permite inventar medallas nuevas sin escribir código.</p>
+<div class="scroll"><table>
+<tr><th style="width:28%">Tipo de condición</th><th style="width:30%">Qué se configura</th><th>Ejemplo</th></tr>
+<tr><td><b>Actividades completadas</b></td><td>cantidad</td><td>50 actividades</td></tr><tr><td><b>Secciones completadas</b></td><td>cantidad</td><td>10 secciones</td></tr><tr><td><b>Cursos completados</b></td><td>cantidad</td><td>1 curso al 100%</td></tr><tr><td><b>Racha de días activos</b></td><td>días seguidos</td><td>7 días</td></tr><tr><td><b>Nivel alcanzado</b></td><td>nivel</td><td>nivel 5</td></tr><tr><td><b>Nota mínima obtenida</b></td><td>nota y veces</td><td>nota máxima, 1 vez</td></tr><tr><td><b>Posición en el ranking</b></td><td>puesto y periodo</td><td>puesto 1 del mes</td></tr><tr><td><b>Juegos completados</b></td><td>cantidad y puntaje mínimo</td><td>10 juegos con puntaje perfecto</td></tr><tr><td><b>Entregas puntuales</b></td><td>cantidad</td><td>10 entregas antes del plazo</td></tr>
+</table></div>
+
+<h3>Catálogo inicial de medallas</h3>
+<p>Estas 17 medallas cubren los nueve tipos de condición. Ninguna requiere desarrollo adicional: todas son configuración.</p>
+<div class="scroll"><table>
+<tr><th style="width:15%">Medalla</th><th style="width:11%">Categoría</th><th style="width:29%">Condición</th><th style="width:19%">Tipo</th><th>Se evalúa</th></tr>
+<tr><td><b>Primer paso</b></td><td>Progreso</td><td>Completar tu primera actividad<div class="nota" style="margin-left:0">La primera recompensa debe llegar rápido: es la que engancha.</div></td><td>Actividades completadas</td><td class="sub">Al completar una actividad</td></tr><tr><td><b>En marcha</b></td><td>Progreso</td><td>Completar 10 actividades</td><td>Actividades completadas</td><td class="sub">Al completar una actividad</td></tr><tr><td><b>Maratonista</b></td><td>Progreso</td><td>Completar 50 actividades</td><td>Actividades completadas</td><td class="sub">Al completar una actividad</td></tr><tr><td><b>Explorador</b></td><td>Progreso</td><td>Completar 10 secciones<div class="nota" style="margin-left:0">Una sección cuenta como completada cuando todas sus actividades lo están.</div></td><td>Secciones completadas</td><td class="sub">Al completar una actividad</td></tr><tr><td><b>Curso completo</b></td><td>Progreso</td><td>Terminar tu primer curso al 100%<div class="nota" style="margin-left:0">La medalla más importante del catálogo: marca el objetivo real del producto.</div></td><td>Cursos completados</td><td class="sub">Al completar una actividad</td></tr><tr><td><b>Coleccionista</b></td><td>Progreso</td><td>Terminar 5 cursos completos</td><td>Cursos completados</td><td class="sub">Al completar una actividad</td></tr><tr><td><b>Constante</b></td><td>Constancia</td><td>Mantener 7 días seguidos de actividad</td><td>Racha de días activos</td><td class="sub">Al completar una actividad</td></tr><tr><td><b>Imparable</b></td><td>Constancia</td><td>Mantener 30 días seguidos de actividad</td><td>Racha de días activos</td><td class="sub">Al completar una actividad</td></tr><tr><td><b>Puntual</b></td><td>Constancia</td><td>Entregar 10 trabajos antes de la fecha límite</td><td>Entregas puntuales</td><td class="sub">Al calificarse una entrega</td></tr><tr><td><b>Excelencia</b></td><td>Desempeño</td><td>Obtener la nota máxima en una evaluación</td><td>Nota mínima obtenida</td><td class="sub">Al calificarse una evaluación</td></tr><tr><td><b>Impecable</b></td><td>Desempeño</td><td>Aprobar 5 evaluaciones seguidas sin reprobar ninguna<div class="nota" style="margin-left:0">Requiere guardar la racha de aprobados, no solo la última nota.</div></td><td>Nota mínima obtenida</td><td class="sub">Al calificarse una evaluación</td></tr><tr><td><b>Escalador</b></td><td>Nivel</td><td>Alcanzar el nivel 5</td><td>Nivel alcanzado</td><td class="sub">Al acreditarse puntos</td></tr><tr><td><b>Cima</b></td><td>Nivel</td><td>Alcanzar el nivel 10</td><td>Nivel alcanzado</td><td class="sub">Al acreditarse puntos</td></tr><tr><td><b>Podio</b></td><td>Ranking</td><td>Quedar entre los 3 primeros del ranking al cierre de un mes<div class="nota" style="margin-left:0">Se evalúa una vez al mes, no en tiempo real. Si se calculara al vuelo, la medalla se otorgaría y quitaría cada pocos minutos.</div></td><td>Posición en el ranking</td><td class="sub">Al cerrar el periodo</td></tr><tr><td><b>Número uno</b></td><td>Ranking</td><td>Quedar primero en el ranking de tu organización al cierre de un mes<div class="nota" style="margin-left:0">El ranking es siempre dentro de la organización, nunca entre clientes distintos.</div></td><td>Posición en el ranking</td><td class="sub">Al cerrar el periodo</td></tr><tr><td><b>Jugador</b></td><td>Juegos</td><td>Completar tu primer juego</td><td>Juegos completados</td><td class="sub">Al terminar una partida</td></tr><tr><td><b>Maestro del juego</b></td><td>Juegos</td><td>Completar 10 juegos con puntaje perfecto<div class="nota" style="margin-left:0">Cuenta la primera vez que se logra el puntaje perfecto en cada juego, no las repeticiones del mismo.</div></td><td>Juegos completados</td><td class="sub">Al terminar una partida</td></tr>
+</table></div>
+<div class="callout">
+  <b>Reglas del sistema de medallas</b>
+  Una medalla se otorga <b>una sola vez</b> por persona y <b>no se puede perder</b>. Al desbloquearse se notifica en el momento
+  y aparece en el perfil. Las medallas de ranking son la excepción al desbloqueo inmediato: se evalúan al cierre del periodo,
+  porque calcularlas en tiempo real haría que se otorgaran y quitaran cada pocos minutos.
+</div>
+
+<h2 id="modelo"><span class="n">8</span>Modelo de dominio</h2>
+<p class="sec-lead">Entidades que sostienen el sistema. Las marcadas como nuevas todavía no existen y son la raíz de la mayoría de los requerimientos pendientes.</p>
+<div class="scroll"><table>
+<tr><th style="width:19%">Entidad</th><th style="width:37%">Qué es</th><th>Relaciones</th></tr>
+<tr><td><b>Organización</b></td><td>El cliente. Todo cuelga de aquí.</td><td style="color:var(--muted)">tiene muchos → Usuarios, Grupos, Cursos</td></tr><tr><td><b>Usuario</b></td><td>Persona con uno de los cuatro roles.</td><td style="color:var(--muted)">pertenece a → Organización · pertenece a muchos → Grupos</td></tr><tr><td><b>Grupo</b></td><td>Conjunto de aprendices. Unidad de asignación de cursos.</td><td style="color:var(--muted)">pertenece a → Organización · tiene muchos → Usuarios, Cursos</td></tr><tr><td><b>Curso</b></td><td>Unidad formativa con un instructor responsable.</td><td style="color:var(--muted)">pertenece a → Organización · tiene muchas → Secciones</td></tr><tr><td><b>Sección</b><span class="new">NUEVA</span></td><td>Parte ordenada de un curso. Da estructura al contenido.</td><td style="color:var(--muted)">pertenece a → Curso · tiene muchas → Actividades</td></tr><tr><td><b>Actividad</b><span class="new">NUEVA</span></td><td>Recurso, tarea entregable, examen o juego. El tipo define su comportamiento.</td><td style="color:var(--muted)">pertenece a → Sección</td></tr><tr><td><b>Contenido de actividad</b><span class="new">NUEVA</span></td><td>Las preguntas o términos que el instructor cargó. Estructura común para poder reaprovecharse.</td><td style="color:var(--muted)">pertenece a → Actividad</td></tr><tr><td><b>Progreso</b><span class="new">NUEVA</span></td><td>Qué completó cada aprendiz y cuándo. Sin esto no hay avance ni puntos.</td><td style="color:var(--muted)">relaciona → Usuario y Actividad</td></tr><tr><td><b>Entrega</b><span class="new">NUEVA</span></td><td>Archivo enviado por un aprendiz, con estado, nota y retroalimentación.</td><td style="color:var(--muted)">relaciona → Usuario y Actividad</td></tr><tr><td><b>Movimiento de puntos</b><span class="new">NUEVA</span></td><td>Cada acreditación con su origen. Permite auditar y aplicar topes.</td><td style="color:var(--muted)">pertenece a → Usuario</td></tr><tr><td><b>Nivel</b><span class="new">NUEVA</span></td><td>Umbrales de puntos configurables por organización.</td><td style="color:var(--muted)">pertenece a → Organización</td></tr><tr><td><b>Medalla</b><span class="new">NUEVA</span></td><td>Meta desbloqueable con una condición de un catálogo cerrado.</td><td style="color:var(--muted)">pertenece a → Organización</td></tr>
+</table></div>
+<div class="callout">
+  <b>La decisión estructural más importante</b>
+  Hoy un curso guarda sus actividades como una lista plana, sin orden ni agrupación. Introducir <b>Sección</b> como capa
+  intermedia es lo que permite que el curso tenga secuencia, que el avance se mida por parte y que las medallas de
+  progreso puedan contar secciones completadas. Es un cambio de estructura: cuanto antes se haga, menos datos habrá que migrar.
+</div>
+
+<h2 id="rf"><span class="n">9</span>Requerimientos funcionales</h2>
+<p class="sec-lead">79 requerimientos agrupados por módulo. Cada uno enuncia una capacidad del sistema, sus reglas de verificación y la historia de usuario con la que se construye.</p>
+<h3>9.1 · Plataforma y Multi-tenancy <span style="font-weight:400;color:var(--muted);font-size:13px">— Que varias organizaciones convivan en la misma instalación sin verse entre sí. Es el cimiento comercial del producto.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-01.01</span>
+    <span class="rf-e">El sistema debe permitir a superadmin registrar una nueva organización con su nombre y dominio de correo.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 1</span></span>
+  </div>
+  <div class="rf-m">Propósito: habilitar a un cliente nuevo en la plataforma.</div>
+  <ol class="rf-r"><li>Dado que soy superadmin, cuando envío nombre y dominio válidos, entonces la organización queda creada y activa.</li><li>El dominio se normaliza a minúsculas y es único: un dominio repetido devuelve error explicativo.</li><li>Un usuario que no sea superadmin recibe 403.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-001</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-01.02</span>
+    <span class="rf-e">El sistema debe permitir a superadmin ver el listado de todas las organizaciones.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 2</span></span>
+  </div>
+  <div class="rf-m">Propósito: administrar los clientes de la plataforma.</div>
+  <ol class="rf-r"><li>El listado muestra nombre, dominio, estado y fecha de creación.</li><li>Solo accesible para superadmin.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-002</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-01.03</span>
+    <span class="rf-e">El sistema debe permitir a superadmin actualizar el nombre o dominio de una organización.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: corregir datos o reflejar cambios del cliente.</div>
+  <ol class="rf-r"><li>Solo se aplican nombre, dominio y estado activo; el resto se ignora.</li><li>Cambiar el dominio a uno ya usado devuelve error.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-003</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-01.04</span>
+    <span class="rf-e">El sistema debe permitir a superadmin suspender el acceso de una organización sin borrar sus datos.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: gestionar impagos o bajas temporales.</div>
+  <ol class="rf-r"><li>Con la organización inactiva, el login OAuth de ese dominio queda bloqueado.</li><li>Los datos existentes se conservan intactos.</li><li>Debe quedar claro en la UI que los usuarios ya creados aún pueden entrar con contraseña.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-004</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-01.05</span>
+    <span class="rf-e">El sistema debe permitir a superadmin borrar definitivamente una organización.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: cerrar la cuenta de un cliente que se va.</div>
+  <ol class="rf-r"><li>Se pide confirmación explícita escribiendo el nombre de la organización.</li><li>Se advierte que se borran en cascada sus grupos y cursos.</li><li>Los usuarios no se borran: quedan sin organización asignada.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-005</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-01.06</span>
+    <span class="rf-e">El sistema debe permitir a sistema que toda consulta devuelva únicamente datos de la organización del usuario autenticado.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 3</span></span>
+  </div>
+  <div class="rf-m">Propósito: impedir que un cliente vea información de otro.</div>
+  <ol class="rf-r"><li>Grupos, cursos, actividades y ranking se filtran por la organización del token.</li><li>Un admin de la organización A no obtiene ningún registro de la B, ni siquiera conociendo el id.</li><li>El superadmin es la única excepción y puede consultar todo.</li><li>Existe una prueba automatizada que lo verifica para cada módulo.</li></ol>
+  <div class="nota">Riesgo alto. El schema ya tiene tenant_id en groups y courses, pero ningún servicio lo escribe ni lo filtra. La tabla activities ni siquiera tiene la columna.</div>
+  <div class="rf-t">Trazabilidad: historia HU-006</div>
+</div><h3>9.2 · Autenticación y Acceso <span style="font-weight:400;color:var(--muted);font-size:13px">— Entrar al sistema de forma segura por credenciales propias o proveedores corporativos.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-02.01</span>
+    <span class="rf-e">El sistema debe permitir a usuario entrar con mi correo y contraseña.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 1</span></span>
+  </div>
+  <div class="rf-m">Propósito: acceder a la plataforma.</div>
+  <ol class="rf-r"><li>Con credenciales válidas recibo un token y mis datos, sin la contraseña.</li><li>Con contraseña incorrecta recibo 401 y un mensaje que no revela si el correo existe.</li><li>Un usuario creado solo por OAuth recibe un mensaje indicándole que use su proveedor.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-007</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-02.02</span>
+    <span class="rf-e">El sistema debe permitir a usuario entrar con mi cuenta institucional de Google.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 1</span></span>
+  </div>
+  <div class="rf-m">Propósito: no tener que recordar otra contraseña.</div>
+  <ol class="rf-r"><li>El dominio del correo debe corresponder a una organización activa; si no, se rechaza con motivo explícito.</li><li>Si es mi primer ingreso, se crea mi usuario con rol aprendiz en esa organización.</li><li>Al terminar vuelvo al frontend con un token válido.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-008</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-02.03</span>
+    <span class="rf-e">El sistema debe permitir a usuario entrar con mi cuenta institucional de Microsoft.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 1</span></span>
+  </div>
+  <div class="rf-m">Propósito: no tener que recordar otra contraseña.</div>
+  <ol class="rf-r"><li>Mismo comportamiento que Google respecto al dominio y alta automática.</li><li>El correo se toma de 'mail' y, si viene vacío, de 'userPrincipalName'.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-009</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-02.04</span>
+    <span class="rf-e">El sistema debe permitir a usuario restablecer mi contraseña desde el correo.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 2</span></span>
+  </div>
+  <div class="rf-m">Propósito: recuperar el acceso sin depender de un administrador.</div>
+  <ol class="rf-r"><li>Se envía un enlace con token de un solo uso y caducidad de 1 hora.</li><li>La respuesta es idéntica exista o no el correo, para no filtrar qué cuentas hay.</li><li>Al usar el enlace se exige una contraseña que cumpla la política mínima.</li><li>El token queda invalidado tras el primer uso.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-010</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-02.05</span>
+    <span class="rf-e">El sistema debe permitir a usuario salir de mi cuenta.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 1</span></span>
+  </div>
+  <div class="rf-m">Propósito: proteger mi información en equipos compartidos.</div>
+  <ol class="rf-r"><li>El token se descarta en el cliente y se redirige al login.</li><li>Volver atrás en el navegador no restaura la sesión.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-011</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-02.06</span>
+    <span class="rf-e">El sistema debe permitir a usuario seguir trabajando sin que se me corte la sesión de golpe.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: no perder lo que estoy haciendo.</div>
+  <ol class="rf-r"><li>El token dura 3 horas y se renueva de forma transparente mientras haya actividad.</li><li>Tras el periodo de inactividad se pide iniciar sesión de nuevo con aviso previo.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-012</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-02.07</span>
+    <span class="rf-e">El sistema debe permitir a sistema bloquear temporalmente tras varios intentos fallidos.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 2</span></span>
+  </div>
+  <div class="rf-m">Propósito: impedir ataques de fuerza bruta contra las contraseñas.</div>
+  <ol class="rf-r"><li>Tras 5 intentos fallidos desde la misma IP se aplica una espera creciente.</li><li>El bloqueo se registra para auditoría.</li><li>Un inicio de sesión exitoso reinicia el contador.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-013</div>
+</div><h3>9.3 · Usuarios y Roles <span style="font-weight:400;color:var(--muted);font-size:13px">— Administrar las personas de cada organización y lo que cada una puede hacer.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-03.01</span>
+    <span class="rf-e">El sistema debe permitir a administrador dar de alta a una persona en mi organización.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 3</span></span>
+  </div>
+  <div class="rf-m">Propósito: que pueda acceder a los cursos.</div>
+  <ol class="rf-r"><li>El correo es único en todo el sistema; si se repite, error claro.</li><li>La contraseña se almacena cifrada, nunca en texto plano.</li><li>El usuario queda siempre en mi organización, aunque envíe otra en la petición.</li><li>Solo un superadmin puede crear otro superadmin.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-014</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-03.02</span>
+    <span class="rf-e">El sistema debe permitir a administrador ver, buscar y filtrar las personas de mi organización.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 4</span></span>
+  </div>
+  <div class="rf-m">Propósito: gestionarlas con agilidad.</div>
+  <ol class="rf-r"><li>Puedo filtrar por rol y estado, y buscar por nombre o correo.</li><li>El listado se pagina a partir de 50 registros.</li><li>Nunca se expone el hash de la contraseña.</li><li>Un admin solo ve su organización; el superadmin ve todas.</li></ol>
+  <div class="nota">Falta paginación y búsqueda por texto; el filtrado por rol y tenant ya funciona.</div>
+  <div class="rf-t">Trazabilidad: historia HU-015</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-03.03</span>
+    <span class="rf-e">El sistema debe permitir a administrador actualizar los datos de una persona.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 5</span></span>
+  </div>
+  <div class="rf-m">Propósito: mantener la información al día.</div>
+  <ol class="rf-r"><li>Puedo actualizar campos sueltos sin enviar el registro completo.</li><li>Si cambio la contraseña, se vuelve a cifrar.</li><li>Un admin no puede promover a nadie a superadmin.</li><li>Un admin no puede editar usuarios de otra organización.</li></ol>
+  <div class="nota">No valida que el usuario objetivo pertenezca al tenant de quien edita.</div>
+  <div class="rf-t">Trazabilidad: historia HU-016</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-03.04</span>
+    <span class="rf-e">El sistema debe permitir a administrador dar de baja a una persona.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b ok">Sprint 5</span></span>
+  </div>
+  <div class="rf-m">Propósito: depurar la base de usuarios.</div>
+  <ol class="rf-r"><li>Se pide confirmación antes de borrar.</li><li>Si no existe, la respuesta es 404, no 500.</li><li>Un admin no puede borrar usuarios de otra organización.</li><li>Se advierte qué pasa con sus entregas y su progreso.</li></ol>
+  <div class="nota">Devuelve 500 cuando el usuario no existe, y no valida tenant.</div>
+  <div class="rf-t">Trazabilidad: historia HU-017</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-03.05</span>
+    <span class="rf-e">El sistema debe permitir a administrador definir si alguien es aprendiz, instructor o administrador.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 5</span></span>
+  </div>
+  <div class="rf-m">Propósito: controlar qué puede hacer cada persona.</div>
+  <ol class="rf-r"><li>Los roles disponibles dependen de mi propio rol: un admin no puede crear superadmins.</li><li>El cambio de rol se refleja en el siguiente inicio de sesión del afectado.</li><li>El cambio queda registrado en auditoría con autor y fecha.</li></ol>
+  <div class="nota">El cambio funciona, pero no hay registro de auditoría ni invalidación del token vigente.</div>
+  <div class="rf-t">Trazabilidad: historia HU-018</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-03.06</span>
+    <span class="rf-e">El sistema debe permitir a administrador importar muchas personas desde un CSV o Excel.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: no dar de alta uno por uno al inicio de cada periodo.</div>
+  <ol class="rf-r"><li>Se puede descargar una plantilla con las columnas esperadas.</li><li>Antes de importar se muestra una previsualización con los errores detectados por fila.</li><li>Las filas válidas se importan aunque otras fallen, y se entrega un resumen final.</li><li>Los correos duplicados se reportan sin interrumpir el proceso.</li></ol>
+  <div class="nota">Alto impacto para clientes educativos: dar de alta 300 estudiantes a mano no es viable.</div>
+  <div class="rf-t">Trazabilidad: historia HU-019</div>
+</div><h3>9.4 · Grupos <span style="font-weight:400;color:var(--muted);font-size:13px">— Agrupar aprendices para asignarles cursos en bloque, en vez de uno por uno.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-04.01</span>
+    <span class="rf-e">El sistema debe permitir a administrador crear un grupo dentro de mi organización.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 3</span></span>
+  </div>
+  <div class="rf-m">Propósito: administrar aprendices en bloque.</div>
+  <ol class="rf-r"><li>El grupo queda asociado a mi organización de forma automática.</li><li>Opcionalmente puedo añadir aprendices en el mismo paso.</li></ol>
+  <div class="nota">Funciona, pero no guarda tenant_id: los grupos creados por la API quedan huérfanos de organización.</div>
+  <div class="rf-t">Trazabilidad: historia HU-020</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-04.02</span>
+    <span class="rf-e">El sistema debe permitir a administrador ver los grupos de mi organización con sus integrantes y cursos.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 5</span></span>
+  </div>
+  <div class="rf-m">Propósito: saber cómo está distribuida la gente.</div>
+  <ol class="rf-r"><li>Cada grupo muestra el número de integrantes y los cursos asignados.</li><li>Solo veo grupos de mi organización.</li><li>Requiere autenticación.</li></ol>
+  <div class="nota">Riesgo alto: hoy responde sin token y sin filtrar por organización. Expone correos y roles de todos los usuarios.</div>
+  <div class="rf-t">Trazabilidad: historia HU-021</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-04.03</span>
+    <span class="rf-e">El sistema debe permitir a administrador renombrar o borrar un grupo.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: mantener la estructura organizada entre periodos.</div>
+  <ol class="rf-r"><li>Al borrar se pide confirmación y se avisa cuántos aprendices quedarán sin ese grupo.</li><li>Borrar el grupo no borra a sus integrantes ni los cursos.</li></ol>
+  <div class="nota">Funciona, pero sin autenticación.</div>
+  <div class="rf-t">Trazabilidad: historia HU-022</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-04.04</span>
+    <span class="rf-e">El sistema debe permitir a administrador añadir y quitar aprendices de un grupo.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 4</span></span>
+  </div>
+  <div class="rf-m">Propósito: reflejar los cambios de matrícula.</div>
+  <ol class="rf-r"><li>Puedo añadir varios de una vez desde un buscador.</li><li>Añadir a alguien que ya está no genera duplicados ni error.</li><li>Solo puedo añadir personas de mi organización.</li></ol>
+  <div class="nota">La lógica de upsert está bien resuelta. Falta autenticación y validación de organización.</div>
+  <div class="rf-t">Trazabilidad: historia HU-023</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-04.05</span>
+    <span class="rf-e">El sistema debe permitir a administrador vincular uno o varios cursos a un grupo completo.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 5</span></span>
+  </div>
+  <div class="rf-m">Propósito: no asignar el curso persona por persona.</div>
+  <ol class="rf-r"><li>Al asignar un curso al grupo, todos sus integrantes lo ven de inmediato.</li><li>Quitar el curso del grupo retira el acceso, sin borrar el progreso ya logrado.</li><li>Solo puedo asignar cursos de mi organización.</li></ol>
+  <div class="nota">Hueco importante: es el mecanismo central de asignación y hoy solo se puede poblar con el seed.</div>
+  <div class="rf-t">Trazabilidad: historia HU-024</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-04.06</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz ver a qué grupos pertenezco.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b ok">Sprint 6</span></span>
+  </div>
+  <div class="rf-m">Propósito: entender de dónde vienen mis cursos.</div>
+  <ol class="rf-r"><li>Veo el nombre y descripción de cada grupo al que pertenezco.</li><li>Requiere sesión iniciada.</li></ol>
+  <div class="nota">La ruta no monta el middleware de autenticación, por lo que siempre responde 401. Corrección de una línea.</div>
+  <div class="rf-t">Trazabilidad: historia HU-025</div>
+</div><h3>9.5 · Cursos y Estructura de Contenido <span style="font-weight:400;color:var(--muted);font-size:13px">— Organizar el contenido formativo en cursos con secciones ordenados.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-05.01</span>
+    <span class="rf-e">El sistema debe permitir a administrador / instructor registrar un curso nuevo.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 3</span></span>
+  </div>
+  <div class="rf-m">Propósito: ofrecer contenido formativo.</div>
+  <ol class="rf-r"><li>El curso queda en mi organización y en estado borrador hasta publicarlo.</li><li>El instructor asignado debe ser un usuario existente con rol instructor.</li><li>Un instructor solo puede crear cursos en su organización.</li></ol>
+  <div class="nota">El controlador pasa el objeto request completo al servicio en lugar del cuerpo. Falla siempre.</div>
+  <div class="rf-t">Trazabilidad: historia HU-026</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-05.02</span>
+    <span class="rf-e">El sistema debe permitir a administrador / instructor ver el catálogo de cursos de mi organización.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 4</span></span>
+  </div>
+  <div class="rf-m">Propósito: gestionar la oferta formativa.</div>
+  <ol class="rf-r"><li>El admin ve todos los cursos de su organización.</li><li>El instructor ve únicamente los cursos que tiene asignados.</li><li>Se puede buscar por nombre y filtrar por estado.</li><li>Requiere autenticación.</li></ol>
+  <div class="nota">El listado responde sin token y sin filtrar. La consulta por id está rota: pasa el request como identificador.</div>
+  <div class="rf-t">Trazabilidad: historia HU-027</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-05.03</span>
+    <span class="rf-e">El sistema debe permitir a administrador / instructor modificar los datos de un curso.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 8</span></span>
+  </div>
+  <div class="rf-m">Propósito: mantener la información vigente.</div>
+  <ol class="rf-r"><li>El instructor solo puede editar cursos que tiene asignados.</li><li>Los cambios se reflejan de inmediato para los aprendices.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-028</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-05.04</span>
+    <span class="rf-e">El sistema debe permitir a administrador retirar un curso del catálogo.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: depurar contenido que ya no se dicta.</div>
+  <ol class="rf-r"><li>Se pide confirmación y se avisa cuántos aprendices lo tienen asignado.</li><li>Se prefiere archivar sobre borrar, para conservar el histórico de progreso.</li><li>Un curso archivado deja de aparecer para los aprendices.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-029</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-05.05</span>
+    <span class="rf-e">El sistema debe permitir a administrador designar quién dicta cada curso.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 9</span></span>
+  </div>
+  <div class="rf-m">Propósito: definir responsables.</div>
+  <ol class="rf-r"><li>Solo se pueden seleccionar usuarios con rol instructor de mi organización.</li><li>El instructor asignado pasa a ver el curso en su listado.</li><li>Se puede reasignar a otro instructor.</li></ol>
+  <div class="nota">El campo guarda un correo en vez de una referencia al usuario. Conviene cambiarlo a clave foránea.</div>
+  <div class="rf-t">Trazabilidad: historia HU-030</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-05.06</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz ver únicamente los cursos que me corresponden.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 9</span></span>
+  </div>
+  <div class="rf-m">Propósito: entrar directo a lo mío sin ruido.</div>
+  <ol class="rf-r"><li>Veo los cursos asignados a mí o a cualquiera de mis grupos, sin duplicados.</li><li>No veo cursos de otros grupos ni de otras organizaciones.</li><li>Cada curso muestra mi porcentaje de avance.</li></ol>
+  <div class="nota">La resolución grupo a curso ya funciona. Falta el porcentaje de avance.</div>
+  <div class="rf-t">Trazabilidad: historia HU-031</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-05.07</span>
+    <span class="rf-e">El sistema debe permitir a instructor dividir el curso en secciones ordenados.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 4</span></span>
+  </div>
+  <div class="rf-m">Propósito: que el aprendiz siga una secuencia lógica en vez de una lista plana.</div>
+  <ol class="rf-r"><li>Puedo crear, renombrar y eliminar secciones dentro de un curso.</li><li>Cada sección agrupa actividades, recursos, evaluaciones y juegos.</li><li>Puedo reordenar secciones y sus contenidos arrastrando.</li><li>Un sección vacío no se muestra al aprendiz.</li></ol>
+  <div class="nota">Cambio estructural. Hoy el curso guarda las actividades en un arreglo plano de texto, sin orden ni agrupación.</div>
+  <div class="rf-t">Trazabilidad: historia HU-032</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-05.08</span>
+    <span class="rf-e">El sistema debe permitir a administrador / instructor controlar cuándo el curso se hace visible.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: prepararlo con calma antes de abrirlo.</div>
+  <ol class="rf-r"><li>Un curso en borrador solo lo ven quienes lo administran.</li><li>Al publicar se valida que tenga al menos un sección con contenido.</li><li>Despublicar no borra el progreso ya registrado.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-033</div>
+</div><h3>9.6 · Actividades y Recursos Multimedia <span style="font-weight:400;color:var(--muted);font-size:13px">— Cargar y consumir el material de apoyo: videos, PDFs, enlaces.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-06.01</span>
+    <span class="rf-e">El sistema debe permitir a instructor añadir una actividad dentro de un sección.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 5</span></span>
+  </div>
+  <div class="rf-m">Propósito: estructurar el contenido del curso.</div>
+  <ol class="rf-r"><li>Puedo elegir el tipo: recurso, tarea entregable, evaluación o juego.</li><li>La actividad queda dentro del sección y la organización correctos.</li><li>Los campos obligatorios se validan antes de guardar.</li></ol>
+  <div class="nota">La ruta monta el servicio en lugar del controlador. Además el controlador correcto importa un archivo que no existe.</div>
+  <div class="rf-t">Trazabilidad: historia HU-034</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-06.02</span>
+    <span class="rf-e">El sistema debe permitir a usuario ver las actividades disponibles.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 10</span></span>
+  </div>
+  <div class="rf-m">Propósito: saber qué tengo que hacer.</div>
+  <ol class="rf-r"><li>Las actividades se muestran agrupadas por sección y en orden.</li><li>El aprendiz solo ve actividades de cursos que tiene asignados.</li><li>Cada actividad indica su estado: pendiente, entregada o completada.</li></ol>
+  <div class="nota">El endpoint nunca responde: la petición queda abierta hasta que el cliente corta por tiempo.</div>
+  <div class="rf-t">Trazabilidad: historia HU-035</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-06.03</span>
+    <span class="rf-e">El sistema debe permitir a instructor corregir o retirar una actividad.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: mantener el contenido actualizado.</div>
+  <ol class="rf-r"><li>Solo puedo modificar actividades de cursos que tengo asignados.</li><li>Al eliminar se advierte si ya existen entregas asociadas.</li><li>Se prefiere ocultar frente a borrar cuando ya hay entregas.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-036</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-06.04</span>
+    <span class="rf-e">El sistema debe permitir a instructor adjuntar archivos a una actividad.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 7</span></span>
+  </div>
+  <div class="rf-m">Propósito: entregar el material de estudio.</div>
+  <ol class="rf-r"><li>Se aceptan PDF, imágenes y video, con un límite de tamaño explícito.</li><li>Un formato o tamaño no permitido se rechaza con mensaje claro antes de subir.</li><li>Se muestra el progreso de carga.</li><li>El archivo queda accesible solo para quien tiene acceso al curso.</li></ol>
+  <div class="nota">Los archivos de Drive se publican como accesibles para cualquiera con el enlace. Revisar si es aceptable para contenido de clientes.</div>
+  <div class="rf-t">Trazabilidad: historia HU-037</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-06.05</span>
+    <span class="rf-e">El sistema debe permitir a usuario abrir o descargar los archivos de una actividad.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 10</span></span>
+  </div>
+  <div class="rf-m">Propósito: estudiar el material.</div>
+  <ol class="rf-r"><li>Los PDFs y videos se previsualizan sin salir de la plataforma.</li><li>Solo accedo a material de cursos que tengo asignados.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-038</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-06.06</span>
+    <span class="rf-e">El sistema debe permitir a instructor quitar un archivo de una actividad.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: retirar material obsoleto.</div>
+  <ol class="rf-r"><li>Se pide confirmación.</li><li>El archivo se elimina también del almacenamiento externo, no solo la referencia.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-039</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-06.07</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz marcar que terminé una actividad de tipo recurso.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 7</span></span>
+  </div>
+  <div class="rf-m">Propósito: llevar el control de mi avance y recibir mi XP.</div>
+  <ol class="rf-r"><li>Solo aplica a recursos; las tareas y evaluaciones se completan al entregarlas o resolverlas.</li><li>Al marcarla se acredita el XP configurado, una sola vez.</li><li>Desmarcarla no retira el XP ya otorgado.</li><li>El avance del curso se recalcula al instante.</li></ol>
+  <div class="nota">Pieza faltante clave: sin registro de progreso no hay gamificación posible.</div>
+  <div class="rf-t">Trazabilidad: historia HU-040</div>
+</div><h3>9.7 · Evaluaciones <span style="font-weight:400;color:var(--muted);font-size:13px">— El examen de siempre y el motor que presenta preguntas y las califica. Ese mismo motor es el que después reutilizan los juegos.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-07.01</span>
+    <span class="rf-e">El sistema debe permitir a instructor crear un examen dentro de una sección, cargando sus preguntas con opciones y la respuesta correcta.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 6</span></span>
+  </div>
+  <div class="rf-m">Propósito: evaluar formalmente lo aprendido, como en cualquier plataforma de formación.</div>
+  <ol class="rf-r"><li>Al crear la actividad elijo el tipo examen, y el formulario me pide preguntas, opciones y cuál es la correcta.</li><li>Configuro puntaje total, tiempo límite e intentos permitidos.</li><li>Puedo previsualizar el examen tal como lo verá el aprendiz antes de publicarlo.</li><li>El examen queda dentro de la sección y el curso correctos.</li></ol>
+  <div class="nota">Las preguntas se guardan con una estructura común para que después puedan reaprovecharse en un juego, pero el instructor nunca tiene que gestionar un banco aparte: carga lo que pide el examen y ya.</div>
+  <div class="rf-t">Trazabilidad: historia HU-041</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-07.02</span>
+    <span class="rf-e">El sistema debe permitir a instructor cargar las preguntas de un examen desde un archivo.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: no escribir cincuenta preguntas a mano.</div>
+  <ol class="rf-r"><li>Hay una plantilla descargable con las columnas esperadas.</li><li>Se previsualizan los errores por fila antes de confirmar la importación.</li><li>Las filas válidas se importan aunque otras fallen.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-042</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-07.03</span>
+    <span class="rf-e">El sistema debe permitir a instructor reaprovechar en una actividad nueva las preguntas o términos que ya cargué en otra del mismo curso.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: no volver a escribir el mismo contenido para cada examen o juego.</div>
+  <ol class="rf-r"><li>Al crear una actividad puedo elegir entre cargar contenido nuevo o tomarlo de otra actividad del curso.</li><li>Solo se ofrecen actividades cuyo contenido es compatible con el tipo que estoy creando.</li><li>Editar el contenido en una actividad no altera el de la otra.</li></ol>
+  <div class="nota">Es la pieza que evita duplicar trabajo cuando un curso tiene examen y varios juegos sobre el mismo tema. Vale la pena en cuanto haya más de dos actividades por sección.</div>
+  <div class="rf-t">Trazabilidad: historia HU-043</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-07.04</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz resolver el examen dentro de la plataforma.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 8</span></span>
+  </div>
+  <div class="rf-m">Propósito: demostrar lo aprendido.</div>
+  <ol class="rf-r"><li>El cronómetro es visible y al agotarse la evaluación se envía automáticamente.</li><li>Las respuestas se van guardando para no perderlas si se corta la conexión.</li><li>No puedo superar el número de intentos configurado.</li><li>El orden de preguntas y opciones puede aleatorizarse.</li></ol>
+  <div class="nota">Es el motor común: presentar preguntas, recoger respuestas y controlar tiempo e intentos. El concurso del sprint 11 lo reutiliza entero, solo cambia la presentación.</div>
+  <div class="rf-t">Trazabilidad: historia HU-044</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-07.05</span>
+    <span class="rf-e">El sistema debe permitir a sistema calcular la nota al enviar y otorgar los puntos correspondientes.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 9</span></span>
+  </div>
+  <div class="rf-m">Propósito: dar resultado inmediato sin trabajo del instructor.</div>
+  <ol class="rf-r"><li>La nota se calcula al instante para preguntas de opción múltiple.</li><li>El aprendiz ve qué acertó y qué falló, si el instructor lo habilitó.</li><li>Los puntos se acreditan en proporción a la nota obtenida.</li><li>El resultado queda en el histórico del aprendiz.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-045</div>
+</div><h3>9.8 · Entregas y Calificación <span style="font-weight:400;color:var(--muted);font-size:13px">— Que el aprendiz entregue trabajos y el instructor los califique con retroalimentación.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-08.01</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz adjuntar mi trabajo en una actividad entregable.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 6</span></span>
+  </div>
+  <div class="rf-m">Propósito: cumplir con lo asignado.</div>
+  <ol class="rf-r"><li>Solo disponible en actividades de tipo entregable.</li><li>Se validan formato y tamaño antes de subir.</li><li>La entrega queda en estado entregado, con fecha y hora.</li><li>Puedo reemplazarla mientras el plazo siga abierto y no esté calificada.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-046</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-08.02</span>
+    <span class="rf-e">El sistema debe permitir a instructor ver qué entregas tengo por calificar.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 10</span></span>
+  </div>
+  <div class="rf-m">Propósito: organizar mi trabajo.</div>
+  <ol class="rf-r"><li>Puedo filtrar por pendientes y ordenar por fecha de entrega.</li><li>Solo veo entregas de cursos que tengo asignados.</li><li>Se muestra un contador de pendientes.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-047</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-08.03</span>
+    <span class="rf-e">El sistema debe permitir a instructor poner nota y comentario a una entrega.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 7</span></span>
+  </div>
+  <div class="rf-m">Propósito: evaluar y orientar la mejora del aprendiz.</div>
+  <ol class="rf-r"><li>La nota se valida contra el rango configurado en la actividad.</li><li>El comentario de retroalimentación es obligatorio.</li><li>Al guardar, la entrega pasa a calificada y se acredita el XP de la actividad.</li><li>El aprendiz recibe una notificación.</li></ol>
+  <div class="nota">Es el punto donde se conectan entregas y gamificación: el XP se otorga al calificar, no al subir.</div>
+  <div class="rf-t">Trazabilidad: historia HU-048</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-08.04</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz consultar la nota y el comentario del instructor.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 11</span></span>
+  </div>
+  <div class="rf-m">Propósito: saber cómo me fue y qué mejorar.</div>
+  <ol class="rf-r"><li>La nota y el comentario solo son visibles una vez calificada la entrega.</li><li>Se muestra la fecha de calificación y el XP obtenido.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-049</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-08.05</span>
+    <span class="rf-e">El sistema debe permitir a instructor reabrir una entrega ya calificada.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: dar una segunda oportunidad cuando corresponde.</div>
+  <ol class="rf-r"><li>Al reabrir, la entrega vuelve a estado pendiente y se conserva el histórico de la nota anterior.</li><li>El aprendiz recibe una notificación indicando el motivo.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-050</div>
+</div><h3>9.9 · Gamificación: XP y Niveles <span style="font-weight:400;color:var(--muted);font-size:13px">— La economía de puntos que sostiene toda la motivación del producto.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-09.01</span>
+    <span class="rf-e">El sistema debe permitir a instructor asignar cuántos puntos otorga cada actividad.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 6</span></span>
+  </div>
+  <div class="rf-m">Propósito: calibrar la dificultad y el incentivo.</div>
+  <ol class="rf-r"><li>El valor es un entero positivo dentro de un rango configurable por la organización.</li><li>Se puede cambiar después, sin afectar el XP ya otorgado.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-051</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-09.02</span>
+    <span class="rf-e">El sistema debe permitir a sistema sumar el XP al aprendiz cuando corresponde.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 8</span></span>
+  </div>
+  <div class="rf-m">Propósito: reflejar su progreso real.</div>
+  <ol class="rf-r"><li>En recursos, al marcarlos completados.</li><li>En entregas, al momento de ser calificadas, nunca al subir el archivo.</li><li>En exámenes y juegos, en proporción al resultado obtenido.</li><li>Cada acreditación queda registrada con su origen, para poder auditarla.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-052</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-09.03</span>
+    <span class="rf-e">El sistema debe permitir a administrador definir cuánto XP requiere cada nivel.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: ajustar la curva de progresión a mi organización.</div>
+  <ol class="rf-r"><li>Puedo definir los umbrales de cada nivel y su nombre.</li><li>Cambiar la tabla recalcula el nivel de todos los usuarios de la organización.</li><li>Cada organización tiene su propia configuración.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-053</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-09.04</span>
+    <span class="rf-e">El sistema debe permitir a sistema recalcular el nivel cuando el XP cruza un umbral.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 10</span></span>
+  </div>
+  <div class="rf-m">Propósito: que el progreso se sienta inmediato.</div>
+  <ol class="rf-r"><li>El nivel se recalcula en la misma operación que acredita el XP.</li><li>Al subir de nivel se muestra una celebración en la interfaz y se emite una notificación.</li><li>El nivel nunca baja aunque se ajuste la tabla a la baja.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-054</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-09.05</span>
+    <span class="rf-e">El sistema debe permitir a sistema limitar cuánto XP se puede ganar repitiendo lo mismo.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: que el ranking mida aprendizaje y no insistencia.</div>
+  <ol class="rf-r"><li>Una actividad otorga XP completo solo en el primer intento; las repeticiones dan un porcentaje reducido o cero.</li><li>Existe un tope diario de XP configurable por organización.</li><li>Los intentos que no otorgan XP se lo indican al aprendiz de forma clara.</li></ol>
+  <div class="nota">Imprescindible antes de lanzar los juegos: un juego rejugable sin tope convierte el XP en una fuente infinita.</div>
+  <div class="rf-t">Trazabilidad: historia HU-055</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-09.06</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz consultar mi puntaje y nivel actual.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b ok">Sprint 11</span></span>
+  </div>
+  <div class="rf-m">Propósito: monitorear mi progreso.</div>
+  <ol class="rf-r"><li>Veo XP total, nivel actual y cuánto falta para el siguiente.</li><li>Veo el detalle de las últimas acreditaciones y su origen.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-056</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-09.07</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz ver el ranking de mi organización.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b ok">Sprint 11</span></span>
+  </div>
+  <div class="rf-m">Propósito: compararme y motivarme.</div>
+  <ol class="rf-r"><li>El ranking solo incluye aprendices de mi organización.</li><li>Se ordena por XP y muestra mi posición destacada.</li><li>Se puede filtrar por grupo y por periodo.</li><li>Instructores y administradores quedan excluidos.</li></ol>
+  <div class="nota">Devuelve error en producción. Además no filtra por organización: hoy mezclaría aprendices de clientes distintos.</div>
+  <div class="rf-t">Trazabilidad: historia HU-057</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-09.08</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz que se registre mi constancia diaria.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: mantener el hábito de estudio.</div>
+  <ol class="rf-r"><li>La racha aumenta con al menos una actividad completada por día.</li><li>Se reinicia tras un día sin actividad.</li><li>Se otorga XP extra en hitos de racha configurables.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-058</div>
+</div><h3>9.10 · Gamificación: Logros <span style="font-weight:400;color:var(--muted);font-size:13px">— Metas desbloqueables que premian conductas específicas.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-10.01</span>
+    <span class="rf-e">El sistema debe permitir a administrador / instructor definir un logro con nombre, descripción e insignia.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: dar metas concretas a los aprendices.</div>
+  <ol class="rf-r"><li>El logro pertenece a mi organización.</li><li>Puedo subir o elegir una insignia.</li><li>El logro queda inactivo hasta definirle una condición.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-059</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-10.02</span>
+    <span class="rf-e">El sistema debe permitir a administrador / instructor elegir de una lista qué hay que cumplir para ganar una medalla y con qué valores.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: premiar conductas concretas sin depender del equipo técnico para cada medalla nueva.</div>
+  <ol class="rf-r"><li>Elijo el tipo de condición de un catálogo cerrado de nueve opciones y solo completo sus valores.</li><li>El sistema me muestra cuántas personas cumplirían la condición hoy, antes de activarla.</li><li>Una medalla sin condición definida queda inactiva y no se puede desbloquear.</li><li>Cambiar la condición no retira las medallas ya otorgadas.</li></ol>
+  <div class="nota">El catálogo cerrado de condiciones es la decisión clave: permite crear medallas nuevas sin escribir código. Un motor de reglas libre costaría varias veces más y nadie lo usaría.</div>
+  <div class="rf-t">Trazabilidad: historia HU-060</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-10.03</span>
+    <span class="rf-e">El sistema debe permitir a sistema otorgar el logro en cuanto se cumple la condición.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: que la recompensa se sienta inmediata.</div>
+  <ol class="rf-r"><li>La evaluación ocurre solo en los cinco momentos definidos, no de forma continua.</li><li>Una medalla se otorga una única vez por persona y no se puede perder.</li><li>Al desbloquearla se notifica en el momento y aparece en el perfil.</li><li>Las medallas de ranking se evalúan al cierre del periodo, no en tiempo real.</li></ol>
+  <div class="nota">Acotar la evaluación a cinco disparadores es lo que hace que el sistema sea barato: sin eso habría que revisar todas las condiciones de todos los usuarios continuamente.</div>
+  <div class="rf-t">Trazabilidad: historia HU-061</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-10.04</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz ver los logros que gané y los que me faltan.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: saber qué puedo perseguir.</div>
+  <ol class="rf-r"><li>Los desbloqueados muestran la fecha de obtención.</li><li>Los pendientes muestran la condición y mi avance hacia ella.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-062</div>
+</div><h3>9.11 · Juegos Autogenerables <span style="font-weight:400;color:var(--muted);font-size:13px">— El instructor elige qué juego quiere, carga solo los datos que ese juego pide, y el sistema lo arma e inserta en la sección.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-11.01</span>
+    <span class="rf-e">El sistema debe permitir a instructor crear una actividad de tipo sopa de letras indicando la lista de términos.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: reforzar el tema de forma lúdica sin tener que diseñar el juego a mano.</div>
+  <ol class="rf-r"><li>Al crear la actividad elijo sopa de letras y el formulario me pide exactamente la lista de términos.</li><li>Configuro el tamaño de la cuadrícula y si admite diagonales e inversos; si algún término no cabe, el sistema avisa antes de guardar.</li><li>Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.</li><li>Queda insertado como una actividad más dentro de la sección.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-063</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-11.02</span>
+    <span class="rf-e">El sistema debe permitir a instructor crear una actividad de tipo crucigrama indicando los términos con su definición.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: reforzar el tema de forma lúdica sin tener que diseñar el juego a mano.</div>
+  <ol class="rf-r"><li>Al crear la actividad elijo crucigrama y el formulario me pide exactamente los términos con su definición.</li><li>El término es la respuesta y su definición la pista; el sistema cruza las palabras, las numera y reporta las que no pudo ubicar.</li><li>Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.</li><li>Queda insertado como una actividad más dentro de la sección.</li></ol>
+  <div class="nota">El de mayor complejidad algorítmica del grupo. Conviene dejarlo para el final, cuando los demás ya validaron el flujo.</div>
+  <div class="rf-t">Trazabilidad: historia HU-064</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-11.03</span>
+    <span class="rf-e">El sistema debe permitir a instructor crear una actividad de tipo concurso de preguntas indicando las preguntas con sus opciones y la correcta.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b ok">Sprint 9</span></span>
+  </div>
+  <div class="rf-m">Propósito: reforzar el tema de forma lúdica sin tener que diseñar el juego a mano.</div>
+  <ol class="rf-r"><li>Al crear la actividad elijo concurso de preguntas y el formulario me pide exactamente las preguntas con sus opciones y la correcta.</li><li>Configuro cuántas preguntas, el tiempo por pregunta y si la dificultad va en aumento.</li><li>Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.</li><li>Queda insertado como una actividad más dentro de la sección.</li></ol>
+  <div class="nota">Reutiliza el mismo motor de presentación y calificación del examen: cambia la piel, no la mecánica. Por eso es el juego más barato de los llamativos y el mejor candidato para el MVP.</div>
+  <div class="rf-t">Trazabilidad: historia HU-065</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-11.04</span>
+    <span class="rf-e">El sistema debe permitir a instructor crear una actividad de parejas indicando los términos con su definición.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: reforzar el tema de forma lúdica sin tener que diseñar el juego a mano.</div>
+  <ol class="rf-r"><li>Al crear la actividad elijo parejas y el formulario me pide exactamente los términos con su definición.</li><li>El tablero empareja cada término con su definición y mide tiempo e intentos.</li><li>Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.</li><li>Queda insertado como una actividad más dentro de la sección.</li></ol>
+  <div class="nota">El más barato de construir de los cuatro. Buen candidato para validar el flujo de autogeneración antes de invertir en el crucigrama.</div>
+  <div class="rf-t">Trazabilidad: historia HU-066</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-11.05</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz jugar los juegos de mi curso y ganar puntos según cómo me vaya.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 10</span></span>
+  </div>
+  <div class="rf-m">Propósito: aprender de forma entretenida.</div>
+  <ol class="rf-r"><li>Los puntos dependen del desempeño, no de la simple participación.</li><li>Al repetir el juego, el puntaje completo solo se otorga la primera vez.</li><li>Mi mejor resultado queda registrado en el histórico.</li><li>El juego funciona en móvil.</li></ol>
+  <div class="nota">El segundo criterio no es un detalle: sin él, un juego rejugable convierte los puntos en una fuente infinita y el ranking deja de medir aprendizaje.</div>
+  <div class="rf-t">Trazabilidad: historia HU-067</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-11.06</span>
+    <span class="rf-e">El sistema debe permitir a instructor ajustar la dificultad y el XP de cada juego.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: equilibrarlo con el resto del curso.</div>
+  <ol class="rf-r"><li>Configuro nivel de dificultad, tiempo límite y puntos máximos que otorga.</li><li>Puedo previsualizar el juego con esa configuración antes de publicarlo.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-068</div>
+</div><h3>9.12 · Perfil de Usuario <span style="font-weight:400;color:var(--muted);font-size:13px">— Que cada persona gestione sus datos y vea su progreso.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-12.01</span>
+    <span class="rf-e">El sistema debe permitir a usuario consultar mis datos personales.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 1</span></span>
+  </div>
+  <div class="rf-m">Propósito: verificar que están correctos.</div>
+  <ol class="rf-r"><li>Veo nombre, correo, rol, organización y datos de contacto.</li><li>No se muestra ningún dato sensible de autenticación.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-069</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-12.02</span>
+    <span class="rf-e">El sistema debe permitir a usuario actualizar mis datos personales.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: mantenerlos vigentes.</div>
+  <ol class="rf-r"><li>Puedo cambiar nombre, apellido y teléfono.</li><li>No puedo cambiar mi rol, mi organización ni mi XP.</li><li>El correo solo se cambia con verificación del nuevo.</li></ol>
+  <div class="nota">Hace falta un endpoint propio de autoservicio con una lista blanca de campos editables.</div>
+  <div class="rf-t">Trazabilidad: historia HU-070</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-12.03</span>
+    <span class="rf-e">El sistema debe permitir a usuario cambiar mi contraseña estando dentro.</span>
+    <span class="rf-b"><span class="b must">Must</span> <span class="b ok">Sprint 2</span></span>
+  </div>
+  <div class="rf-m">Propósito: mantener segura mi cuenta.</div>
+  <ol class="rf-r"><li>Se exige la contraseña actual antes de permitir el cambio.</li><li>La nueva debe cumplir la política mínima de seguridad.</li><li>Se notifica el cambio al correo registrado.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-071</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-12.04</span>
+    <span class="rf-e">El sistema debe permitir a usuario subir una foto.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: personalizar mi cuenta.</div>
+  <ol class="rf-r"><li>Se aceptan imágenes con límite de tamaño y se recortan a cuadrado.</li><li>La foto aparece en el ranking y en los comentarios.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-072</div>
+</div><h3>9.13 · Notificaciones <span style="font-weight:400;color:var(--muted);font-size:13px">— Avisar de lo que requiere atención sin que el usuario tenga que entrar a buscarlo.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-13.01</span>
+    <span class="rf-e">El sistema debe permitir a usuario ver en un solo lugar lo que requiere mi atención.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: no perderme nada importante.</div>
+  <ol class="rf-r"><li>Hay un indicador con el número de notificaciones sin leer.</li><li>Puedo marcarlas como leídas individualmente o todas.</li><li>Cada notificación enlaza al contenido que la originó.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-073</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-13.02</span>
+    <span class="rf-e">El sistema debe permitir a sistema avisar cuando ocurre algo que le importa al usuario.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: mantener el compromiso con la plataforma.</div>
+  <ol class="rf-r"><li>Se notifica al aprendiz cuando su entrega es calificada, cuando desbloquea un logro y cuando sube de nivel.</li><li>Se notifica al instructor cuando recibe una entrega nueva.</li><li>Se notifica la publicación de una actividad nueva en un curso asignado.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-074</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-13.03</span>
+    <span class="rf-e">El sistema debe permitir a usuario elegir qué avisos recibo y por qué canal.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: no saturarme.</div>
+  <ol class="rf-r"><li>Puedo activar o desactivar cada tipo de notificación por separado.</li><li>Puedo elegir entre notificación dentro de la plataforma y correo.</li><li>Las preferencias se respetan en todos los envíos.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-075</div>
+</div><h3>9.14 · Reportes y Analítica <span style="font-weight:400;color:var(--muted);font-size:13px">— Datos de avance y uso. Es lo que justifica la renovación del contrato ante un cliente.</span></h3>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-14.01</span>
+    <span class="rf-e">El sistema debe permitir a aprendiz ver mi avance consolidado.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: saber dónde estoy parado.</div>
+  <ol class="rf-r"><li>Veo porcentaje de avance por curso, XP total, nivel y logros.</li><li>Veo mis actividades pendientes ordenadas por fecha límite.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-076</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-14.02</span>
+    <span class="rf-e">El sistema debe permitir a instructor ver cómo va cada aprendiz en mis cursos.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: detectar a tiempo a quien se está quedando.</div>
+  <ol class="rf-r"><li>Tabla con avance, XP, entregas pendientes y última conexión por aprendiz.</li><li>Se resaltan quienes llevan más de N días sin actividad.</li><li>Solo incluye cursos que tengo asignados.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-077</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-14.03</span>
+    <span class="rf-e">El sistema debe permitir a administrador ver métricas agregadas de mi organización.</span>
+    <span class="rf-b"><span class="b should">Should</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: justificar la inversión y detectar problemas.</div>
+  <ol class="rf-r"><li>Usuarios activos, cursos publicados, tasa de finalización y XP promedio.</li><li>Comparación contra el periodo anterior.</li><li>Los datos son solo de mi organización.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-078</div>
+</div>
+<div class="rf">
+  <div class="rf-h">
+    <span class="rf-c">RF-14.04</span>
+    <span class="rf-e">El sistema debe permitir a administrador / instructor descargar los reportes en Excel o PDF.</span>
+    <span class="rf-b"><span class="b could">Could</span> <span class="b could">Posterior</span></span>
+  </div>
+  <div class="rf-m">Propósito: compartirlos fuera de la plataforma.</div>
+  <ol class="rf-r"><li>La exportación respeta los filtros aplicados en pantalla.</li><li>El archivo incluye fecha de generación y quién lo generó.</li></ol>
+  
+  <div class="rf-t">Trazabilidad: historia HU-079</div>
+</div>
+
+<h2 id="rnf"><span class="n">10</span>Requerimientos no funcionales</h2>
+<div class="scroll"><table>
+<tr><th style="width:9%">Código</th><th style="width:15%">Categoría</th><th>Requerimiento</th></tr>
+<tr><td class="mono"><b>RNF-01</b></td><td>Seguridad</td><td>Toda operación exige sesión iniciada salvo las declaradas públicas de forma explícita. Una operación nueva sin configuración queda protegida por omisión.</td></tr><tr><td class="mono"><b>RNF-02</b></td><td>Seguridad</td><td>El acceso se bloquea temporalmente tras varios intentos fallidos consecutivos, con espera creciente.</td></tr><tr><td class="mono"><b>RNF-03</b></td><td>Seguridad</td><td>Ningún secreto ni credencial se almacena en el código fuente. Toda configuración sensible se lee del entorno.</td></tr><tr><td class="mono"><b>RNF-04</b></td><td>Rendimiento</td><td>Los listados se paginan a partir de 50 registros. Ninguna pantalla carga la totalidad de una tabla.</td></tr><tr><td class="mono"><b>RNF-05</b></td><td>Rendimiento</td><td>Una operación de consulta responde en menos de 2 segundos en condiciones normales de uso.</td></tr><tr><td class="mono"><b>RNF-06</b></td><td>Usabilidad</td><td>Toda la plataforma es usable desde móvil, incluidos los juegos y la presentación de evaluaciones.</td></tr><tr><td class="mono"><b>RNF-07</b></td><td>Usabilidad</td><td>Los mensajes de error son comprensibles para el usuario final y no exponen detalles internos del sistema.</td></tr><tr><td class="mono"><b>RNF-08</b></td><td>Disponibilidad</td><td>Una configuración incompleta impide el arranque con un mensaje que indica exactamente qué falta, en lugar de fallar de forma silenciosa.</td></tr><tr><td class="mono"><b>RNF-09</b></td><td>Trazabilidad</td><td>Los cambios de rol, las acreditaciones de puntos y las calificaciones quedan registrados con autor y fecha.</td></tr><tr><td class="mono"><b>RNF-10</b></td><td>Mantenibilidad</td><td>El contrato de la interfaz de programación se mantiene sincronizado con el comportamiento real y es la referencia común de los dos repositorios.</td></tr><tr><td class="mono"><b>RNF-11</b></td><td>Datos personales</td><td>Se almacenan únicamente los datos necesarios para la operación. Cada organización accede solo a los de sus propios usuarios.</td></tr>
+</table></div>
+
+<h2 id="entrega"><span class="n">11</span>Plan de entrega</h2>
+<p class="sec-lead">Once sprints de una semana. El detalle de historias, puntos y dependencias está en el archivo de backlog en Excel.</p>
+<div class="card">
+<div class="spr"><span class="t">Sprint 1</span><span class="d">7 sep — 11 sep</span><span>Entrar a la plataforma por cualquiera de los tres medios. Es lo que más avanzado está, así que se cierra de entrada.</span><span class="sp">14 SP</span></div><div class="spr"><span class="t">Sprint 2</span><span class="d">14 sep — 18 sep</span><span>La cuenta queda segura: se recupera si se pierde, se cambia la contraseña y se frena la fuerza bruta.</span><span class="sp">13 SP</span></div><div class="spr"><span class="t">Sprint 3</span><span class="d">21 sep — 25 sep</span><span>Cada organización solo ve lo suyo, y el administrador da de alta a su gente.</span><span class="sp">17 SP</span></div><div class="spr"><span class="t">Sprint 4</span><span class="d">28 sep — 2 oct</span><span>Gestión completa de personas y su perfil.</span><span class="sp">17 SP</span></div><div class="spr"><span class="t">Sprint 5</span><span class="d">5 oct — 9 oct</span><span>Las personas se organizan en grupos y existen los primeros cursos.</span><span class="sp">17 SP</span></div><div class="spr"><span class="t">Sprint 6</span><span class="d">12 oct — 16 oct</span><span>Cursos con instructor, asignados a grupos completos.</span><span class="sp">16 SP</span></div><div class="spr"><span class="t">Sprint 7</span><span class="d">19 oct — 23 oct</span><span>El curso tiene estructura por secciones y el aprendiz ve lo que le toca.</span><span class="sp">15 SP</span></div><div class="spr"><span class="t">Sprint 8</span><span class="d">26 oct — 30 oct</span><span>Hay contenido real: actividades, material consultable y banco de preguntas.</span><span class="sp">16 SP</span></div><div class="spr"><span class="t">Sprint 9</span><span class="d">2 nov — 6 nov</span><span>El aprendiz entrega y el instructor ve qué tiene pendiente.</span><span class="sp">16 SP</span></div><div class="spr"><span class="t">Sprint 10</span><span class="d">9 nov — 13 nov</span><span>Ciclo cerrado de calificación con retroalimentación, y el progreso empieza a dar puntos.</span><span class="sp">17 SP</span></div><div class="spr"><span class="t">Sprint 11</span><span class="d">16 nov — 20 nov</span><span>Gamificación visible: nivel, ranking y un juego jugable. Estabilización y demo.</span><span class="sp">7 SP</span></div>
+</div>
+<div class="callout w">
+  <b>Lo que hay que vigilar</b>
+  El MVP son 165 puntos en 11 semanas: hacen falta 15.0 puntos por sprint sostenidos.
+  Si tras los primeros tres sprints la velocidad real queda por debajo de 13, la decisión correcta es recortar alcance, no acelerar.
+  El primer candidato a salir es el concurso de preguntas y su historia de juego, que suman 10 puntos y dejarían el examen
+  en pie. El segundo son las secciones, volviendo a una lista plana de actividades.
+</div>
+
+<footer>
+  OnBoardPro · Documento de Requerimientos Funcionales v2.0 · 3 de septiembre de 2026 ·
+  79 requerimientos funcionales · 13 reglas de negocio · 11 no funcionales · 17 medallas ·
+  Backlog y sprints en OnBoardPro-Backlog.xlsx
+</footer>
+
+</div>
+</body>
+</html>

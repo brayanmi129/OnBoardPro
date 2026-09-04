@@ -1,0 +1,846 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "OnBoardPro API",
+    "version": "1.0.0",
+    "description": "API multi-tenant de OnBoardPro (Express + Supabase).\n\n## Cómo usar en Postman\n1. Import > File > selecciona este archivo.\n2. Arriba a la derecha elige el server `https://onboardpro.onrender.com`.\n3. Ejecuta **Auth > POST /api/auth/localuser**, copia el `token` de la respuesta.\n4. En la colección: Authorization > Bearer Token > pega el token. Las rutas protegidas lo heredan.\n\n## Roles\n- `superadmin`: administra tenants y ve todos los usuarios.\n- `admin`: administra usuarios de su propio tenant.\n- `instructor` / `student`: acceso limitado.\n\n## Estado de los endpoints\nCada operación indica su estado real verificado contra el deploy actual:\n- **OK** — funciona.\n- **[SIN AUTH]** — responde sin token; no debería.\n- **[ROTO]** — falla siempre.\n- **[CUELGA]** — nunca responde, la petición hace timeout."
+  },
+  "servers": [
+    { "url": "https://onboardpro.onrender.com", "description": "Render (producción actual)" },
+    { "url": "http://localhost:3000", "description": "Local" }
+  ],
+  "tags": [
+    { "name": "Auth", "description": "Login local, OAuth (Google/Microsoft) y perfil" },
+    { "name": "Users", "description": "CRUD de usuarios, aislado por tenant" },
+    { "name": "Tenants", "description": "CRUD de tenants (solo superadmin)" },
+    { "name": "Courses", "description": "Cursos" },
+    { "name": "Groups", "description": "Grupos y asignación de usuarios" },
+    { "name": "Activities", "description": "Actividades y adjuntos" },
+    { "name": "Gamification", "description": "Ranking de XP / nivel" }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "JWT emitido por /api/auth/localuser. Expira en 3h. Payload: { id, tenantId, role }."
+      }
+    },
+    "schemas": {
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "maxLength": 50, "example": "u-stu-uc1" },
+          "tenantId": { "type": "string", "nullable": true, "example": "tenant-uc" },
+          "firstname": { "type": "string", "maxLength": 50, "example": "Juliana" },
+          "lastname": { "type": "string", "example": "López" },
+          "email": { "type": "string", "format": "email", "example": "j.lopez@ucentral.edu.co" },
+          "phonumber": { "type": "string", "example": "+57 300 1234567" },
+          "role": { "type": "string", "enum": ["student", "instructor", "admin", "superadmin"], "default": "student" },
+          "status": { "type": "string", "enum": ["Active", "Inactive"], "default": "Active" },
+          "level": { "type": "integer", "minimum": 0, "example": 1 },
+          "xp": { "type": "integer", "minimum": 0, "example": 150 },
+          "streak": { "type": "integer", "minimum": 0, "example": 3 },
+          "average": { "type": "number", "minimum": 0, "maximum": 5, "example": 4.2 },
+          "missions": { "type": "string", "example": "3/5" }
+        }
+      },
+      "UserCreate": {
+        "type": "object",
+        "required": ["email"],
+        "description": "El id lo genera el servidor. El tenantId lo fuerza el backend según tu rol: un admin solo crea dentro de su tenant; un superadmin puede especificarlo.",
+        "properties": {
+          "email": { "type": "string", "format": "email" },
+          "password": { "type": "string", "nullable": true },
+          "firstname": { "type": "string", "maxLength": 50 },
+          "lastname": { "type": "string" },
+          "phonumber": { "type": "string" },
+          "tenantId": { "type": "string", "nullable": true },
+          "role": { "type": "string", "enum": ["student", "instructor", "admin", "superadmin"] },
+          "status": { "type": "string", "enum": ["Active", "Inactive"] },
+          "level": { "type": "integer" },
+          "xp": { "type": "integer" },
+          "streak": { "type": "integer" },
+          "average": { "type": "number" },
+          "missions": { "type": "string" }
+        }
+      },
+      "Tenant": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "tenant-uc" },
+          "name": { "type": "string", "maxLength": 100, "example": "Universidad Central" },
+          "domain": { "type": "string", "maxLength": 100, "example": "ucentral.edu.co", "description": "Se normaliza a minúsculas. Decide a qué tenant entra quien hace login por OAuth." },
+          "active": { "type": "boolean", "default": true },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Course": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "crs-poo" },
+          "name": { "type": "string", "maxLength": 50, "example": "Programación Orientada a Objetos" },
+          "instructor": { "type": "string", "format": "email", "example": "a.garcia@ucentral.edu.co", "description": "Debe ser un email válido: zod lo valida con .email()." },
+          "grupo": { "type": "string", "maxLength": 50, "example": "grp-uc-a" },
+          "status": { "type": "string", "enum": ["Abierto", "Cerrado"], "default": "Abierto" },
+          "actividades": { "type": "array", "items": { "type": "string" }, "example": ["act-01", "act-02"] }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "grp-uc-a" },
+          "name": { "type": "string", "maxLength": 100, "example": "Ingeniería de Sistemas 2026-1" },
+          "description": { "type": "string", "example": "Grupo A de primer semestre" }
+        }
+      },
+      "GroupDetailed": {
+        "allOf": [
+          { "$ref": "#/components/schemas/Group" },
+          {
+            "type": "object",
+            "properties": {
+              "tenant_id": { "type": "string", "nullable": true },
+              "users": { "type": "array", "items": { "$ref": "#/components/schemas/User" } },
+              "courses": { "type": "array", "items": { "$ref": "#/components/schemas/Course" } }
+            }
+          }
+        ]
+      },
+      "Activity": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "act-01" },
+          "name": { "type": "string", "maxLength": 50, "example": "taller-herencia" },
+          "type": { "type": "string", "enum": ["Tarea", "Recurso", "Examen"], "default": "Recurso" },
+          "title": { "type": "string", "maxLength": 100, "example": "Taller de Herencia y Polimorfismo" },
+          "description": { "type": "string", "maxLength": 400, "example": "Resolver los 5 ejercicios del PDF adjunto." },
+          "adjunto": { "type": "string", "format": "uri", "example": "https://drive.google.com/file/d/1abcDEF/view", "description": "URL obligatoria. Si mandas archivo en el multipart, el backend la genera subiéndolo a Google Drive." },
+          "deliverable": { "type": "boolean", "default": false }
+        }
+      },
+      "RankingEntry": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "example": "u-stu-un5" },
+          "firstname": { "type": "string", "example": "Felipe" },
+          "lastname": { "type": "string", "example": "Guerrero" },
+          "level": { "type": "integer", "example": 3 }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "message": { "type": "string" },
+          "error": { "type": "string" },
+          "details": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "responses": {
+      "Unauthorized": {
+        "description": "Token ausente, inválido o expirado",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "examples": {
+              "sinToken": { "summary": "Sin header Authorization", "value": { "message": "Token no proporcionado" } },
+              "invalido": { "summary": "Token vencido o mal firmado", "value": { "message": "Token inválido o expirado" } }
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Autenticado, pero sin el rol requerido",
+        "content": {
+          "application/json": {
+            "schema": { "$ref": "#/components/schemas/Error" },
+            "example": { "message": "Sin permisos para esta acción" }
+          }
+        }
+      }
+    }
+  },
+  "security": [],
+  "paths": {
+    "/api/auth/localuser": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Login con email y contraseña",
+        "description": "**OK.** Devuelve el JWT que necesitas para el resto de la colección. Copia `token` de la respuesta y pégalo en el Bearer Token de la colección.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              },
+              "examples": {
+                "superadmin": { "summary": "Superadmin", "value": { "email": "super@onboardpro.com", "password": "Test1234!" } },
+                "admin": { "summary": "Admin de un tenant", "value": { "email": "admin@ucentral.edu.co", "password": "Test1234!" } },
+                "estudiante": { "summary": "Estudiante", "value": { "email": "j.lopez@ucentral.edu.co", "password": "Test1234!" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Autenticado",
+            "content": {
+              "application/json": {
+                "example": {
+                  "userData": {
+                    "id": "u-stu-uc1",
+                    "tenantId": "tenant-uc",
+                    "firstname": "Juliana",
+                    "lastname": "López",
+                    "email": "j.lopez@ucentral.edu.co",
+                    "role": "student",
+                    "status": "Active",
+                    "level": 1,
+                    "xp": 150,
+                    "streak": 3,
+                    "average": 4.2,
+                    "missions": "3/5"
+                  },
+                  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InUtc3R1LXVjMSIsInRlbmFudElkIjoidGVuYW50LXVjIiwicm9sZSI6InN0dWRlbnQifQ.xxxxx"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Faltan campos",
+            "content": { "application/json": { "example": { "message": "Debe ingresar un email y una contraseña." } } }
+          },
+          "401": {
+            "description": "Contraseña incorrecta, o usuario solo-OAuth",
+            "content": {
+              "application/json": {
+                "examples": {
+                  "malaPassword": { "value": { "message": "Contraseña incorrecta." } },
+                  "soloOAuth": { "value": { "message": "Este usuario no tiene contraseña configurada. Usa Google o Microsoft." } }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Email no registrado",
+            "content": { "application/json": { "example": { "message": "No existe usuario con ese email." } } }
+          }
+        }
+      }
+    },
+    "/api/auth/me": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Perfil del usuario autenticado",
+        "description": "**OK.** Resuelve el usuario a partir del `id` del JWT.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Datos del usuario",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Usuario autenticado correctamente.",
+                  "userData": {
+                    "id": "u-stu-uc1",
+                    "tenantId": "tenant-uc",
+                    "firstname": "Juliana",
+                    "lastname": "López",
+                    "email": "j.lopez@ucentral.edu.co",
+                    "role": "student",
+                    "level": 1,
+                    "xp": 150
+                  }
+                }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "description": "El id del token ya no existe en la BD", "content": { "application/json": { "example": { "message": "Usuario no encontrado o no registrado en el sistema." } } } }
+        }
+      }
+    },
+    "/api/auth/google": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Inicia OAuth con Google (abrir en navegador)",
+        "description": "**Solo navegador.** Redirige a Google. Postman no completa el flujo: al final Google redirige a `${URL_FRONT}/?token=...`. El dominio del email debe existir como `domain` de un tenant activo, si no responde `?token=Fail&reason=Dominio%20no%20registrado...`.",
+        "security": [],
+        "responses": { "302": { "description": "Redirección a la pantalla de login de Google" } }
+      }
+    },
+    "/api/auth/google/callback": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Callback de Google",
+        "description": "**No invocar a mano.** Google lo llama con el `code`. Redirige al frontend con el token en la query.",
+        "security": [],
+        "parameters": [{ "in": "query", "name": "code", "schema": { "type": "string" }, "description": "Código temporal de Google" }],
+        "responses": { "302": { "description": "Redirección al frontend con ?token=..." } }
+      }
+    },
+    "/api/auth/microsoft": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Inicia OAuth con Microsoft (abrir en navegador)",
+        "description": "**Solo navegador.** Mismo flujo que Google. El email sale de `mail` o `userPrincipalName` del perfil.",
+        "security": [],
+        "responses": { "302": { "description": "Redirección a la pantalla de login de Microsoft" } }
+      }
+    },
+    "/api/auth/microsoft/callback": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Callback de Microsoft",
+        "description": "**No invocar a mano.**",
+        "security": [],
+        "parameters": [{ "in": "query", "name": "code", "schema": { "type": "string" } }],
+        "responses": { "302": { "description": "Redirección al frontend con ?token=..." } }
+      }
+    },
+
+    "/api/users/get/all": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Lista usuarios",
+        "description": "**OK.** Requiere rol `admin` o `superadmin`. Un `admin` solo ve los de su tenant; un `superadmin` los ve todos. Nunca devuelve el campo `password`.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Lista de usuarios",
+            "content": {
+              "application/json": {
+                "example": [
+                  { "id": "u-adm-uc", "tenantId": "tenant-uc", "firstname": "Carlos", "lastname": "Mendoza", "email": "admin@ucentral.edu.co", "role": "admin", "status": "Active", "level": 0, "xp": 0 },
+                  { "id": "u-stu-uc1", "tenantId": "tenant-uc", "firstname": "Juliana", "lastname": "López", "email": "j.lopez@ucentral.edu.co", "role": "student", "status": "Active", "level": 1, "xp": 150, "streak": 3, "average": 4.2, "missions": "3/5" }
+                ]
+              }
+            }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/users/get/id/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Usuario por id",
+        "description": "**OK, pero ojo:** basta con estar autenticado, no valida rol ni tenant. Cualquier usuario logueado puede leer un usuario de otro tenant si adivina el id.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "u-stu-uc1" }],
+        "responses": {
+          "200": { "description": "Usuario", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "404": { "description": "No encontrado", "content": { "application/json": { "example": { "message": "Usuario no encontrado" } } } }
+        }
+      }
+    },
+    "/api/users/get/email/{email}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Usuario por email",
+        "description": "**OK.** Requiere `admin` o `superadmin`. Un `admin` solo lo encuentra si está en su tenant.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "email", "required": true, "schema": { "type": "string", "format": "email" }, "example": "j.lopez@ucentral.edu.co" }],
+        "responses": {
+          "200": { "description": "Usuario", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/User" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "description": "No encontrado", "content": { "application/json": { "example": { "message": "Usuario no encontrado" } } } }
+        }
+      }
+    },
+    "/api/users/get/role/{role}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Usuarios por rol",
+        "description": "**OK.** Requiere `admin` o `superadmin`, filtrado por tenant igual que el listado.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "role", "required": true, "schema": { "type": "string", "enum": ["student", "instructor", "admin", "superadmin"] }, "example": "instructor" }],
+        "responses": {
+          "200": {
+            "description": "Lista filtrada",
+            "content": { "application/json": { "example": [ { "id": "u-ins-uc1", "tenantId": "tenant-uc", "firstname": "Andrés", "lastname": "García", "email": "a.garcia@ucentral.edu.co", "role": "instructor", "xp": 320, "level": 3 } ] } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/users/create": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Crear usuario",
+        "description": "**OK.** Requiere `admin` o `superadmin`. La contraseña se hashea con bcrypt. Solo un `superadmin` puede crear otro `superadmin`. El `tenantId` que mandes se ignora salvo que seas superadmin.\n\nEl schema es `.strict()`: cualquier campo extra hace fallar la validación.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserCreate" },
+              "examples": {
+                "estudiante": {
+                  "summary": "Estudiante (admin lo crea en su tenant)",
+                  "value": { "email": "nuevo.alumno@ucentral.edu.co", "password": "Test1234!", "firstname": "Andrea", "lastname": "Suárez", "phonumber": "+57 301 5551234", "role": "student" }
+                },
+                "instructor": {
+                  "summary": "Instructor",
+                  "value": { "email": "nuevo.docente@ucentral.edu.co", "password": "Test1234!", "firstname": "Ricardo", "lastname": "Peña", "role": "instructor" }
+                },
+                "adminOtroTenant": {
+                  "summary": "Admin en otro tenant (solo superadmin)",
+                  "value": { "email": "admin2@unal.edu.co", "password": "Test1234!", "firstname": "Lucía", "lastname": "Ibáñez", "role": "admin", "tenantId": "tenant-un" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Creado (sin password en la respuesta)",
+            "content": { "application/json": { "example": { "id": "9f3a1c", "tenantId": "tenant-uc", "email": "nuevo.alumno@ucentral.edu.co", "firstname": "Andrea", "lastname": "Suárez", "phonumber": "+57 301 5551234", "role": "student", "status": "Active", "level": 0, "xp": 0 } } }
+          },
+          "400": { "description": "Validación zod fallida", "content": { "application/json": { "example": { "error": "Datos inválidos", "details": ["Invalid email"] } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "description": "Rol insuficiente, o intento de crear superadmin", "content": { "application/json": { "example": { "message": "Solo un superadmin puede crear otros superadmins" } } } }
+        }
+      }
+    },
+    "/api/users/update/{id}": {
+      "put": {
+        "tags": ["Users"],
+        "summary": "Actualizar usuario",
+        "description": "**OK.** Requiere `admin` o `superadmin`. Acepta campos parciales. Si mandas `password` se re-hashea. Un `admin` no puede promover a `superadmin`.\n\n**Ojo:** no valida que el usuario pertenezca a tu tenant, así que un admin puede editar usuarios de otro tenant si conoce el id.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "u-stu-uc1" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/UserCreate" },
+              "examples": {
+                "datosBasicos": { "summary": "Nombre y teléfono", "value": { "firstname": "Juliana Andrea", "phonumber": "+57 300 9998877" } },
+                "gamificacion": { "summary": "Progreso", "value": { "xp": 320, "level": 3, "streak": 8, "average": 4.6, "missions": "5/5" } },
+                "desactivar": { "summary": "Desactivar cuenta", "value": { "status": "Inactive" } },
+                "password": { "summary": "Cambiar contraseña", "value": { "password": "NuevaClave123!" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Actualizado", "content": { "application/json": { "example": { "message": "Usuario u-stu-uc1 actualizado correctamente", "updatedData": { "firstname": "Juliana Andrea", "phonumber": "+57 300 9998877" } } } } },
+          "400": { "description": "No encontrado o datos inválidos", "content": { "application/json": { "examples": { "noExiste": { "value": { "error": "Usuario no encontrado" } }, "invalido": { "value": { "error": "Datos inválidos", "details": ["Invalid email"] } } } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/users/delete/{id}": {
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Eliminar usuario",
+        "description": "**OK.** Requiere `admin` o `superadmin`. Igual que update, no valida el tenant del objetivo.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "9f3a1c" }],
+        "responses": {
+          "200": { "description": "Eliminado", "content": { "application/json": { "example": { "message": "Usuario 9f3a1c eliminado correctamente" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "500": { "description": "No encontrado (el controller lo mapea a 500, no a 404)", "content": { "application/json": { "example": { "message": "Usuario no encontrado" } } } }
+        }
+      }
+    },
+
+    "/api/tenants/get/all": {
+      "get": {
+        "tags": ["Tenants"],
+        "summary": "Lista tenants",
+        "description": "**OK.** Solo `superadmin`.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Lista",
+            "content": { "application/json": { "example": [ { "id": "tenant-uc", "name": "Universidad Central", "domain": "ucentral.edu.co", "active": true, "createdAt": "2026-08-01T10:00:00.000Z" }, { "id": "tenant-un", "name": "Universidad Nacional", "domain": "unal.edu.co", "active": true, "createdAt": "2026-08-01T10:00:00.000Z" } ] } }
+          },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/tenants/get/id/{id}": {
+      "get": {
+        "tags": ["Tenants"],
+        "summary": "Tenant por id",
+        "description": "**OK.** Solo `superadmin`.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "tenant-uc" }],
+        "responses": {
+          "200": { "description": "Tenant", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Tenant" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "description": "No encontrado", "content": { "application/json": { "example": { "message": "Tenant no encontrado" } } } }
+        }
+      }
+    },
+    "/api/tenants/create": {
+      "post": {
+        "tags": ["Tenants"],
+        "summary": "Crear tenant",
+        "description": "**OK.** Solo `superadmin`. El `domain` se guarda en minúsculas y es UNIQUE: es la llave que usa el login OAuth para decidir a qué tenant entra un usuario nuevo.",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "required": ["name", "domain"], "properties": { "name": { "type": "string", "maxLength": 100 }, "domain": { "type": "string", "maxLength": 100 } } },
+              "examples": {
+                "universidad": { "summary": "Universidad", "value": { "name": "Universidad de los Andes", "domain": "uniandes.edu.co" } },
+                "empresa": { "summary": "Empresa", "value": { "name": "NGDS", "domain": "ngds.ai" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Creado", "content": { "application/json": { "example": { "id": "a1b2c3d4", "name": "Universidad de los Andes", "domain": "uniandes.edu.co", "active": true, "createdAt": "2026-08-29T01:20:00.000Z" } } } },
+          "400": { "description": "Validación fallida o dominio duplicado", "content": { "application/json": { "example": { "message": "duplicate key value violates unique constraint \"tenants_domain_key\"" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/tenants/update/{id}": {
+      "put": {
+        "tags": ["Tenants"],
+        "summary": "Actualizar tenant",
+        "description": "**OK.** Solo `superadmin`. Solo aplica `name`, `domain` y `active`; el resto se ignora. Poner `active: false` bloquea el login OAuth de ese dominio.",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "tenant-uc" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "name": { "type": "string" }, "domain": { "type": "string" }, "active": { "type": "boolean" } } },
+              "examples": {
+                "renombrar": { "summary": "Cambiar nombre", "value": { "name": "Universidad Central de Colombia" } },
+                "desactivar": { "summary": "Desactivar (corta el login OAuth del dominio)", "value": { "active": false } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Actualizado", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Tenant" } } } },
+          "400": { "description": "No encontrado o error de BD", "content": { "application/json": { "example": { "message": "Tenant no encontrado" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+    "/api/tenants/delete/{id}": {
+      "delete": {
+        "tags": ["Tenants"],
+        "summary": "Eliminar tenant",
+        "description": "**OK, pero destructivo.** Solo `superadmin`. Por el `ON DELETE CASCADE` del schema, borra también sus grupos y cursos. Los usuarios NO se borran: su `tenant_id` queda en NULL (`ON DELETE SET NULL`).",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "a1b2c3d4" }],
+        "responses": {
+          "200": { "description": "Eliminado", "content": { "application/json": { "example": { "message": "Tenant eliminado correctamente" } } } },
+          "400": { "description": "No encontrado", "content": { "application/json": { "example": { "message": "Tenant no encontrado" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" }
+        }
+      }
+    },
+
+    "/api/courses/get/all": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Lista cursos",
+        "description": "**[SIN AUTH]** Responde sin token, y sin filtrar por tenant: devuelve los cursos de todas las organizaciones.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Lista",
+            "content": { "application/json": { "example": [ { "id": "crs-poo", "tenant_id": "tenant-uc", "name": "Programación Orientada a Objetos", "instructor": "a.garcia@ucentral.edu.co", "grupo": "grp-uc-a", "status": "Abierto", "actividades": [] } ] } }
+          }
+        }
+      }
+    },
+    "/api/courses/get/id/{id}": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Curso por id",
+        "description": "**[ROTO]** El controller llama `CourseService.getById(req, res)` pasando el objeto `req` completo en vez de `req.params.id`, así que la query se arma como `.eq(\"id\", <objeto request>)` y nunca encuentra nada. Siempre 404 o 500.",
+        "security": [],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "crs-poo" }],
+        "responses": {
+          "404": { "description": "Siempre, por el bug", "content": { "text/plain": { "example": "Curso no encontrado" } } },
+          "500": { "description": "Error interno", "content": { "text/plain": { "example": "Error interno" } } }
+        }
+      }
+    },
+    "/api/courses/create": {
+      "post": {
+        "tags": ["Courses"],
+        "summary": "Crear curso",
+        "description": "**[ROTO]** El controller llama `CourseService.createCourse(req, res)` pasando el `req` completo como datos del curso. El schema zod lo rechaza siempre. El body de abajo es el que *debería* aceptar una vez arreglado.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/Course" },
+              "examples": {
+                "curso": { "summary": "Curso nuevo", "value": { "name": "Bases de Datos II", "instructor": "p.martinez@ucentral.edu.co", "grupo": "grp-uc-b", "status": "Abierto", "actividades": [] } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Creado (cuando se arregle)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Course" } } } },
+          "500": { "description": "Actual: falla la validación zod", "content": { "application/json": { "example": { "error": "Required, Required, Invalid email" } } } }
+        }
+      }
+    },
+    "/api/courses/me": {
+      "get": {
+        "tags": ["Courses"],
+        "summary": "Mis cursos",
+        "description": "**OK.** Requiere token. Resuelve: grupos del usuario, cursos de esos grupos.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "Cursos del usuario", "content": { "application/json": { "example": [ { "id": "crs-poo", "tenant_id": "tenant-uc", "name": "Programación Orientada a Objetos", "instructor": "a.garcia@ucentral.edu.co", "status": "Abierto" } ] } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" }
+        }
+      }
+    },
+
+    "/api/groups/get/all": {
+      "get": {
+        "tags": ["Groups"],
+        "summary": "Lista grupos con usuarios y cursos",
+        "description": "**[SIN AUTH]** Sin token y sin filtro de tenant. Devuelve nombre, email y rol de todos los usuarios de todos los grupos: es la fuga de datos más grave de la API.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Lista",
+            "content": {
+              "application/json": {
+                "example": [
+                  {
+                    "id": "grp-uc-a",
+                    "tenant_id": "tenant-uc",
+                    "name": "Ingeniería de Sistemas 2026-1",
+                    "description": "Grupo A de primer semestre",
+                    "users": [ { "id": "u-stu-uc1", "firstname": "Juliana", "lastname": "López", "email": "j.lopez@ucentral.edu.co", "role": "student" } ],
+                    "courses": [ { "id": "crs-poo", "name": "Programación Orientada a Objetos", "instructor": "a.garcia@ucentral.edu.co", "status": "Abierto" } ]
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/groups/get/id/{id}": {
+      "get": {
+        "tags": ["Groups"],
+        "summary": "Grupo por id",
+        "description": "**[SIN AUTH]** Funciona, pero sin token.",
+        "security": [],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "grp-uc-a" }],
+        "responses": {
+          "200": { "description": "Grupo con usuarios y cursos", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/GroupDetailed" } } } },
+          "404": { "description": "No encontrado", "content": { "text/plain": { "example": "Grupo no encontrado" } } }
+        }
+      }
+    },
+    "/api/groups/create": {
+      "post": {
+        "tags": ["Groups"],
+        "summary": "Crear grupo",
+        "description": "**[SIN AUTH]** Funciona sin token. El schema es `.strict()` sobre `{id, name, description}`, pero `userIds` se lee aparte para poblar `users_groups`: mándalo en el mismo body.\n\n**Nota:** no guarda `tenant_id`, aunque la tabla lo tiene. Los grupos creados por la API quedan huérfanos de tenant.",
+        "security": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name"],
+                "properties": {
+                  "name": { "type": "string", "maxLength": 100 },
+                  "description": { "type": "string" },
+                  "userIds": { "type": "array", "items": { "type": "string" }, "description": "Opcional. Usuarios a inscribir de una vez." }
+                }
+              },
+              "examples": {
+                "simple": { "summary": "Solo el grupo", "value": { "name": "Ingeniería de Sistemas 2026-2", "description": "Grupo B de segundo semestre" } },
+                "conUsuarios": { "summary": "Grupo + usuarios iniciales", "value": { "name": "Bootcamp Backend", "description": "Cohorte de agosto", "userIds": ["u-stu-uc1", "u-stu-uc2", "u-stu-uc3"] } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Creado", "content": { "application/json": { "example": { "id": "7de91b", "name": "Bootcamp Backend", "description": "Cohorte de agosto" } } } },
+          "500": { "description": "Validación fallida", "content": { "application/json": { "example": { "error": "Unrecognized key(s) in object: 'tenantId'" } } } }
+        }
+      }
+    },
+    "/api/groups/update/{id}": {
+      "put": {
+        "tags": ["Groups"],
+        "summary": "Actualizar grupo",
+        "description": "**[SIN AUTH]** Solo `name` y `description`.",
+        "security": [],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "grp-uc-a" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "properties": { "name": { "type": "string" }, "description": { "type": "string" } } },
+              "example": { "name": "Ingeniería de Sistemas 2026-1 (A)", "description": "Actualizado" }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Actualizado", "content": { "application/json": { "example": { "message": "Grupo grp-uc-a actualizado correctamente", "updatedData": { "name": "Ingeniería de Sistemas 2026-1 (A)" } } } } },
+          "400": { "description": "No encontrado o inválido", "content": { "application/json": { "example": { "error": "Grupo no encontrado" } } } }
+        }
+      }
+    },
+    "/api/groups/{id}/add-users": {
+      "post": {
+        "tags": ["Groups"],
+        "summary": "Inscribir usuarios en un grupo",
+        "description": "**[SIN AUTH]** Hace upsert sobre `users_groups`, así que repetir la llamada es idempotente y no revienta por duplicados.",
+        "security": [],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "grp-uc-a" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "required": ["userIds"], "properties": { "userIds": { "type": "array", "items": { "type": "string" } } } },
+              "examples": {
+                "uno": { "summary": "Un usuario", "value": { "userIds": ["u-stu-uc4"] } },
+                "varios": { "summary": "Varios", "value": { "userIds": ["u-stu-uc4", "u-stu-uc5", "u-ins-uc2"] } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Inscritos", "content": { "application/json": { "example": { "message": "Usuarios agregados al grupo correctamente" } } } },
+          "400": { "description": "Grupo inexistente, o algún userId no existe (viola la FK)", "content": { "application/json": { "example": { "error": "Grupo no encontrado" } } } }
+        }
+      }
+    },
+    "/api/groups/{id}/remove-users": {
+      "delete": {
+        "tags": ["Groups"],
+        "summary": "Quitar usuarios de un grupo",
+        "description": "**[SIN AUTH]** Requiere body en un DELETE: Postman lo soporta, pero algunos clientes HTTP lo descartan.",
+        "security": [],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "grp-uc-a" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "type": "object", "required": ["userIds"], "properties": { "userIds": { "type": "array", "items": { "type": "string" } } } },
+              "example": { "userIds": ["u-stu-uc4", "u-stu-uc5"] }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Removidos", "content": { "application/json": { "example": { "message": "Usuarios eliminados del grupo correctamente" } } } },
+          "400": { "description": "Lista vacía o inválida", "content": { "application/json": { "example": { "error": "Debe enviar una lista de userIds" } } } }
+        }
+      }
+    },
+    "/api/groups/delete/{id}": {
+      "delete": {
+        "tags": ["Groups"],
+        "summary": "Eliminar grupo",
+        "description": "**[SIN AUTH]** El CASCADE limpia `users_groups` y `groups_courses`.",
+        "security": [],
+        "parameters": [{ "in": "path", "name": "id", "required": true, "schema": { "type": "string" }, "example": "7de91b" }],
+        "responses": {
+          "200": { "description": "Eliminado", "content": { "text/plain": { "example": "Grupo eliminado 7de91b correctamente" } } },
+          "500": { "description": "No encontrado", "content": { "text/plain": { "example": "Error al eliminar el grupo" } } }
+        }
+      }
+    },
+    "/api/groups/me": {
+      "get": {
+        "tags": ["Groups"],
+        "summary": "Mis grupos",
+        "description": "**[ROTO]** La ruta no monta `verifyJWT`, entonces `req.user` nunca existe y siempre responde 401, mandes el token que mandes. Falla cerrado, pero el endpoint es inservible hasta agregarle el middleware.",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "401": { "description": "Siempre, por el bug", "content": { "application/json": { "example": { "error": "No autenticado" } } } }
+        }
+      }
+    },
+
+    "/api/activities/get/all": {
+      "get": {
+        "tags": ["Activities"],
+        "summary": "Lista actividades",
+        "description": "**[CUELGA]** `routes/activitiesRoutes.js` monta el *service* como handler en vez del controller. `ActivitiesService.getAll()` devuelve los datos pero nunca llama a `res`, así que la petición queda abierta hasta que el cliente corta. Verificado: timeout a los 30s.",
+        "security": [],
+        "responses": {
+          "200": { "description": "Lo que devolvería una vez arreglado", "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Activity" } } } } }
+        }
+      }
+    },
+    "/api/activities/create": {
+      "post": {
+        "tags": ["Activities"],
+        "summary": "Crear actividad (multipart con adjunto)",
+        "description": "**[ROTO]** Mismo bug: se montó el service, cuya firma es `create(data, file)`, así que recibe `(req, res)`. Toma el `res` como si fuera el archivo y llama a Google Drive con `undefined`.\n\nEl controller correcto (`controllers/actividades.js`) espera multipart con un campo `data` (JSON como string) y un campo `file`. Además importa `../services/activitiesService.js`, que no existe: el archivo se llama `actividades.js`.",
+        "security": [],
+        "requestBody": {
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "data": { "type": "string", "description": "JSON en string con los campos de la actividad.", "example": "{\"name\":\"taller-herencia\",\"type\":\"Tarea\",\"title\":\"Taller de Herencia y Polimorfismo\",\"description\":\"Resolver los 5 ejercicios del PDF.\",\"deliverable\":true,\"adjunto\":\"https://drive.google.com/file/d/1abcDEF/view\"}" },
+                  "file": { "type": "string", "format": "binary", "description": "Opcional. Si lo mandas, el backend lo sube a Drive y sobrescribe `adjunto` con la URL." }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Creada (cuando se arregle)", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Activity" } } } },
+          "400": { "description": "Datos inválidos", "content": { "text/plain": { "example": "Datos inválidos" } } }
+        }
+      }
+    },
+
+    "/api/gamification/ranking": {
+      "get": {
+        "tags": ["Gamification"],
+        "summary": "Ranking por nivel",
+        "description": "**[ROTO] y [SIN AUTH]** Devuelve 500 en el deploy actual. Además no filtra por tenant: mezclaría estudiantes de todas las organizaciones en un mismo ranking.",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "Lo que devolvería (estudiantes ordenados por nivel desc)",
+            "content": { "application/json": { "example": [ { "id": "u-stu-un5", "firstname": "Felipe", "lastname": "Guerrero", "level": 3 }, { "id": "u-stu-uc5", "firstname": "Natalia", "lastname": "Herrera", "level": 3 }, { "id": "u-stu-uc3", "firstname": "Valentina", "lastname": "Ríos", "level": 2 } ] } }
+          },
+          "500": { "description": "Actual", "content": { "text/plain": { "example": "Error al obtener los grupos" } } }
+        }
+      }
+    }
+  }
+}

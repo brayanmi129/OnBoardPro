@@ -1,0 +1,2270 @@
+{
+  "meta": {
+    "proyecto": "OnBoardPro",
+    "version": "2.0",
+    "fecha": "2026-09-03",
+    "nota": "Backlog reorganizado. El campo 'estado' refleja una auditoría real del código en el commit 7398058, no una estimación.",
+    "escalaSP": {
+      "1": "Trivial. Endpoint ya existe, solo falta UI o un ajuste menor.",
+      "2": "CRUD simple sobre una entidad que ya existe.",
+      "3": "CRUD con validaciones, reglas de rol o filtrado por tenant.",
+      "5": "Lógica de negocio nueva, integración externa o cambio de schema.",
+      "8": "Varias entidades nuevas + algoritmo no trivial. Candidata a partirse.",
+      "13": "Es una épica disfrazada. Hay que partirla antes de estimarla."
+    },
+    "escalaValor": {
+      "1": "Nice to have.",
+      "2": "Conveniencia. Se puede vivir sin ello un tiempo.",
+      "3": "Mejora relevante de la experiencia.",
+      "4": "Diferenciador o núcleo de la propuesta de valor.",
+      "5": "Sin esto el producto no se puede vender ni usar."
+    },
+    "estados": {
+      "Implementado": "Existe y funciona, verificado contra el deploy.",
+      "Parcial": "Existe parte de la funcionalidad o falta el aislamiento por tenant.",
+      "Roto": "El endpoint existe pero falla siempre. Diagnóstico en docs/openapi.json.",
+      "No iniciado": "No hay una sola línea de código."
+    }
+  },
+  "epicas": [
+    {
+      "id": "E01",
+      "nombre": "Plataforma y Multi-tenancy",
+      "objetivo": "Que varias organizaciones convivan en la misma instalación sin verse entre sí. Es el cimiento comercial del producto."
+    },
+    {
+      "id": "E02",
+      "nombre": "Autenticación y Acceso",
+      "objetivo": "Entrar al sistema de forma segura por credenciales propias o proveedores corporativos."
+    },
+    {
+      "id": "E03",
+      "nombre": "Usuarios y Roles",
+      "objetivo": "Administrar las personas de cada organización y lo que cada una puede hacer."
+    },
+    {
+      "id": "E04",
+      "nombre": "Grupos",
+      "objetivo": "Agrupar aprendices para asignarles cursos en bloque, en vez de uno por uno."
+    },
+    {
+      "id": "E05",
+      "nombre": "Cursos y Estructura de Contenido",
+      "objetivo": "Organizar el contenido formativo en cursos con secciones ordenados."
+    },
+    {
+      "id": "E06",
+      "nombre": "Actividades y Recursos Multimedia",
+      "objetivo": "Cargar y consumir el material de apoyo: videos, PDFs, enlaces."
+    },
+    {
+      "id": "E07",
+      "nombre": "Evaluaciones",
+      "objetivo": "El examen de siempre y el motor que presenta preguntas y las califica. Ese mismo motor es el que después reutilizan los juegos."
+    },
+    {
+      "id": "E08",
+      "nombre": "Entregas y Calificación",
+      "objetivo": "Que el aprendiz entregue trabajos y el instructor los califique con retroalimentación."
+    },
+    {
+      "id": "E09",
+      "nombre": "Gamificación: XP y Niveles",
+      "objetivo": "La economía de puntos que sostiene toda la motivación del producto."
+    },
+    {
+      "id": "E10",
+      "nombre": "Gamificación: Logros",
+      "objetivo": "Metas desbloqueables que premian conductas específicas."
+    },
+    {
+      "id": "E11",
+      "nombre": "Juegos Autogenerables",
+      "objetivo": "El instructor elige qué juego quiere, carga solo los datos que ese juego pide, y el sistema lo arma e inserta en la sección."
+    },
+    {
+      "id": "E12",
+      "nombre": "Perfil de Usuario",
+      "objetivo": "Que cada persona gestione sus datos y vea su progreso."
+    },
+    {
+      "id": "E13",
+      "nombre": "Notificaciones",
+      "objetivo": "Avisar de lo que requiere atención sin que el usuario tenga que entrar a buscarlo."
+    },
+    {
+      "id": "E14",
+      "nombre": "Reportes y Analítica",
+      "objetivo": "Datos de avance y uso. Es lo que justifica la renovación del contrato ante un cliente."
+    },
+    {
+      "id": "E15",
+      "nombre": "Calidad, Seguridad y Operación",
+      "objetivo": "Deuda técnica y seguridad detectadas en la auditoría del backend."
+    }
+  ],
+  "historias": [
+    {
+      "id": "HU-001",
+      "epica": "E01",
+      "nombre": "Crear organización",
+      "rol": "Superadmin",
+      "quiero": "registrar una nueva organización con su nombre y dominio de correo",
+      "para": "habilitar a un cliente nuevo en la plataforma",
+      "criterios": [
+        "Dado que soy superadmin, cuando envío nombre y dominio válidos, entonces la organización queda creada y activa.",
+        "El dominio se normaliza a minúsculas y es único: un dominio repetido devuelve error explicativo.",
+        "Un usuario que no sea superadmin recibe 403."
+      ],
+      "sp": 3,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [],
+      "estado": "Implementado",
+      "endpoints": "POST /api/tenants/create",
+      "sprint": 1
+    },
+    {
+      "id": "HU-002",
+      "epica": "E01",
+      "nombre": "Consultar organizaciones",
+      "rol": "Superadmin",
+      "quiero": "ver el listado de todas las organizaciones",
+      "para": "administrar los clientes de la plataforma",
+      "criterios": [
+        "El listado muestra nombre, dominio, estado y fecha de creación.",
+        "Solo accesible para superadmin."
+      ],
+      "sp": 2,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Implementado",
+      "endpoints": "GET /api/tenants/get/all, GET /api/tenants/get/id/{id}",
+      "sprint": 1
+    },
+    {
+      "id": "HU-003",
+      "epica": "E01",
+      "nombre": "Editar organización",
+      "rol": "Superadmin",
+      "quiero": "actualizar el nombre o dominio de una organización",
+      "para": "corregir datos o reflejar cambios del cliente",
+      "criterios": [
+        "Solo se aplican nombre, dominio y estado activo; el resto se ignora.",
+        "Cambiar el dominio a uno ya usado devuelve error."
+      ],
+      "sp": 2,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Implementado",
+      "endpoints": "PUT /api/tenants/update/{id}",
+      "sprint": 1
+    },
+    {
+      "id": "HU-004",
+      "epica": "E01",
+      "nombre": "Activar o desactivar organización",
+      "rol": "Superadmin",
+      "quiero": "suspender el acceso de una organización sin borrar sus datos",
+      "para": "gestionar impagos o bajas temporales",
+      "criterios": [
+        "Con la organización inactiva, el login OAuth de ese dominio queda bloqueado.",
+        "Los datos existentes se conservan intactos.",
+        "Debe quedar claro en la UI que los usuarios ya creados aún pueden entrar con contraseña."
+      ],
+      "sp": 2,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Implementado",
+      "endpoints": "PUT /api/tenants/update/{id} (active=false)",
+      "sprint": 2
+    },
+    {
+      "id": "HU-005",
+      "epica": "E01",
+      "nombre": "Eliminar organización",
+      "rol": "Superadmin",
+      "quiero": "borrar definitivamente una organización",
+      "para": "cerrar la cuenta de un cliente que se va",
+      "criterios": [
+        "Se pide confirmación explícita escribiendo el nombre de la organización.",
+        "Se advierte que se borran en cascada sus grupos y cursos.",
+        "Los usuarios no se borran: quedan sin organización asignada."
+      ],
+      "sp": 3,
+      "valor": 2,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Implementado",
+      "endpoints": "DELETE /api/tenants/delete/{id}",
+      "sprint": 3
+    },
+    {
+      "id": "HU-006",
+      "epica": "E01",
+      "nombre": "Aislamiento de datos entre organizaciones",
+      "rol": "Sistema",
+      "quiero": "que toda consulta devuelva únicamente datos de la organización del usuario autenticado",
+      "para": "impedir que un cliente vea información de otro",
+      "criterios": [
+        "Grupos, cursos, actividades y ranking se filtran por la organización del token.",
+        "Un admin de la organización A no obtiene ningún registro de la B, ni siquiera conociendo el id.",
+        "El superadmin es la única excepción y puede consultar todo.",
+        "Existe una prueba automatizada que lo verifica para cada módulo."
+      ],
+      "sp": 8,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Parcial",
+      "endpoints": "Transversal. Hoy solo el módulo de usuarios lo cumple.",
+      "sprint": 1,
+      "notas": "Riesgo alto. El schema ya tiene tenant_id en groups y courses, pero ningún servicio lo escribe ni lo filtra. La tabla activities ni siquiera tiene la columna."
+    },
+    {
+      "id": "HU-007",
+      "epica": "E02",
+      "nombre": "Iniciar sesión con correo y contraseña",
+      "rol": "Usuario",
+      "quiero": "entrar con mi correo y contraseña",
+      "para": "acceder a la plataforma",
+      "criterios": [
+        "Con credenciales válidas recibo un token y mis datos, sin la contraseña.",
+        "Con contraseña incorrecta recibo 401 y un mensaje que no revela si el correo existe.",
+        "Un usuario creado solo por OAuth recibe un mensaje indicándole que use su proveedor."
+      ],
+      "sp": 3,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [],
+      "estado": "Implementado",
+      "endpoints": "POST /api/auth/localuser",
+      "sprint": 1
+    },
+    {
+      "id": "HU-008",
+      "epica": "E02",
+      "nombre": "Iniciar sesión con Google",
+      "rol": "Usuario",
+      "quiero": "entrar con mi cuenta institucional de Google",
+      "para": "no tener que recordar otra contraseña",
+      "criterios": [
+        "El dominio del correo debe corresponder a una organización activa; si no, se rechaza con motivo explícito.",
+        "Si es mi primer ingreso, se crea mi usuario con rol aprendiz en esa organización.",
+        "Al terminar vuelvo al frontend con un token válido."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Implementado",
+      "endpoints": "GET /api/auth/google",
+      "sprint": 1
+    },
+    {
+      "id": "HU-009",
+      "epica": "E02",
+      "nombre": "Iniciar sesión con Microsoft",
+      "rol": "Usuario",
+      "quiero": "entrar con mi cuenta institucional de Microsoft",
+      "para": "no tener que recordar otra contraseña",
+      "criterios": [
+        "Mismo comportamiento que Google respecto al dominio y alta automática.",
+        "El correo se toma de 'mail' y, si viene vacío, de 'userPrincipalName'."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Implementado",
+      "endpoints": "GET /api/auth/microsoft",
+      "sprint": 1
+    },
+    {
+      "id": "HU-010",
+      "epica": "E02",
+      "nombre": "Recuperar contraseña olvidada",
+      "rol": "Usuario",
+      "quiero": "restablecer mi contraseña desde el correo",
+      "para": "recuperar el acceso sin depender de un administrador",
+      "criterios": [
+        "Se envía un enlace con token de un solo uso y caducidad de 1 hora.",
+        "La respuesta es idéntica exista o no el correo, para no filtrar qué cuentas hay.",
+        "Al usar el enlace se exige una contraseña que cumpla la política mínima.",
+        "El token queda invalidado tras el primer uso."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-007"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. Requiere además integrar un servicio de correo.",
+      "sprint": 3
+    },
+    {
+      "id": "HU-011",
+      "epica": "E02",
+      "nombre": "Cerrar sesión",
+      "rol": "Usuario",
+      "quiero": "salir de mi cuenta",
+      "para": "proteger mi información en equipos compartidos",
+      "criterios": [
+        "El token se descarta en el cliente y se redirige al login.",
+        "Volver atrás en el navegador no restaura la sesión."
+      ],
+      "sp": 1,
+      "valor": 3,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-007"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 2
+    },
+    {
+      "id": "HU-012",
+      "epica": "E02",
+      "nombre": "Renovar sesión antes de que expire",
+      "rol": "Usuario",
+      "quiero": "seguir trabajando sin que se me corte la sesión de golpe",
+      "para": "no perder lo que estoy haciendo",
+      "criterios": [
+        "El token dura 3 horas y se renueva de forma transparente mientras haya actividad.",
+        "Tras el periodo de inactividad se pide iniciar sesión de nuevo con aviso previo."
+      ],
+      "sp": 5,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-007"
+      ],
+      "estado": "Parcial",
+      "endpoints": "El JWT ya expira en 3h, pero no existe mecanismo de refresco.",
+      "sprint": 4
+    },
+    {
+      "id": "HU-013",
+      "epica": "E02",
+      "nombre": "Limitar intentos fallidos de inicio de sesión",
+      "rol": "Sistema",
+      "quiero": "bloquear temporalmente tras varios intentos fallidos",
+      "para": "impedir ataques de fuerza bruta contra las contraseñas",
+      "criterios": [
+        "Tras 5 intentos fallidos desde la misma IP se aplica una espera creciente.",
+        "El bloqueo se registra para auditoría.",
+        "Un inicio de sesión exitoso reinicia el contador."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-007"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. Hoy el login admite intentos ilimitados.",
+      "sprint": 2
+    },
+    {
+      "id": "HU-014",
+      "epica": "E03",
+      "nombre": "Crear usuario",
+      "rol": "Administrador",
+      "quiero": "dar de alta a una persona en mi organización",
+      "para": "que pueda acceder a los cursos",
+      "criterios": [
+        "El correo es único en todo el sistema; si se repite, error claro.",
+        "La contraseña se almacena cifrada, nunca en texto plano.",
+        "El usuario queda siempre en mi organización, aunque envíe otra en la petición.",
+        "Solo un superadmin puede crear otro superadmin."
+      ],
+      "sp": 3,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Implementado",
+      "endpoints": "POST /api/users/create",
+      "sprint": 1
+    },
+    {
+      "id": "HU-015",
+      "epica": "E03",
+      "nombre": "Consultar usuarios con filtros",
+      "rol": "Administrador",
+      "quiero": "ver, buscar y filtrar las personas de mi organización",
+      "para": "gestionarlas con agilidad",
+      "criterios": [
+        "Puedo filtrar por rol y estado, y buscar por nombre o correo.",
+        "El listado se pagina a partir de 50 registros.",
+        "Nunca se expone el hash de la contraseña.",
+        "Un admin solo ve su organización; el superadmin ve todas."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-014"
+      ],
+      "estado": "Parcial",
+      "endpoints": "GET /api/users/get/all, /get/role/{role}, /get/email/{email}",
+      "sprint": 2,
+      "notas": "Falta paginación y búsqueda por texto; el filtrado por rol y tenant ya funciona."
+    },
+    {
+      "id": "HU-016",
+      "epica": "E03",
+      "nombre": "Editar usuario",
+      "rol": "Administrador",
+      "quiero": "actualizar los datos de una persona",
+      "para": "mantener la información al día",
+      "criterios": [
+        "Puedo actualizar campos sueltos sin enviar el registro completo.",
+        "Si cambio la contraseña, se vuelve a cifrar.",
+        "Un admin no puede promover a nadie a superadmin.",
+        "Un admin no puede editar usuarios de otra organización."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-014"
+      ],
+      "estado": "Parcial",
+      "endpoints": "PUT /api/users/update/{id}",
+      "sprint": 2,
+      "notas": "No valida que el usuario objetivo pertenezca al tenant de quien edita."
+    },
+    {
+      "id": "HU-017",
+      "epica": "E03",
+      "nombre": "Eliminar usuario",
+      "rol": "Administrador",
+      "quiero": "dar de baja a una persona",
+      "para": "depurar la base de usuarios",
+      "criterios": [
+        "Se pide confirmación antes de borrar.",
+        "Si no existe, la respuesta es 404, no 500.",
+        "Un admin no puede borrar usuarios de otra organización.",
+        "Se advierte qué pasa con sus entregas y su progreso."
+      ],
+      "sp": 2,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-014"
+      ],
+      "estado": "Parcial",
+      "endpoints": "DELETE /api/users/delete/{id}",
+      "sprint": 2,
+      "notas": "Devuelve 500 cuando el usuario no existe, y no valida tenant."
+    },
+    {
+      "id": "HU-018",
+      "epica": "E03",
+      "nombre": "Asignar y cambiar rol",
+      "rol": "Administrador",
+      "quiero": "definir si alguien es aprendiz, instructor o administrador",
+      "para": "controlar qué puede hacer cada persona",
+      "criterios": [
+        "Los roles disponibles dependen de mi propio rol: un admin no puede crear superadmins.",
+        "El cambio de rol se refleja en el siguiente inicio de sesión del afectado.",
+        "El cambio queda registrado en auditoría con autor y fecha."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-014"
+      ],
+      "estado": "Parcial",
+      "endpoints": "PUT /api/users/update/{id}",
+      "sprint": 2,
+      "notas": "El cambio funciona, pero no hay registro de auditoría ni invalidación del token vigente."
+    },
+    {
+      "id": "HU-019",
+      "epica": "E03",
+      "nombre": "Carga masiva de usuarios desde archivo",
+      "rol": "Administrador",
+      "quiero": "importar muchas personas desde un CSV o Excel",
+      "para": "no dar de alta uno por uno al inicio de cada periodo",
+      "criterios": [
+        "Se puede descargar una plantilla con las columnas esperadas.",
+        "Antes de importar se muestra una previsualización con los errores detectados por fila.",
+        "Las filas válidas se importan aunque otras fallen, y se entrega un resumen final.",
+        "Los correos duplicados se reportan sin interrumpir el proceso."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-014"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 4,
+      "notas": "Alto impacto para clientes educativos: dar de alta 300 estudiantes a mano no es viable."
+    },
+    {
+      "id": "HU-020",
+      "epica": "E04",
+      "nombre": "Crear grupo",
+      "rol": "Administrador",
+      "quiero": "crear un grupo dentro de mi organización",
+      "para": "administrar aprendices en bloque",
+      "criterios": [
+        "El grupo queda asociado a mi organización de forma automática.",
+        "Opcionalmente puedo añadir aprendices en el mismo paso."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Parcial",
+      "endpoints": "POST /api/groups/create",
+      "sprint": 2,
+      "notas": "Funciona, pero no guarda tenant_id: los grupos creados por la API quedan huérfanos de organización."
+    },
+    {
+      "id": "HU-021",
+      "epica": "E04",
+      "nombre": "Consultar grupos",
+      "rol": "Administrador",
+      "quiero": "ver los grupos de mi organización con sus integrantes y cursos",
+      "para": "saber cómo está distribuida la gente",
+      "criterios": [
+        "Cada grupo muestra el número de integrantes y los cursos asignados.",
+        "Solo veo grupos de mi organización.",
+        "Requiere autenticación."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-020"
+      ],
+      "estado": "Parcial",
+      "endpoints": "GET /api/groups/get/all, GET /api/groups/get/id/{id}",
+      "sprint": 2,
+      "notas": "Riesgo alto: hoy responde sin token y sin filtrar por organización. Expone correos y roles de todos los usuarios."
+    },
+    {
+      "id": "HU-022",
+      "epica": "E04",
+      "nombre": "Editar y eliminar grupo",
+      "rol": "Administrador",
+      "quiero": "renombrar o borrar un grupo",
+      "para": "mantener la estructura organizada entre periodos",
+      "criterios": [
+        "Al borrar se pide confirmación y se avisa cuántos aprendices quedarán sin ese grupo.",
+        "Borrar el grupo no borra a sus integrantes ni los cursos."
+      ],
+      "sp": 2,
+      "valor": 2,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-020"
+      ],
+      "estado": "Parcial",
+      "endpoints": "PUT /api/groups/update/{id}, DELETE /api/groups/delete/{id}",
+      "sprint": 3,
+      "notas": "Funciona, pero sin autenticación."
+    },
+    {
+      "id": "HU-023",
+      "epica": "E04",
+      "nombre": "Gestionar integrantes de un grupo",
+      "rol": "Administrador",
+      "quiero": "añadir y quitar aprendices de un grupo",
+      "para": "reflejar los cambios de matrícula",
+      "criterios": [
+        "Puedo añadir varios de una vez desde un buscador.",
+        "Añadir a alguien que ya está no genera duplicados ni error.",
+        "Solo puedo añadir personas de mi organización."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-020",
+        "HU-014"
+      ],
+      "estado": "Parcial",
+      "endpoints": "POST /api/groups/{id}/add-users, DELETE /api/groups/{id}/remove-users",
+      "sprint": 2,
+      "notas": "La lógica de upsert está bien resuelta. Falta autenticación y validación de organización."
+    },
+    {
+      "id": "HU-024",
+      "epica": "E04",
+      "nombre": "Asignar cursos a un grupo",
+      "rol": "Administrador",
+      "quiero": "vincular uno o varios cursos a un grupo completo",
+      "para": "no asignar el curso persona por persona",
+      "criterios": [
+        "Al asignar un curso al grupo, todos sus integrantes lo ven de inmediato.",
+        "Quitar el curso del grupo retira el acceso, sin borrar el progreso ya logrado.",
+        "Solo puedo asignar cursos de mi organización."
+      ],
+      "sp": 3,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-020",
+        "HU-027"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. La tabla groups_courses existe pero no hay endpoint que la escriba.",
+      "sprint": 3,
+      "notas": "Hueco importante: es el mecanismo central de asignación y hoy solo se puede poblar con el seed."
+    },
+    {
+      "id": "HU-025",
+      "epica": "E04",
+      "nombre": "Ver mis grupos",
+      "rol": "Aprendiz",
+      "quiero": "ver a qué grupos pertenezco",
+      "para": "entender de dónde vienen mis cursos",
+      "criterios": [
+        "Veo el nombre y descripción de cada grupo al que pertenezco.",
+        "Requiere sesión iniciada."
+      ],
+      "sp": 1,
+      "valor": 2,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-023"
+      ],
+      "estado": "Roto",
+      "endpoints": "GET /api/groups/me",
+      "sprint": 3,
+      "notas": "La ruta no monta el middleware de autenticación, por lo que siempre responde 401. Corrección de una línea."
+    },
+    {
+      "id": "HU-026",
+      "epica": "E05",
+      "nombre": "Crear curso",
+      "rol": "Administrador / Instructor",
+      "quiero": "registrar un curso nuevo",
+      "para": "ofrecer contenido formativo",
+      "criterios": [
+        "El curso queda en mi organización y en estado borrador hasta publicarlo.",
+        "El instructor asignado debe ser un usuario existente con rol instructor.",
+        "Un instructor solo puede crear cursos en su organización."
+      ],
+      "sp": 3,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "Roto",
+      "endpoints": "POST /api/courses/create",
+      "sprint": 3,
+      "notas": "El controlador pasa el objeto request completo al servicio en lugar del cuerpo. Falla siempre."
+    },
+    {
+      "id": "HU-027",
+      "epica": "E05",
+      "nombre": "Consultar cursos",
+      "rol": "Administrador / Instructor",
+      "quiero": "ver el catálogo de cursos de mi organización",
+      "para": "gestionar la oferta formativa",
+      "criterios": [
+        "El admin ve todos los cursos de su organización.",
+        "El instructor ve únicamente los cursos que tiene asignados.",
+        "Se puede buscar por nombre y filtrar por estado.",
+        "Requiere autenticación."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-026"
+      ],
+      "estado": "Parcial",
+      "endpoints": "GET /api/courses/get/all, GET /api/courses/get/id/{id}",
+      "sprint": 3,
+      "notas": "El listado responde sin token y sin filtrar. La consulta por id está rota: pasa el request como identificador."
+    },
+    {
+      "id": "HU-028",
+      "epica": "E05",
+      "nombre": "Editar curso",
+      "rol": "Administrador / Instructor",
+      "quiero": "modificar los datos de un curso",
+      "para": "mantener la información vigente",
+      "criterios": [
+        "El instructor solo puede editar cursos que tiene asignados.",
+        "Los cambios se reflejan de inmediato para los aprendices."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-026"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. No existe endpoint de actualización de cursos.",
+      "sprint": 3
+    },
+    {
+      "id": "HU-029",
+      "epica": "E05",
+      "nombre": "Eliminar o archivar curso",
+      "rol": "Administrador",
+      "quiero": "retirar un curso del catálogo",
+      "para": "depurar contenido que ya no se dicta",
+      "criterios": [
+        "Se pide confirmación y se avisa cuántos aprendices lo tienen asignado.",
+        "Se prefiere archivar sobre borrar, para conservar el histórico de progreso.",
+        "Un curso archivado deja de aparecer para los aprendices."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-026"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 4
+    },
+    {
+      "id": "HU-030",
+      "epica": "E05",
+      "nombre": "Asignar instructor a un curso",
+      "rol": "Administrador",
+      "quiero": "designar quién dicta cada curso",
+      "para": "definir responsables",
+      "criterios": [
+        "Solo se pueden seleccionar usuarios con rol instructor de mi organización.",
+        "El instructor asignado pasa a ver el curso en su listado.",
+        "Se puede reasignar a otro instructor."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-026"
+      ],
+      "estado": "Parcial",
+      "endpoints": "El campo instructor existe en la tabla, pero se guarda como texto libre y no hay endpoint dedicado.",
+      "sprint": 3,
+      "notas": "El campo guarda un correo en vez de una referencia al usuario. Conviene cambiarlo a clave foránea."
+    },
+    {
+      "id": "HU-031",
+      "epica": "E05",
+      "nombre": "Ver mis cursos asignados",
+      "rol": "Aprendiz",
+      "quiero": "ver únicamente los cursos que me corresponden",
+      "para": "entrar directo a lo mío sin ruido",
+      "criterios": [
+        "Veo los cursos asignados a mí o a cualquiera de mis grupos, sin duplicados.",
+        "No veo cursos de otros grupos ni de otras organizaciones.",
+        "Cada curso muestra mi porcentaje de avance."
+      ],
+      "sp": 3,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-024"
+      ],
+      "estado": "Parcial",
+      "endpoints": "GET /api/courses/me",
+      "sprint": 3,
+      "notas": "La resolución grupo a curso ya funciona. Falta el porcentaje de avance."
+    },
+    {
+      "id": "HU-032",
+      "epica": "E05",
+      "nombre": "Organizar el curso en secciones",
+      "rol": "Instructor",
+      "quiero": "dividir el curso en secciones ordenados",
+      "para": "que el aprendiz siga una secuencia lógica en vez de una lista plana",
+      "criterios": [
+        "Puedo crear, renombrar y eliminar secciones dentro de un curso.",
+        "Cada sección agrupa actividades, recursos, evaluaciones y juegos.",
+        "Puedo reordenar secciones y sus contenidos arrastrando.",
+        "Un sección vacío no se muestra al aprendiz."
+      ],
+      "sp": 8,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-026"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. Requiere tabla nueva y migrar courses.actividades.",
+      "sprint": 5,
+      "notas": "Cambio estructural. Hoy el curso guarda las actividades en un arreglo plano de texto, sin orden ni agrupación."
+    },
+    {
+      "id": "HU-033",
+      "epica": "E05",
+      "nombre": "Publicar o despublicar un curso",
+      "rol": "Administrador / Instructor",
+      "quiero": "controlar cuándo el curso se hace visible",
+      "para": "prepararlo con calma antes de abrirlo",
+      "criterios": [
+        "Un curso en borrador solo lo ven quienes lo administran.",
+        "Al publicar se valida que tenga al menos un sección con contenido.",
+        "Despublicar no borra el progreso ya registrado."
+      ],
+      "sp": 2,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-032"
+      ],
+      "estado": "Parcial",
+      "endpoints": "El campo status con valores Abierto y Cerrado existe, pero nada lo verifica al servir contenido.",
+      "sprint": 5
+    },
+    {
+      "id": "HU-034",
+      "epica": "E06",
+      "nombre": "Crear actividad o recurso",
+      "rol": "Instructor",
+      "quiero": "añadir una actividad dentro de un sección",
+      "para": "estructurar el contenido del curso",
+      "criterios": [
+        "Puedo elegir el tipo: recurso, tarea entregable, evaluación o juego.",
+        "La actividad queda dentro del sección y la organización correctos.",
+        "Los campos obligatorios se validan antes de guardar."
+      ],
+      "sp": 3,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-032"
+      ],
+      "estado": "Roto",
+      "endpoints": "POST /api/activities/create",
+      "sprint": 5,
+      "notas": "La ruta monta el servicio en lugar del controlador. Además el controlador correcto importa un archivo que no existe."
+    },
+    {
+      "id": "HU-035",
+      "epica": "E06",
+      "nombre": "Consultar actividades de un curso",
+      "rol": "Usuario",
+      "quiero": "ver las actividades disponibles",
+      "para": "saber qué tengo que hacer",
+      "criterios": [
+        "Las actividades se muestran agrupadas por sección y en orden.",
+        "El aprendiz solo ve actividades de cursos que tiene asignados.",
+        "Cada actividad indica su estado: pendiente, entregada o completada."
+      ],
+      "sp": 3,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "Roto",
+      "endpoints": "GET /api/activities/get/all",
+      "sprint": 5,
+      "notas": "El endpoint nunca responde: la petición queda abierta hasta que el cliente corta por tiempo."
+    },
+    {
+      "id": "HU-036",
+      "epica": "E06",
+      "nombre": "Editar y eliminar actividad",
+      "rol": "Instructor",
+      "quiero": "corregir o retirar una actividad",
+      "para": "mantener el contenido actualizado",
+      "criterios": [
+        "Solo puedo modificar actividades de cursos que tengo asignados.",
+        "Al eliminar se advierte si ya existen entregas asociadas.",
+        "Se prefiere ocultar frente a borrar cuando ya hay entregas."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. No existen endpoints de actualización ni borrado de actividades.",
+      "sprint": 5
+    },
+    {
+      "id": "HU-037",
+      "epica": "E06",
+      "nombre": "Subir material de apoyo",
+      "rol": "Instructor",
+      "quiero": "adjuntar archivos a una actividad",
+      "para": "entregar el material de estudio",
+      "criterios": [
+        "Se aceptan PDF, imágenes y video, con un límite de tamaño explícito.",
+        "Un formato o tamaño no permitido se rechaza con mensaje claro antes de subir.",
+        "Se muestra el progreso de carga.",
+        "El archivo queda accesible solo para quien tiene acceso al curso."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "Parcial",
+      "endpoints": "La integración con Google Drive funciona, pero la ruta que la invoca está rota.",
+      "sprint": 5,
+      "notas": "Los archivos de Drive se publican como accesibles para cualquiera con el enlace. Revisar si es aceptable para contenido de clientes."
+    },
+    {
+      "id": "HU-038",
+      "epica": "E06",
+      "nombre": "Ver y descargar material",
+      "rol": "Usuario",
+      "quiero": "abrir o descargar los archivos de una actividad",
+      "para": "estudiar el material",
+      "criterios": [
+        "Los PDFs y videos se previsualizan sin salir de la plataforma.",
+        "Solo accedo a material de cursos que tengo asignados."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-037"
+      ],
+      "estado": "Parcial",
+      "endpoints": "El enlace se guarda en el campo adjunto, pero no hay control de acceso.",
+      "sprint": 5
+    },
+    {
+      "id": "HU-039",
+      "epica": "E06",
+      "nombre": "Eliminar material de apoyo",
+      "rol": "Instructor",
+      "quiero": "quitar un archivo de una actividad",
+      "para": "retirar material obsoleto",
+      "criterios": [
+        "Se pide confirmación.",
+        "El archivo se elimina también del almacenamiento externo, no solo la referencia."
+      ],
+      "sp": 3,
+      "valor": 2,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-037"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 6
+    },
+    {
+      "id": "HU-040",
+      "epica": "E06",
+      "nombre": "Marcar actividad como completada",
+      "rol": "Aprendiz",
+      "quiero": "marcar que terminé una actividad de tipo recurso",
+      "para": "llevar el control de mi avance y recibir mi XP",
+      "criterios": [
+        "Solo aplica a recursos; las tareas y evaluaciones se completan al entregarlas o resolverlas.",
+        "Al marcarla se acredita el XP configurado, una sola vez.",
+        "Desmarcarla no retira el XP ya otorgado.",
+        "El avance del curso se recalcula al instante."
+      ],
+      "sp": 5,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-034",
+        "HU-042"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. No existe la noción de progreso por aprendiz.",
+      "sprint": 6,
+      "notas": "Pieza faltante clave: sin registro de progreso no hay gamificación posible."
+    },
+    {
+      "id": "HU-041",
+      "epica": "E07",
+      "nombre": "Crear un examen",
+      "rol": "Instructor",
+      "quiero": "crear un examen dentro de una sección, cargando sus preguntas con opciones y la respuesta correcta",
+      "para": "evaluar formalmente lo aprendido, como en cualquier plataforma de formación",
+      "criterios": [
+        "Al crear la actividad elijo el tipo examen, y el formulario me pide preguntas, opciones y cuál es la correcta.",
+        "Configuro puntaje total, tiempo límite e intentos permitidos.",
+        "Puedo previsualizar el examen tal como lo verá el aprendiz antes de publicarlo.",
+        "El examen queda dentro de la sección y el curso correctos."
+      ],
+      "sp": 8,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 7,
+      "notas": "Las preguntas se guardan con una estructura común para que después puedan reaprovecharse en un juego, pero el instructor nunca tiene que gestionar un banco aparte: carga lo que pide el examen y ya."
+    },
+    {
+      "id": "HU-042",
+      "epica": "E07",
+      "nombre": "Importar preguntas desde un archivo",
+      "rol": "Instructor",
+      "quiero": "cargar las preguntas de un examen desde un archivo",
+      "para": "no escribir cincuenta preguntas a mano",
+      "criterios": [
+        "Hay una plantilla descargable con las columnas esperadas.",
+        "Se previsualizan los errores por fila antes de confirmar la importación.",
+        "Las filas válidas se importan aunque otras fallen."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-041"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 7,
+      "notas": ""
+    },
+    {
+      "id": "HU-043",
+      "epica": "E07",
+      "nombre": "Reutilizar preguntas ya cargadas",
+      "rol": "Instructor",
+      "quiero": "reaprovechar en una actividad nueva las preguntas o términos que ya cargué en otra del mismo curso",
+      "para": "no volver a escribir el mismo contenido para cada examen o juego",
+      "criterios": [
+        "Al crear una actividad puedo elegir entre cargar contenido nuevo o tomarlo de otra actividad del curso.",
+        "Solo se ofrecen actividades cuyo contenido es compatible con el tipo que estoy creando.",
+        "Editar el contenido en una actividad no altera el de la otra."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-041"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 7,
+      "notas": "Es la pieza que evita duplicar trabajo cuando un curso tiene examen y varios juegos sobre el mismo tema. Vale la pena en cuanto haya más de dos actividades por sección."
+    },
+    {
+      "id": "HU-044",
+      "epica": "E07",
+      "nombre": "Presentar y responder una evaluación",
+      "rol": "Aprendiz",
+      "quiero": "resolver el examen dentro de la plataforma",
+      "para": "demostrar lo aprendido",
+      "criterios": [
+        "El cronómetro es visible y al agotarse la evaluación se envía automáticamente.",
+        "Las respuestas se van guardando para no perderlas si se corta la conexión.",
+        "No puedo superar el número de intentos configurado.",
+        "El orden de preguntas y opciones puede aleatorizarse."
+      ],
+      "sp": 8,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-041"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 8,
+      "notas": "Es el motor común: presentar preguntas, recoger respuestas y controlar tiempo e intentos. El concurso del sprint 11 lo reutiliza entero, solo cambia la presentación."
+    },
+    {
+      "id": "HU-045",
+      "epica": "E07",
+      "nombre": "Calificar la evaluación y acreditar puntos",
+      "rol": "Sistema",
+      "quiero": "calcular la nota al enviar y otorgar los puntos correspondientes",
+      "para": "dar resultado inmediato sin trabajo del instructor",
+      "criterios": [
+        "La nota se calcula al instante para preguntas de opción múltiple.",
+        "El aprendiz ve qué acertó y qué falló, si el instructor lo habilitó.",
+        "Los puntos se acreditan en proporción a la nota obtenida.",
+        "El resultado queda en el histórico del aprendiz."
+      ],
+      "sp": 5,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-044"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 8,
+      "notas": ""
+    },
+    {
+      "id": "HU-046",
+      "epica": "E08",
+      "nombre": "Subir entrega",
+      "rol": "Aprendiz",
+      "quiero": "adjuntar mi trabajo en una actividad entregable",
+      "para": "cumplir con lo asignado",
+      "criterios": [
+        "Solo disponible en actividades de tipo entregable.",
+        "Se validan formato y tamaño antes de subir.",
+        "La entrega queda en estado entregado, con fecha y hora.",
+        "Puedo reemplazarla mientras el plazo siga abierto y no esté calificada."
+      ],
+      "sp": 5,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. No existe el concepto de entrega en el modelo de datos.",
+      "sprint": 6
+    },
+    {
+      "id": "HU-047",
+      "epica": "E08",
+      "nombre": "Consultar entregas pendientes",
+      "rol": "Instructor",
+      "quiero": "ver qué entregas tengo por calificar",
+      "para": "organizar mi trabajo",
+      "criterios": [
+        "Puedo filtrar por pendientes y ordenar por fecha de entrega.",
+        "Solo veo entregas de cursos que tengo asignados.",
+        "Se muestra un contador de pendientes."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-046"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 6
+    },
+    {
+      "id": "HU-048",
+      "epica": "E08",
+      "nombre": "Calificar y retroalimentar entrega",
+      "rol": "Instructor",
+      "quiero": "poner nota y comentario a una entrega",
+      "para": "evaluar y orientar la mejora del aprendiz",
+      "criterios": [
+        "La nota se valida contra el rango configurado en la actividad.",
+        "El comentario de retroalimentación es obligatorio.",
+        "Al guardar, la entrega pasa a calificada y se acredita el XP de la actividad.",
+        "El aprendiz recibe una notificación."
+      ],
+      "sp": 5,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-046"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 6,
+      "notas": "Es el punto donde se conectan entregas y gamificación: el XP se otorga al calificar, no al subir."
+    },
+    {
+      "id": "HU-049",
+      "epica": "E08",
+      "nombre": "Ver mi calificación y retroalimentación",
+      "rol": "Aprendiz",
+      "quiero": "consultar la nota y el comentario del instructor",
+      "para": "saber cómo me fue y qué mejorar",
+      "criterios": [
+        "La nota y el comentario solo son visibles una vez calificada la entrega.",
+        "Se muestra la fecha de calificación y el XP obtenido."
+      ],
+      "sp": 2,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-048"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 6
+    },
+    {
+      "id": "HU-050",
+      "epica": "E08",
+      "nombre": "Permitir reenvío de una entrega",
+      "rol": "Instructor",
+      "quiero": "reabrir una entrega ya calificada",
+      "para": "dar una segunda oportunidad cuando corresponde",
+      "criterios": [
+        "Al reabrir, la entrega vuelve a estado pendiente y se conserva el histórico de la nota anterior.",
+        "El aprendiz recibe una notificación indicando el motivo."
+      ],
+      "sp": 3,
+      "valor": 2,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-048"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 9
+    },
+    {
+      "id": "HU-051",
+      "epica": "E09",
+      "nombre": "Definir el XP de una actividad",
+      "rol": "Instructor",
+      "quiero": "asignar cuántos puntos otorga cada actividad",
+      "para": "calibrar la dificultad y el incentivo",
+      "criterios": [
+        "El valor es un entero positivo dentro de un rango configurable por la organización.",
+        "Se puede cambiar después, sin afectar el XP ya otorgado."
+      ],
+      "sp": 2,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. La tabla de actividades no tiene columna de XP.",
+      "sprint": 6
+    },
+    {
+      "id": "HU-052",
+      "epica": "E09",
+      "nombre": "Acreditar XP al completar",
+      "rol": "Sistema",
+      "quiero": "sumar el XP al aprendiz cuando corresponde",
+      "para": "reflejar su progreso real",
+      "criterios": [
+        "En recursos, al marcarlos completados.",
+        "En entregas, al momento de ser calificadas, nunca al subir el archivo.",
+        "En exámenes y juegos, en proporción al resultado obtenido.",
+        "Cada acreditación queda registrada con su origen, para poder auditarla."
+      ],
+      "sp": 5,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-040",
+        "HU-048",
+        "HU-051"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno. El campo xp existe en usuarios, pero nada lo incrementa.",
+      "sprint": 6
+    },
+    {
+      "id": "HU-053",
+      "epica": "E09",
+      "nombre": "Configurar la tabla de niveles",
+      "rol": "Administrador",
+      "quiero": "definir cuánto XP requiere cada nivel",
+      "para": "ajustar la curva de progresión a mi organización",
+      "criterios": [
+        "Puedo definir los umbrales de cada nivel y su nombre.",
+        "Cambiar la tabla recalcula el nivel de todos los usuarios de la organización.",
+        "Cada organización tiene su propia configuración."
+      ],
+      "sp": 5,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-052"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 7
+    },
+    {
+      "id": "HU-054",
+      "epica": "E09",
+      "nombre": "Subir de nivel automáticamente",
+      "rol": "Sistema",
+      "quiero": "recalcular el nivel cuando el XP cruza un umbral",
+      "para": "que el progreso se sienta inmediato",
+      "criterios": [
+        "El nivel se recalcula en la misma operación que acredita el XP.",
+        "Al subir de nivel se muestra una celebración en la interfaz y se emite una notificación.",
+        "El nivel nunca baja aunque se ajuste la tabla a la baja."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-052"
+      ],
+      "estado": "Parcial",
+      "endpoints": "El campo level existe y se lee, pero nada lo actualiza.",
+      "sprint": 7
+    },
+    {
+      "id": "HU-055",
+      "epica": "E09",
+      "nombre": "Reglas de tope y antiabuso de XP",
+      "rol": "Sistema",
+      "quiero": "limitar cuánto XP se puede ganar repitiendo lo mismo",
+      "para": "que el ranking mida aprendizaje y no insistencia",
+      "criterios": [
+        "Una actividad otorga XP completo solo en el primer intento; las repeticiones dan un porcentaje reducido o cero.",
+        "Existe un tope diario de XP configurable por organización.",
+        "Los intentos que no otorgan XP se lo indican al aprendiz de forma clara."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-052"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 8,
+      "notas": "Imprescindible antes de lanzar los juegos: un juego rejugable sin tope convierte el XP en una fuente infinita."
+    },
+    {
+      "id": "HU-056",
+      "epica": "E09",
+      "nombre": "Ver mi XP y nivel",
+      "rol": "Aprendiz",
+      "quiero": "consultar mi puntaje y nivel actual",
+      "para": "monitorear mi progreso",
+      "criterios": [
+        "Veo XP total, nivel actual y cuánto falta para el siguiente.",
+        "Veo el detalle de las últimas acreditaciones y su origen."
+      ],
+      "sp": 2,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-052"
+      ],
+      "estado": "Parcial",
+      "endpoints": "Los campos se devuelven en el perfil, pero siempre valen cero porque nada los alimenta.",
+      "sprint": 7
+    },
+    {
+      "id": "HU-057",
+      "epica": "E09",
+      "nombre": "Ver tabla de posiciones",
+      "rol": "Aprendiz",
+      "quiero": "ver el ranking de mi organización",
+      "para": "compararme y motivarme",
+      "criterios": [
+        "El ranking solo incluye aprendices de mi organización.",
+        "Se ordena por XP y muestra mi posición destacada.",
+        "Se puede filtrar por grupo y por periodo.",
+        "Instructores y administradores quedan excluidos."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-052"
+      ],
+      "estado": "Roto",
+      "endpoints": "GET /api/gamification/ranking",
+      "sprint": 7,
+      "notas": "Devuelve error en producción. Además no filtra por organización: hoy mezclaría aprendices de clientes distintos."
+    },
+    {
+      "id": "HU-058",
+      "epica": "E09",
+      "nombre": "Racha de días activos",
+      "rol": "Aprendiz",
+      "quiero": "que se registre mi constancia diaria",
+      "para": "mantener el hábito de estudio",
+      "criterios": [
+        "La racha aumenta con al menos una actividad completada por día.",
+        "Se reinicia tras un día sin actividad.",
+        "Se otorga XP extra en hitos de racha configurables."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-052"
+      ],
+      "estado": "Parcial",
+      "endpoints": "El campo streak existe pero nada lo calcula.",
+      "sprint": 9
+    },
+    {
+      "id": "HU-059",
+      "epica": "E10",
+      "nombre": "Crear logro",
+      "rol": "Administrador / Instructor",
+      "quiero": "definir un logro con nombre, descripción e insignia",
+      "para": "dar metas concretas a los aprendices",
+      "criterios": [
+        "El logro pertenece a mi organización.",
+        "Puedo subir o elegir una insignia.",
+        "El logro queda inactivo hasta definirle una condición."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-001"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 8
+    },
+    {
+      "id": "HU-060",
+      "epica": "E10",
+      "nombre": "Definir la condición de una medalla",
+      "rol": "Administrador / Instructor",
+      "quiero": "elegir de una lista qué hay que cumplir para ganar una medalla y con qué valores",
+      "para": "premiar conductas concretas sin depender del equipo técnico para cada medalla nueva",
+      "criterios": [
+        "Elijo el tipo de condición de un catálogo cerrado de nueve opciones y solo completo sus valores.",
+        "El sistema me muestra cuántas personas cumplirían la condición hoy, antes de activarla.",
+        "Una medalla sin condición definida queda inactiva y no se puede desbloquear.",
+        "Cambiar la condición no retira las medallas ya otorgadas."
+      ],
+      "sp": 5,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-059"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 8,
+      "notas": "El catálogo cerrado de condiciones es la decisión clave: permite crear medallas nuevas sin escribir código. Un motor de reglas libre costaría varias veces más y nadie lo usaría."
+    },
+    {
+      "id": "HU-061",
+      "epica": "E10",
+      "nombre": "Desbloquear logro automáticamente",
+      "rol": "Sistema",
+      "quiero": "otorgar el logro en cuanto se cumple la condición",
+      "para": "que la recompensa se sienta inmediata",
+      "criterios": [
+        "La evaluación ocurre solo en los cinco momentos definidos, no de forma continua.",
+        "Una medalla se otorga una única vez por persona y no se puede perder.",
+        "Al desbloquearla se notifica en el momento y aparece en el perfil.",
+        "Las medallas de ranking se evalúan al cierre del periodo, no en tiempo real."
+      ],
+      "sp": 5,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-060"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 8,
+      "notas": "Acotar la evaluación a cinco disparadores es lo que hace que el sistema sea barato: sin eso habría que revisar todas las condiciones de todos los usuarios continuamente."
+    },
+    {
+      "id": "HU-062",
+      "epica": "E10",
+      "nombre": "Ver mis logros",
+      "rol": "Aprendiz",
+      "quiero": "ver los logros que gané y los que me faltan",
+      "para": "saber qué puedo perseguir",
+      "criterios": [
+        "Los desbloqueados muestran la fecha de obtención.",
+        "Los pendientes muestran la condición y mi avance hacia ella."
+      ],
+      "sp": 2,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-061"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 8
+    },
+    {
+      "id": "HU-063",
+      "epica": "E11",
+      "nombre": "Crear actividad de sopa de letras",
+      "rol": "Instructor",
+      "quiero": "crear una actividad de tipo sopa de letras indicando la lista de términos",
+      "para": "reforzar el tema de forma lúdica sin tener que diseñar el juego a mano",
+      "criterios": [
+        "Al crear la actividad elijo sopa de letras y el formulario me pide exactamente la lista de términos.",
+        "Configuro el tamaño de la cuadrícula y si admite diagonales e inversos; si algún término no cabe, el sistema avisa antes de guardar.",
+        "Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.",
+        "Queda insertado como una actividad más dentro de la sección."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 9,
+      "notas": ""
+    },
+    {
+      "id": "HU-064",
+      "epica": "E11",
+      "nombre": "Crear actividad de crucigrama",
+      "rol": "Instructor",
+      "quiero": "crear una actividad de tipo crucigrama indicando los términos con su definición",
+      "para": "reforzar el tema de forma lúdica sin tener que diseñar el juego a mano",
+      "criterios": [
+        "Al crear la actividad elijo crucigrama y el formulario me pide exactamente los términos con su definición.",
+        "El término es la respuesta y su definición la pista; el sistema cruza las palabras, las numera y reporta las que no pudo ubicar.",
+        "Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.",
+        "Queda insertado como una actividad más dentro de la sección."
+      ],
+      "sp": 8,
+      "valor": 4,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 10,
+      "notas": "El de mayor complejidad algorítmica del grupo. Conviene dejarlo para el final, cuando los demás ya validaron el flujo."
+    },
+    {
+      "id": "HU-065",
+      "epica": "E11",
+      "nombre": "Crear actividad de concurso de preguntas",
+      "rol": "Instructor",
+      "quiero": "crear una actividad de tipo concurso de preguntas indicando las preguntas con sus opciones y la correcta",
+      "para": "reforzar el tema de forma lúdica sin tener que diseñar el juego a mano",
+      "criterios": [
+        "Al crear la actividad elijo concurso de preguntas y el formulario me pide exactamente las preguntas con sus opciones y la correcta.",
+        "Configuro cuántas preguntas, el tiempo por pregunta y si la dificultad va en aumento.",
+        "Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.",
+        "Queda insertado como una actividad más dentro de la sección."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 9,
+      "notas": "Reutiliza el mismo motor de presentación y calificación del examen: cambia la piel, no la mecánica. Por eso es el juego más barato de los llamativos y el mejor candidato para el MVP."
+    },
+    {
+      "id": "HU-066",
+      "epica": "E11",
+      "nombre": "Crear actividad de parejas o memoria",
+      "rol": "Instructor",
+      "quiero": "crear una actividad de parejas indicando los términos con su definición",
+      "para": "reforzar el tema de forma lúdica sin tener que diseñar el juego a mano",
+      "criterios": [
+        "Al crear la actividad elijo parejas y el formulario me pide exactamente los términos con su definición.",
+        "El tablero empareja cada término con su definición y mide tiempo e intentos.",
+        "Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.",
+        "Queda insertado como una actividad más dentro de la sección."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-034"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 10,
+      "notas": "El más barato de construir de los cuatro. Buen candidato para validar el flujo de autogeneración antes de invertir en el crucigrama."
+    },
+    {
+      "id": "HU-067",
+      "epica": "E11",
+      "nombre": "Jugar y ganar puntos",
+      "rol": "Aprendiz",
+      "quiero": "jugar los juegos de mi curso y ganar puntos según cómo me vaya",
+      "para": "aprender de forma entretenida",
+      "criterios": [
+        "Los puntos dependen del desempeño, no de la simple participación.",
+        "Al repetir el juego, el puntaje completo solo se otorga la primera vez.",
+        "Mi mejor resultado queda registrado en el histórico.",
+        "El juego funciona en móvil."
+      ],
+      "sp": 5,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-065",
+        "HU-052"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 9,
+      "notas": "El segundo criterio no es un detalle: sin él, un juego rejugable convierte los puntos en una fuente infinita y el ranking deja de medir aprendizaje."
+    },
+    {
+      "id": "HU-068",
+      "epica": "E11",
+      "nombre": "Configurar dificultad y recompensa del juego",
+      "rol": "Instructor",
+      "quiero": "ajustar la dificultad y el XP de cada juego",
+      "para": "equilibrarlo con el resto del curso",
+      "criterios": [
+        "Configuro nivel de dificultad, tiempo límite y puntos máximos que otorga.",
+        "Puedo previsualizar el juego con esa configuración antes de publicarlo."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-067"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 9,
+      "notas": ""
+    },
+    {
+      "id": "HU-069",
+      "epica": "E12",
+      "nombre": "Ver mi perfil",
+      "rol": "Usuario",
+      "quiero": "consultar mis datos personales",
+      "para": "verificar que están correctos",
+      "criterios": [
+        "Veo nombre, correo, rol, organización y datos de contacto.",
+        "No se muestra ningún dato sensible de autenticación."
+      ],
+      "sp": 1,
+      "valor": 3,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-007"
+      ],
+      "estado": "Implementado",
+      "endpoints": "GET /api/auth/me",
+      "sprint": 1
+    },
+    {
+      "id": "HU-070",
+      "epica": "E12",
+      "nombre": "Editar mi perfil",
+      "rol": "Usuario",
+      "quiero": "actualizar mis datos personales",
+      "para": "mantenerlos vigentes",
+      "criterios": [
+        "Puedo cambiar nombre, apellido y teléfono.",
+        "No puedo cambiar mi rol, mi organización ni mi XP.",
+        "El correo solo se cambia con verificación del nuevo."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-069"
+      ],
+      "estado": "Parcial",
+      "endpoints": "PUT /api/users/update/{id} exige rol administrador, así que un aprendiz no puede editarse a sí mismo.",
+      "sprint": 4,
+      "notas": "Hace falta un endpoint propio de autoservicio con una lista blanca de campos editables."
+    },
+    {
+      "id": "HU-071",
+      "epica": "E12",
+      "nombre": "Cambiar mi contraseña",
+      "rol": "Usuario",
+      "quiero": "cambiar mi contraseña estando dentro",
+      "para": "mantener segura mi cuenta",
+      "criterios": [
+        "Se exige la contraseña actual antes de permitir el cambio.",
+        "La nueva debe cumplir la política mínima de seguridad.",
+        "Se notifica el cambio al correo registrado."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-069"
+      ],
+      "estado": "Parcial",
+      "endpoints": "El cambio existe dentro de la actualización general, sin verificar la contraseña actual.",
+      "sprint": 4
+    },
+    {
+      "id": "HU-072",
+      "epica": "E12",
+      "nombre": "Cambiar mi foto de perfil",
+      "rol": "Usuario",
+      "quiero": "subir una foto",
+      "para": "personalizar mi cuenta",
+      "criterios": [
+        "Se aceptan imágenes con límite de tamaño y se recortan a cuadrado.",
+        "La foto aparece en el ranking y en los comentarios."
+      ],
+      "sp": 3,
+      "valor": 1,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-070"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 10
+    },
+    {
+      "id": "HU-073",
+      "epica": "E13",
+      "nombre": "Centro de notificaciones",
+      "rol": "Usuario",
+      "quiero": "ver en un solo lugar lo que requiere mi atención",
+      "para": "no perderme nada importante",
+      "criterios": [
+        "Hay un indicador con el número de notificaciones sin leer.",
+        "Puedo marcarlas como leídas individualmente o todas.",
+        "Cada notificación enlaza al contenido que la originó."
+      ],
+      "sp": 5,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-007"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 9
+    },
+    {
+      "id": "HU-074",
+      "epica": "E13",
+      "nombre": "Notificar eventos relevantes",
+      "rol": "Sistema",
+      "quiero": "avisar cuando ocurre algo que le importa al usuario",
+      "para": "mantener el compromiso con la plataforma",
+      "criterios": [
+        "Se notifica al aprendiz cuando su entrega es calificada, cuando desbloquea un logro y cuando sube de nivel.",
+        "Se notifica al instructor cuando recibe una entrega nueva.",
+        "Se notifica la publicación de una actividad nueva en un curso asignado."
+      ],
+      "sp": 5,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-073"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 9
+    },
+    {
+      "id": "HU-075",
+      "epica": "E13",
+      "nombre": "Configurar mis preferencias de notificación",
+      "rol": "Usuario",
+      "quiero": "elegir qué avisos recibo y por qué canal",
+      "para": "no saturarme",
+      "criterios": [
+        "Puedo activar o desactivar cada tipo de notificación por separado.",
+        "Puedo elegir entre notificación dentro de la plataforma y correo.",
+        "Las preferencias se respetan en todos los envíos."
+      ],
+      "sp": 3,
+      "valor": 2,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-074"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 10
+    },
+    {
+      "id": "HU-076",
+      "epica": "E14",
+      "nombre": "Panel de progreso del aprendiz",
+      "rol": "Aprendiz",
+      "quiero": "ver mi avance consolidado",
+      "para": "saber dónde estoy parado",
+      "criterios": [
+        "Veo porcentaje de avance por curso, XP total, nivel y logros.",
+        "Veo mis actividades pendientes ordenadas por fecha límite."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-040",
+        "HU-052"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 10
+    },
+    {
+      "id": "HU-077",
+      "epica": "E14",
+      "nombre": "Reporte de avance por curso",
+      "rol": "Instructor",
+      "quiero": "ver cómo va cada aprendiz en mis cursos",
+      "para": "detectar a tiempo a quien se está quedando",
+      "criterios": [
+        "Tabla con avance, XP, entregas pendientes y última conexión por aprendiz.",
+        "Se resaltan quienes llevan más de N días sin actividad.",
+        "Solo incluye cursos que tengo asignados."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-076"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 10
+    },
+    {
+      "id": "HU-078",
+      "epica": "E14",
+      "nombre": "Reporte de uso de la organización",
+      "rol": "Administrador",
+      "quiero": "ver métricas agregadas de mi organización",
+      "para": "justificar la inversión y detectar problemas",
+      "criterios": [
+        "Usuarios activos, cursos publicados, tasa de finalización y XP promedio.",
+        "Comparación contra el periodo anterior.",
+        "Los datos son solo de mi organización."
+      ],
+      "sp": 5,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-076"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 11
+    },
+    {
+      "id": "HU-079",
+      "epica": "E14",
+      "nombre": "Exportar reportes",
+      "rol": "Administrador / Instructor",
+      "quiero": "descargar los reportes en Excel o PDF",
+      "para": "compartirlos fuera de la plataforma",
+      "criterios": [
+        "La exportación respeta los filtros aplicados en pantalla.",
+        "El archivo incluye fecha de generación y quién lo generó."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Could",
+      "dependencias": [
+        "HU-077"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Ninguno.",
+      "sprint": 11
+    },
+    {
+      "id": "HU-080",
+      "epica": "E15",
+      "nombre": "Rotar credenciales expuestas en el repositorio",
+      "rol": "Equipo técnico",
+      "quiero": "revocar y reemplazar los secretos que quedaron en el código",
+      "para": "cerrar una exposición real de credenciales",
+      "criterios": [
+        "Las credenciales de Google en el helper de Drive se revocan en la consola del proveedor.",
+        "Las nuevas se leen exclusivamente de variables de entorno.",
+        "Se verifica que ningún secreto quede en el historial de commits."
+      ],
+      "sp": 2,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [],
+      "estado": "No iniciado",
+      "endpoints": "helpers/driveController.js",
+      "sprint": 1,
+      "notas": "Crítico. El identificador y el secreto de cliente están escritos en el código de un repositorio público."
+    },
+    {
+      "id": "HU-081",
+      "epica": "E15",
+      "nombre": "Cerrar los endpoints sin autenticación",
+      "rol": "Equipo técnico",
+      "quiero": "que toda ruta exija sesión salvo las explícitamente públicas",
+      "para": "eliminar la fuga de datos actual",
+      "criterios": [
+        "La autenticación se aplica por defecto a todo el prefijo de la API.",
+        "Las rutas públicas se declaran en una lista blanca explícita.",
+        "Una ruta nueva sin configuración queda protegida, no abierta.",
+        "Existe una prueba que verifica que cada ruta responde 401 sin token."
+      ],
+      "sp": 3,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [],
+      "estado": "No iniciado",
+      "endpoints": "Siete endpoints de cursos, grupos, actividades y ranking responden hoy sin token.",
+      "sprint": 1,
+      "notas": "El listado de grupos devuelve nombre, correo y rol de todos los usuarios de todas las organizaciones."
+    },
+    {
+      "id": "HU-082",
+      "epica": "E15",
+      "nombre": "Unificar la frontera entre controladores y servicios",
+      "rol": "Equipo técnico",
+      "quiero": "que los servicios reciban datos y nunca objetos de HTTP",
+      "para": "eliminar de raíz la familia de fallos actual",
+      "criterios": [
+        "Ningún servicio recibe request o response ni responde directamente.",
+        "Las rutas montan controladores, nunca servicios.",
+        "Se corrigen los endpoints rotos de cursos y actividades.",
+        "La convención queda escrita en la documentación de contribución."
+      ],
+      "sp": 5,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [],
+      "estado": "No iniciado",
+      "endpoints": "Afecta a cursos, actividades y al servicio de autenticación.",
+      "sprint": 2,
+      "notas": "Seis endpoints rotos provienen de este único malentendido de diseño, no de seis errores distintos."
+    },
+    {
+      "id": "HU-083",
+      "epica": "E15",
+      "nombre": "Manejo centralizado de errores y respuesta 404",
+      "rol": "Equipo técnico",
+      "quiero": "un único formato de error y un 404 real para rutas inexistentes",
+      "para": "que el frontend maneje fallos de forma uniforme",
+      "criterios": [
+        "Todas las respuestas de error comparten la misma estructura.",
+        "Una ruta inexistente devuelve 404, no un 200 con texto de bienvenida.",
+        "Los errores no filtran detalles internos en producción."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [],
+      "estado": "No iniciado",
+      "endpoints": "Hoy conviven ocho formatos distintos de error a lo largo de los controladores.",
+      "sprint": 2
+    },
+    {
+      "id": "HU-084",
+      "epica": "E15",
+      "nombre": "Validar la configuración al arrancar",
+      "rol": "Equipo técnico",
+      "quiero": "que la aplicación falle con un mensaje claro si falta una variable",
+      "para": "evitar caídas silenciosas en despliegue",
+      "criterios": [
+        "Al arrancar se validan todas las variables requeridas.",
+        "Si falta alguna, el mensaje dice exactamente cuál.",
+        "El archivo de ejemplo de configuración se mantiene sincronizado."
+      ],
+      "sp": 2,
+      "valor": 4,
+      "prioridad": "Must",
+      "dependencias": [],
+      "estado": "No iniciado",
+      "endpoints": "Transversal.",
+      "sprint": 1,
+      "notas": "Es la causa exacta de la caída total en el despliegue de Azure: el error real era ilegible."
+    },
+    {
+      "id": "HU-085",
+      "epica": "E15",
+      "nombre": "Suite de pruebas automatizadas",
+      "rol": "Equipo técnico",
+      "quiero": "pruebas que cubran cada endpoint y las reglas de acceso",
+      "para": "que un refactor no vuelva a romper producción sin aviso",
+      "criterios": [
+        "Cada endpoint tiene al menos una prueba de camino feliz y una de acceso denegado.",
+        "Hay pruebas específicas de aislamiento entre organizaciones.",
+        "Las pruebas corren en el pipeline y bloquean el despliegue si fallan."
+      ],
+      "sp": 8,
+      "valor": 5,
+      "prioridad": "Must",
+      "dependencias": [
+        "HU-082"
+      ],
+      "estado": "No iniciado",
+      "endpoints": "Hoy el comando de pruebas solo devuelve un error de marcador de posición.",
+      "sprint": 2,
+      "notas": "La ausencia de pruebas es la razón directa de que un endpoint que nunca responde llegara a producción."
+    },
+    {
+      "id": "HU-086",
+      "epica": "E15",
+      "nombre": "Endurecer la configuración de despliegue",
+      "rol": "Equipo técnico",
+      "quiero": "cabeceras de seguridad, limitación de peticiones y confianza en el proxy",
+      "para": "cumplir lo mínimo esperable en producción",
+      "criterios": [
+        "Se añaden cabeceras de seguridad estándar.",
+        "El login y la recuperación de contraseña tienen límite de peticiones.",
+        "Se configura la confianza en el proxy para que las cookies seguras funcionen.",
+        "Se elimina la configuración de sesión que quedó sin uso."
+      ],
+      "sp": 3,
+      "valor": 4,
+      "prioridad": "Should",
+      "dependencias": [],
+      "estado": "No iniciado",
+      "endpoints": "index.js",
+      "sprint": 3
+    },
+    {
+      "id": "HU-087",
+      "epica": "E15",
+      "nombre": "Mantener la documentación de la API al día",
+      "rol": "Equipo técnico",
+      "quiero": "que la especificación refleje siempre el estado real",
+      "para": "que quien consuma la API no trabaje a ciegas",
+      "criterios": [
+        "La especificación se valida en el pipeline contra las rutas registradas.",
+        "Una ruta sin documentar hace fallar la verificación.",
+        "La colección de Postman se regenera desde la misma fuente."
+      ],
+      "sp": 3,
+      "valor": 3,
+      "prioridad": "Should",
+      "dependencias": [
+        "HU-085"
+      ],
+      "estado": "Parcial",
+      "endpoints": "docs/openapi.json y docs/OnBoardPro.postman_collection.json cubren hoy las 33 rutas.",
+      "sprint": 4
+    }
+  ],
+  "disparadores": [
+    {
+      "ev": "Se completa una actividad",
+      "eval": "Medallas de conteo de actividades, secciones y cursos, y de racha de días."
+    },
+    {
+      "ev": "Se califica una entrega o evaluación",
+      "eval": "Medallas de desempeño (notas) y de entregas a tiempo."
+    },
+    {
+      "ev": "Se acreditan puntos",
+      "eval": "Medallas de nivel alcanzado."
+    },
+    {
+      "ev": "Termina una partida de un juego",
+      "eval": "Medallas de juegos jugados y de puntaje perfecto."
+    },
+    {
+      "ev": "Cierra un periodo (semana o mes)",
+      "eval": "Medallas de posición en el ranking. Es el único disparador programado, no inmediato."
+    }
+  ],
+  "tiposCondicion": [
+    {
+      "tipo": "Actividades completadas",
+      "param": "cantidad",
+      "ej": "50 actividades"
+    },
+    {
+      "tipo": "Secciones completadas",
+      "param": "cantidad",
+      "ej": "10 secciones"
+    },
+    {
+      "tipo": "Cursos completados",
+      "param": "cantidad",
+      "ej": "1 curso al 100%"
+    },
+    {
+      "tipo": "Racha de días activos",
+      "param": "días seguidos",
+      "ej": "7 días"
+    },
+    {
+      "tipo": "Nivel alcanzado",
+      "param": "nivel",
+      "ej": "nivel 5"
+    },
+    {
+      "tipo": "Nota mínima obtenida",
+      "param": "nota y veces",
+      "ej": "nota máxima, 1 vez"
+    },
+    {
+      "tipo": "Posición en el ranking",
+      "param": "puesto y periodo",
+      "ej": "puesto 1 del mes"
+    },
+    {
+      "tipo": "Juegos completados",
+      "param": "cantidad y puntaje mínimo",
+      "ej": "10 juegos con puntaje perfecto"
+    },
+    {
+      "tipo": "Entregas puntuales",
+      "param": "cantidad",
+      "ej": "10 entregas antes del plazo"
+    }
+  ],
+  "logros": [
+    {
+      "m": "Primer paso",
+      "cat": "Progreso",
+      "cond": "Completar tu primera actividad",
+      "tipo": "Actividades completadas",
+      "disp": "Al completar una actividad",
+      "nota": "La primera recompensa debe llegar rápido: es la que engancha."
+    },
+    {
+      "m": "En marcha",
+      "cat": "Progreso",
+      "cond": "Completar 10 actividades",
+      "tipo": "Actividades completadas",
+      "disp": "Al completar una actividad",
+      "nota": ""
+    },
+    {
+      "m": "Maratonista",
+      "cat": "Progreso",
+      "cond": "Completar 50 actividades",
+      "tipo": "Actividades completadas",
+      "disp": "Al completar una actividad",
+      "nota": ""
+    },
+    {
+      "m": "Explorador",
+      "cat": "Progreso",
+      "cond": "Completar 10 secciones",
+      "tipo": "Secciones completadas",
+      "disp": "Al completar una actividad",
+      "nota": "Una sección cuenta como completada cuando todas sus actividades lo están."
+    },
+    {
+      "m": "Curso completo",
+      "cat": "Progreso",
+      "cond": "Terminar tu primer curso al 100%",
+      "tipo": "Cursos completados",
+      "disp": "Al completar una actividad",
+      "nota": "La medalla más importante del catálogo: marca el objetivo real del producto."
+    },
+    {
+      "m": "Coleccionista",
+      "cat": "Progreso",
+      "cond": "Terminar 5 cursos completos",
+      "tipo": "Cursos completados",
+      "disp": "Al completar una actividad",
+      "nota": ""
+    },
+    {
+      "m": "Constante",
+      "cat": "Constancia",
+      "cond": "Mantener 7 días seguidos de actividad",
+      "tipo": "Racha de días activos",
+      "disp": "Al completar una actividad",
+      "nota": ""
+    },
+    {
+      "m": "Imparable",
+      "cat": "Constancia",
+      "cond": "Mantener 30 días seguidos de actividad",
+      "tipo": "Racha de días activos",
+      "disp": "Al completar una actividad",
+      "nota": ""
+    },
+    {
+      "m": "Puntual",
+      "cat": "Constancia",
+      "cond": "Entregar 10 trabajos antes de la fecha límite",
+      "tipo": "Entregas puntuales",
+      "disp": "Al calificarse una entrega",
+      "nota": ""
+    },
+    {
+      "m": "Excelencia",
+      "cat": "Desempeño",
+      "cond": "Obtener la nota máxima en una evaluación",
+      "tipo": "Nota mínima obtenida",
+      "disp": "Al calificarse una evaluación",
+      "nota": ""
+    },
+    {
+      "m": "Impecable",
+      "cat": "Desempeño",
+      "cond": "Aprobar 5 evaluaciones seguidas sin reprobar ninguna",
+      "tipo": "Nota mínima obtenida",
+      "disp": "Al calificarse una evaluación",
+      "nota": "Requiere guardar la racha de aprobados, no solo la última nota."
+    },
+    {
+      "m": "Escalador",
+      "cat": "Nivel",
+      "cond": "Alcanzar el nivel 5",
+      "tipo": "Nivel alcanzado",
+      "disp": "Al acreditarse puntos",
+      "nota": ""
+    },
+    {
+      "m": "Cima",
+      "cat": "Nivel",
+      "cond": "Alcanzar el nivel 10",
+      "tipo": "Nivel alcanzado",
+      "disp": "Al acreditarse puntos",
+      "nota": ""
+    },
+    {
+      "m": "Podio",
+      "cat": "Ranking",
+      "cond": "Quedar entre los 3 primeros del ranking al cierre de un mes",
+      "tipo": "Posición en el ranking",
+      "disp": "Al cerrar el periodo",
+      "nota": "Se evalúa una vez al mes, no en tiempo real. Si se calculara al vuelo, la medalla se otorgaría y quitaría cada pocos minutos."
+    },
+    {
+      "m": "Número uno",
+      "cat": "Ranking",
+      "cond": "Quedar primero en el ranking de tu organización al cierre de un mes",
+      "tipo": "Posición en el ranking",
+      "disp": "Al cerrar el periodo",
+      "nota": "El ranking es siempre dentro de la organización, nunca entre clientes distintos."
+    },
+    {
+      "m": "Jugador",
+      "cat": "Juegos",
+      "cond": "Completar tu primer juego",
+      "tipo": "Juegos completados",
+      "disp": "Al terminar una partida",
+      "nota": ""
+    },
+    {
+      "m": "Maestro del juego",
+      "cat": "Juegos",
+      "cond": "Completar 10 juegos con puntaje perfecto",
+      "tipo": "Juegos completados",
+      "disp": "Al terminar una partida",
+      "nota": "Cuenta la primera vez que se logra el puntaje perfecto en cada juego, no las repeticiones del mismo."
+    }
+  ]
+}

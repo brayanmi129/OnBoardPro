@@ -1,0 +1,3202 @@
+{
+  "info": {
+    "_postman_id": "0b8f4d2a-6c1e-4a7b-9e3f-onboardpro2026",
+    "name": "OnBoardPro API",
+    "description": "API multi-tenant de OnBoardPro (Express + Supabase).\n\n## Arranque rápido\n1. Andá a **1 · Auth → Login** y dale Send. El token se guarda solo.\n2. Ya podés correr cualquier otra petición.\n\nPara probar otro rol, cambiá el email del body del login y volvé a mandarlo.\n\n## Servidores\nLa variable `baseUrl` apunta a Render. Para local, editala a `http://localhost:3000`.\n\n## Usuarios del seed\nContraseña de todos: `Test1234!`\n\n| Rol | Email |\n|---|---|\n| superadmin | super@onboardpro.com |\n| admin UC | admin@ucentral.edu.co |\n| admin UN | admin@unal.edu.co |\n| instructor | a.garcia@ucentral.edu.co |\n| estudiante | j.lopez@ucentral.edu.co |\n\nSi el login da 404, la base está vacía: corré `npm run setup`.\n\n## Leyenda\n- **[SIN AUTH]** 🔓 responde sin token; no debería\n- **[ROTO]** ❌ falla siempre\n- **[CUELGA]** 🕐 nunca responde, hace timeout\n\n20 de 33 endpoints funcionan bien. Los otros 13 están marcados con su diagnóstico y el fix en la descripción.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://onboardpro.onrender.com",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "u-stu-uc1",
+      "type": "string"
+    },
+    {
+      "key": "tenantId",
+      "value": "tenant-uc",
+      "type": "string"
+    },
+    {
+      "key": "role",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "nuevoUserId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "nuevoTenantId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "nuevoGroupId",
+      "value": "grp-uc-a",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1 · Auth",
+      "description": "Empezá acá. El login guarda el token solo: no tenés que copiar nada.",
+      "item": [
+        {
+          "name": "Login (guarda el token solo)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/localuser",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "localuser"
+              ]
+            },
+            "description": "**Corré esto primero.** El script de tests guarda `token`, `userId`, `tenantId` y `role` como variables de la colección, así que el resto de las peticiones ya quedan autenticadas.\n\nContraseña de todos los usuarios del seed: `Test1234!`\n\n| Rol | Email |\n|---|---|\n| superadmin | super@onboardpro.com |\n| admin UC | admin@ucentral.edu.co |\n| admin UN | admin@unal.edu.co |\n| instructor | a.garcia@ucentral.edu.co |\n| estudiante | j.lopez@ucentral.edu.co |\n\nCambiá el email del body para probar cada rol. El token dura 3h.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"super@onboardpro.com\",\n  \"password\": \"Test1234!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const ok = pm.response.code === 200;",
+                  "pm.test('Login exitoso', () => pm.expect(ok).to.be.true);",
+                  "if (ok) {",
+                  "  const r = pm.response.json();",
+                  "  pm.collectionVariables.set('token', r.token);",
+                  "  pm.collectionVariables.set('userId', r.userData.id);",
+                  "  pm.collectionVariables.set('tenantId', r.userData.tenantId || '');",
+                  "  pm.collectionVariables.set('role', r.userData.role);",
+                  "  console.log('✓ Token guardado. Rol: ' + r.userData.role);",
+                  "} else {",
+                  "  console.log('✗ ' + pm.response.text());",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/localuser",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "localuser"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"super@onboardpro.com\",\n  \"password\": \"Test1234!\"\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"userData\": {\n    \"id\": \"u-stu-uc1\",\n    \"tenantId\": \"tenant-uc\",\n    \"firstname\": \"Juliana\",\n    \"lastname\": \"López\",\n    \"email\": \"j.lopez@ucentral.edu.co\",\n    \"phonumber\": \"\",\n    \"role\": \"student\",\n    \"status\": \"Active\",\n    \"level\": 1,\n    \"xp\": 150,\n    \"streak\": 3,\n    \"average\": 4.2,\n    \"missions\": \"3/5\"\n  },\n  \"token\": \"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6InUtc3R1LXVjMSJ9.xxx\"\n}"
+            },
+            {
+              "name": "404 email no existe",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/localuser",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "localuser"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"super@onboardpro.com\",\n  \"password\": \"Test1234!\"\n}"
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"No existe usuario con ese email.\"\n}"
+            },
+            {
+              "name": "401 contraseña mala",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/localuser",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "localuser"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"super@onboardpro.com\",\n  \"password\": \"Test1234!\"\n}"
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Contraseña incorrecta.\"\n}"
+            },
+            {
+              "name": "401 usuario solo-OAuth",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/localuser",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "localuser"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"super@onboardpro.com\",\n  \"password\": \"Test1234!\"\n}"
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Este usuario no tiene contraseña configurada. Usa Google o Microsoft.\"\n}"
+            },
+            {
+              "name": "400 faltan campos",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/localuser",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "localuser"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"super@onboardpro.com\",\n  \"password\": \"Test1234!\"\n}"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Debe ingresar un email y una contraseña.\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mi perfil",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ]
+            },
+            "description": "Resuelve el usuario desde el `id` del JWT. Útil para confirmar que el token quedó bien guardado."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "me"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Usuario autenticado correctamente.\",\n  \"userData\": {\n    \"id\": \"u-stu-uc1\",\n    \"tenantId\": \"tenant-uc\",\n    \"firstname\": \"Juliana\",\n    \"lastname\": \"López\",\n    \"email\": \"j.lopez@ucentral.edu.co\",\n    \"phonumber\": \"\",\n    \"role\": \"student\",\n    \"status\": \"Active\",\n    \"level\": 1,\n    \"xp\": 150,\n    \"streak\": 3,\n    \"average\": 4.2,\n    \"missions\": \"3/5\"\n  }\n}"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "me"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "OAuth Google — abrir en navegador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "google"
+              ]
+            },
+            "description": "⚠️ **Postman no puede completar esto.** Copiá la URL y abrila en el navegador.\n\nAl terminar, Google redirige a `${URL_FRONT}/?token=...`. Sacá el token de ahí y pegalo en la variable `token` de la colección.\n\nEl dominio del email **tiene que existir** como `domain` de un tenant activo. Si no, volvés con `?token=Fail&reason=Dominio+no+registrado+en+la+plataforma`.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "OAuth Google — callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/google/callback",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "google",
+                "callback"
+              ]
+            },
+            "description": "No lo invoques a mano: lo llama Google con el `code`. Está acá solo para documentar el flujo.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "OAuth Microsoft — abrir en navegador",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/microsoft",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "microsoft"
+              ]
+            },
+            "description": "⚠️ Igual que Google: abrir en navegador. El email sale de `mail` o, si viene vacío, de `userPrincipalName` del perfil de Microsoft.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "OAuth Microsoft — callback",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/microsoft/callback",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "microsoft",
+                "callback"
+              ]
+            },
+            "description": "No lo invoques a mano.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2 · Users",
+      "description": "CRUD de usuarios. Es el módulo mejor protegido: exige token y rol, y filtra por tenant.",
+      "item": [
+        {
+          "name": "Listar usuarios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/get/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "get",
+                "all"
+              ]
+            },
+            "description": "Requiere `admin` o `superadmin`.\n\n- **admin** → solo los de su tenant\n- **superadmin** → todos\n\nNunca devuelve `password`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "all"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"u-stu-uc1\",\n    \"tenantId\": \"tenant-uc\",\n    \"firstname\": \"Juliana\",\n    \"lastname\": \"López\",\n    \"email\": \"j.lopez@ucentral.edu.co\",\n    \"phonumber\": \"\",\n    \"role\": \"student\",\n    \"status\": \"Active\",\n    \"level\": 1,\n    \"xp\": 150,\n    \"streak\": 3,\n    \"average\": 4.2,\n    \"missions\": \"3/5\"\n  },\n  {\n    \"id\": \"u-adm-uc\",\n    \"tenantId\": \"tenant-uc\",\n    \"firstname\": \"Carlos\",\n    \"lastname\": \"Mendoza\",\n    \"email\": \"admin@ucentral.edu.co\",\n    \"phonumber\": \"\",\n    \"role\": \"admin\",\n    \"status\": \"Active\",\n    \"level\": 0,\n    \"xp\": 0,\n    \"streak\": 0,\n    \"average\": 0,\n    \"missions\": \"0/0\"\n  }\n]"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "all"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            },
+            {
+              "name": "403 sin permisos",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "all"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Sin permisos para esta acción\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Usuario por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/get/id/{{userId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "get",
+                "id",
+                "{{userId}}"
+              ]
+            },
+            "description": "⚠️ Solo pide token, **no valida rol ni tenant**. Cualquier usuario logueado puede leer un usuario de otra organización si adivina el id.\n\nUsa la variable `{{userId}}`, que el login setea con tu propio id."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/id/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "id",
+                    "{{userId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"u-stu-uc1\",\n  \"tenantId\": \"tenant-uc\",\n  \"firstname\": \"Juliana\",\n  \"lastname\": \"López\",\n  \"email\": \"j.lopez@ucentral.edu.co\",\n  \"phonumber\": \"\",\n  \"role\": \"student\",\n  \"status\": \"Active\",\n  \"level\": 1,\n  \"xp\": 150,\n  \"streak\": 3,\n  \"average\": 4.2,\n  \"missions\": \"3/5\"\n}"
+            },
+            {
+              "name": "404",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/id/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "id",
+                    "{{userId}}"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Usuario no encontrado\"\n}"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/id/{{userId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "id",
+                    "{{userId}}"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Usuario por email",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/get/email/j.lopez@ucentral.edu.co",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "get",
+                "email",
+                "j.lopez@ucentral.edu.co"
+              ]
+            },
+            "description": "Requiere `admin` o `superadmin`. Un admin solo lo encuentra si está dentro de su tenant."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/email/j.lopez@ucentral.edu.co",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "email",
+                    "j.lopez@ucentral.edu.co"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"u-stu-uc1\",\n  \"tenantId\": \"tenant-uc\",\n  \"firstname\": \"Juliana\",\n  \"lastname\": \"López\",\n  \"email\": \"j.lopez@ucentral.edu.co\",\n  \"phonumber\": \"\",\n  \"role\": \"student\",\n  \"status\": \"Active\",\n  \"level\": 1,\n  \"xp\": 150,\n  \"streak\": 3,\n  \"average\": 4.2,\n  \"missions\": \"3/5\"\n}"
+            },
+            {
+              "name": "404",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/email/j.lopez@ucentral.edu.co",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "email",
+                    "j.lopez@ucentral.edu.co"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Usuario no encontrado\"\n}"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/email/j.lopez@ucentral.edu.co",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "email",
+                    "j.lopez@ucentral.edu.co"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            },
+            {
+              "name": "403 sin permisos",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/email/j.lopez@ucentral.edu.co",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "email",
+                    "j.lopez@ucentral.edu.co"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Sin permisos para esta acción\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Usuarios por rol",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/get/role/instructor",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "get",
+                "role",
+                "instructor"
+              ]
+            },
+            "description": "Requiere `admin` o `superadmin`. Roles válidos: `student`, `instructor`, `admin`, `superadmin`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/role/instructor",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "role",
+                    "instructor"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"u-ins-uc1\",\n    \"tenantId\": \"tenant-uc\",\n    \"firstname\": \"Andrés\",\n    \"lastname\": \"García\",\n    \"email\": \"a.garcia@ucentral.edu.co\",\n    \"role\": \"instructor\",\n    \"status\": \"Active\",\n    \"level\": 3,\n    \"xp\": 320\n  }\n]"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/role/instructor",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "role",
+                    "instructor"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            },
+            {
+              "name": "403 sin permisos",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/get/role/instructor",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "get",
+                    "role",
+                    "instructor"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Sin permisos para esta acción\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Crear estudiante",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "create"
+              ]
+            },
+            "description": "Requiere `admin` o `superadmin`. La contraseña se hashea con bcrypt.\n\n**El `tenantId` que mandes se ignora** salvo que seas superadmin: el backend lo fuerza al tuyo.\n\nEl schema zod es `.strict()` → cualquier campo de más hace fallar la validación.\n\nEl script guarda el id del creado en `{{nuevoUserId}}` para que puedas encadenar update/delete.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"andrea.suarez@ucentral.edu.co\",\n  \"password\": \"Test1234!\",\n  \"firstname\": \"Andrea\",\n  \"lastname\": \"Suárez\",\n  \"phonumber\": \"+57 301 5551234\",\n  \"role\": \"student\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('nuevoUserId', pm.response.json().id);",
+                  "  console.log('✓ Creado: ' + pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"andrea.suarez@ucentral.edu.co\",\n  \"password\": \"Test1234!\",\n  \"firstname\": \"Andrea\",\n  \"lastname\": \"Suárez\",\n  \"phonumber\": \"+57 301 5551234\",\n  \"role\": \"student\"\n}"
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"9f3a1c\",\n  \"tenantId\": \"tenant-uc\",\n  \"email\": \"andrea.suarez@ucentral.edu.co\",\n  \"firstname\": \"Andrea\",\n  \"lastname\": \"Suárez\",\n  \"phonumber\": \"+57 301 5551234\",\n  \"role\": \"student\",\n  \"status\": \"Active\",\n  \"level\": 0,\n  \"xp\": 0\n}"
+            },
+            {
+              "name": "400 email duplicado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"andrea.suarez@ucentral.edu.co\",\n  \"password\": \"Test1234!\",\n  \"firstname\": \"Andrea\",\n  \"lastname\": \"Suárez\",\n  \"phonumber\": \"+57 301 5551234\",\n  \"role\": \"student\"\n}"
+                }
+              },
+              "status": "Bad Request",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"duplicate key value violates unique constraint \\\"users_email_key\\\"\"\n}"
+            },
+            {
+              "name": "403 crear superadmin sin serlo",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"andrea.suarez@ucentral.edu.co\",\n  \"password\": \"Test1234!\",\n  \"firstname\": \"Andrea\",\n  \"lastname\": \"Suárez\",\n  \"phonumber\": \"+57 301 5551234\",\n  \"role\": \"student\"\n}"
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Solo un superadmin puede crear otros superadmins\"\n}"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"email\": \"andrea.suarez@ucentral.edu.co\",\n  \"password\": \"Test1234!\",\n  \"firstname\": \"Andrea\",\n  \"lastname\": \"Suárez\",\n  \"phonumber\": \"+57 301 5551234\",\n  \"role\": \"student\"\n}"
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Crear instructor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "create"
+              ]
+            },
+            "description": "Mismo endpoint, cambiando `role`. Los instructores se referencian por **email** desde los cursos (`courses.instructor`), no por id.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"ricardo.pena@ucentral.edu.co\",\n  \"password\": \"Test1234!\",\n  \"firstname\": \"Ricardo\",\n  \"lastname\": \"Peña\",\n  \"role\": \"instructor\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Crear admin en otro tenant (solo superadmin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "create"
+              ]
+            },
+            "description": "Solo funciona logueado como **superadmin**. Es el único caso en que el `tenantId` del body se respeta.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"admin2@unal.edu.co\",\n  \"password\": \"Test1234!\",\n  \"firstname\": \"Lucía\",\n  \"lastname\": \"Ibáñez\",\n  \"role\": \"admin\",\n  \"tenantId\": \"tenant-un\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          }
+        },
+        {
+          "name": "Actualizar usuario",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/update/{{nuevoUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "update",
+                "{{nuevoUserId}}"
+              ]
+            },
+            "description": "Requiere `admin` o `superadmin`. Acepta campos parciales; si mandás `password` se re-hashea.\n\nUn `admin` no puede promover a nadie a `superadmin`.\n\n⚠️ **No valida el tenant del objetivo**: un admin puede editar usuarios de otra organización si conoce el id.\n\nOtros bodies útiles:\n```json\n{ \"xp\": 320, \"level\": 3, \"streak\": 8, \"average\": 4.6, \"missions\": \"5/5\" }\n```\n```json\n{ \"status\": \"Inactive\" }\n```\n```json\n{ \"password\": \"NuevaClave123!\" }\n```",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstname\": \"Andrea Carolina\",\n  \"phonumber\": \"+57 300 9998877\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/update/{{nuevoUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "update",
+                    "{{nuevoUserId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstname\": \"Andrea Carolina\",\n  \"phonumber\": \"+57 300 9998877\"\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Usuario 9f3a1c actualizado correctamente\",\n  \"updatedData\": {\n    \"firstname\": \"Andrea Carolina\",\n    \"phonumber\": \"+57 300 9998877\"\n  }\n}"
+            },
+            {
+              "name": "400 no existe",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/update/{{nuevoUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "update",
+                    "{{nuevoUserId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstname\": \"Andrea Carolina\",\n  \"phonumber\": \"+57 300 9998877\"\n}"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"Usuario no encontrado\"\n}"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/update/{{nuevoUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "update",
+                    "{{nuevoUserId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstname\": \"Andrea Carolina\",\n  \"phonumber\": \"+57 300 9998877\"\n}"
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            },
+            {
+              "name": "403 sin permisos",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/update/{{nuevoUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "update",
+                    "{{nuevoUserId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"firstname\": \"Andrea Carolina\",\n  \"phonumber\": \"+57 300 9998877\"\n}"
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Sin permisos para esta acción\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Eliminar usuario",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/users/delete/{{nuevoUserId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "users",
+                "delete",
+                "{{nuevoUserId}}"
+              ]
+            },
+            "description": "Requiere `admin` o `superadmin`. Igual que update, no valida el tenant del objetivo.\n\nSi no existe devuelve **500**, no 404: el controller mapea mal ese error."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/delete/{{nuevoUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "delete",
+                    "{{nuevoUserId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Usuario 9f3a1c eliminado correctamente\"\n}"
+            },
+            {
+              "name": "500 no existe",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/delete/{{nuevoUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "delete",
+                    "{{nuevoUserId}}"
+                  ]
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Usuario no encontrado\"\n}"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/delete/{{nuevoUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "delete",
+                    "{{nuevoUserId}}"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            },
+            {
+              "name": "403 sin permisos",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/users/delete/{{nuevoUserId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "users",
+                    "delete",
+                    "{{nuevoUserId}}"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Sin permisos para esta acción\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "3 · Tenants",
+      "description": "Organizaciones. Todo el módulo es exclusivo de `superadmin`.",
+      "item": [
+        {
+          "name": "Listar tenants",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/get/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "get",
+                "all"
+              ]
+            },
+            "description": "Solo `superadmin`. Logueate con `super@onboardpro.com`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/get/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "get",
+                    "all"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"tenant-uc\",\n    \"name\": \"Universidad Central\",\n    \"domain\": \"ucentral.edu.co\",\n    \"active\": true,\n    \"createdAt\": \"2026-08-29T01:00:00.000Z\"\n  },\n  {\n    \"id\": \"tenant-un\",\n    \"name\": \"Universidad Nacional\",\n    \"domain\": \"unal.edu.co\",\n    \"active\": true,\n    \"createdAt\": \"2026-08-29T01:00:00.000Z\"\n  }\n]"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/get/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "get",
+                    "all"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            },
+            {
+              "name": "403 sin permisos",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/get/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "get",
+                    "all"
+                  ]
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Sin permisos para esta acción\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Tenant por id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/get/id/tenant-uc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "get",
+                "id",
+                "tenant-uc"
+              ]
+            },
+            "description": "Solo `superadmin`."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/get/id/tenant-uc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "get",
+                    "id",
+                    "tenant-uc"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"tenant-uc\",\n  \"name\": \"Universidad Central\",\n  \"domain\": \"ucentral.edu.co\",\n  \"active\": true,\n  \"createdAt\": \"2026-08-29T01:00:00.000Z\"\n}"
+            },
+            {
+              "name": "404",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/get/id/tenant-uc",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "get",
+                    "id",
+                    "tenant-uc"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Tenant no encontrado\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Crear tenant",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "create"
+              ]
+            },
+            "description": "Solo `superadmin`.\n\nEl `domain` se guarda en minúsculas y es **UNIQUE**. Es la llave del multi-tenant: cuando alguien entra por Google/Microsoft, el backend saca el dominio de su email y lo busca acá para decidir a qué organización pertenece.\n\nEl script guarda el id en `{{nuevoTenantId}}`.",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Universidad de los Andes\",\n  \"domain\": \"uniandes.edu.co\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('nuevoTenantId', pm.response.json().id);",
+                  "  console.log('✓ Tenant: ' + pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Universidad de los Andes\",\n  \"domain\": \"uniandes.edu.co\"\n}"
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"a1b2c3d4\",\n  \"name\": \"Universidad de los Andes\",\n  \"domain\": \"uniandes.edu.co\",\n  \"active\": true,\n  \"createdAt\": \"2026-08-29T01:20:00.000Z\"\n}"
+            },
+            {
+              "name": "400 dominio duplicado",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Universidad de los Andes\",\n  \"domain\": \"uniandes.edu.co\"\n}"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"duplicate key value violates unique constraint \\\"tenants_domain_key\\\"\"\n}"
+            },
+            {
+              "name": "403 sin permisos",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Universidad de los Andes\",\n  \"domain\": \"uniandes.edu.co\"\n}"
+                }
+              },
+              "status": "Forbidden",
+              "code": 403,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Sin permisos para esta acción\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Actualizar tenant",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/update/{{nuevoTenantId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "update",
+                "{{nuevoTenantId}}"
+              ]
+            },
+            "description": "Solo `superadmin`. Solo aplica `name`, `domain` y `active`; cualquier otro campo se ignora en silencio.\n\nPoner `active: false` **corta el login OAuth** de ese dominio: `getByDomain` filtra por `active = true`. Los usuarios ya creados siguen entrando con email y contraseña.\n\n```json\n{ \"active\": false }\n```",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Universidad de los Andes — Bogotá\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/update/{{nuevoTenantId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "update",
+                    "{{nuevoTenantId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Universidad de los Andes — Bogotá\"\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"a1b2c3d4\",\n  \"name\": \"Universidad de los Andes — Bogotá\",\n  \"domain\": \"uniandes.edu.co\",\n  \"active\": true\n}"
+            },
+            {
+              "name": "400 no existe",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/update/{{nuevoTenantId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "update",
+                    "{{nuevoTenantId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Universidad de los Andes — Bogotá\"\n}"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Tenant no encontrado\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Eliminar tenant",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/tenants/delete/{{nuevoTenantId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tenants",
+                "delete",
+                "{{nuevoTenantId}}"
+              ]
+            },
+            "description": "☢️ **Destructivo.** Por el `ON DELETE CASCADE` del schema, borra también **todos los grupos y cursos** de ese tenant, y en cascada sus relaciones.\n\nLos usuarios NO se borran: quedan con `tenant_id` en NULL (`ON DELETE SET NULL`), o sea huérfanos y visibles solo para el superadmin."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/delete/{{nuevoTenantId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "delete",
+                    "{{nuevoTenantId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Tenant eliminado correctamente\"\n}"
+            },
+            {
+              "name": "400 no existe",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/tenants/delete/{{nuevoTenantId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "tenants",
+                    "delete",
+                    "{{nuevoTenantId}}"
+                  ]
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Tenant no encontrado\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "4 · Courses",
+      "description": "⚠️ Módulo con problemas: 2 de 4 endpoints están rotos y 3 no piden token.",
+      "item": [
+        {
+          "name": "Listar cursos  [SIN AUTH]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/get/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses",
+                "get",
+                "all"
+              ]
+            },
+            "description": "🔓 **Responde sin token** y **sin filtrar por tenant**: devuelve los cursos de todas las organizaciones.\n\nProbalo sin login para comprobarlo.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses/get/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses",
+                    "get",
+                    "all"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"crs-poo\",\n    \"tenant_id\": \"tenant-uc\",\n    \"name\": \"Programación Orientada a Objetos\",\n    \"instructor\": \"a.garcia@ucentral.edu.co\",\n    \"grupo\": \"grp-uc-a\",\n    \"status\": \"Abierto\",\n    \"actividades\": [\n      \"act-poo1\",\n      \"act-poo2\",\n      \"act-poo3\"\n    ]\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Curso por id  [ROTO]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/get/id/crs-poo",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses",
+                "get",
+                "id",
+                "crs-poo"
+              ]
+            },
+            "description": "❌ **Roto.** `courseController.getById` llama a `CourseService.getById(req, res)` pasando el objeto `req` completo en lugar de `req.params.id`.\n\nLa query queda como `.eq(\"id\", <objeto request>)` y nunca matchea. Siempre 404 o 500.\n\nFix: `CourseService.getById(req.params.id)` — el `id` incluso ya está desestructurado en la línea de arriba, sin usarse.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "404 (siempre)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses/get/id/crs-poo",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses",
+                    "get",
+                    "id",
+                    "crs-poo"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "cookie": [],
+              "body": "Curso no encontrado"
+            }
+          ]
+        },
+        {
+          "name": "Crear curso  [ROTO]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses",
+                "create"
+              ]
+            },
+            "description": "❌ **Roto.** `courseController.create` llama a `CourseService.createCourse(req, res)`, mandando el `req` entero como datos del curso. El schema zod `.strict()` lo rechaza siempre.\n\nFix: `CourseService.createCourse(req.body)`.\n\nEl body de acá abajo es el que debería aceptar una vez arreglado. Ojo: `instructor` se valida con `.email()`, tiene que ser un email, no un id.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bases de Datos II\",\n  \"instructor\": \"p.martinez@ucentral.edu.co\",\n  \"grupo\": \"grp-uc-b\",\n  \"status\": \"Abierto\",\n  \"actividades\": []\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "500 (actual)",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Bases de Datos II\",\n  \"instructor\": \"p.martinez@ucentral.edu.co\",\n  \"grupo\": \"grp-uc-b\",\n  \"status\": \"Abierto\",\n  \"actividades\": []\n}"
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"Required, Required, Invalid email\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Mis cursos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/courses/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "courses",
+                "me"
+              ]
+            },
+            "description": "✅ Funciona. Requiere token. Resuelve la cadena: tus grupos (`users_groups`) → cursos de esos grupos (`groups_courses`).\n\nLogueate como estudiante (`j.lopez@ucentral.edu.co`) para ver resultados."
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses",
+                    "me"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"crs-poo\",\n    \"tenant_id\": \"tenant-uc\",\n    \"name\": \"Programación Orientada a Objetos\",\n    \"instructor\": \"a.garcia@ucentral.edu.co\",\n    \"grupo\": \"grp-uc-a\",\n    \"status\": \"Abierto\"\n  }\n]"
+            },
+            {
+              "name": "401 sin token",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/courses/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "courses",
+                    "me"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Token no proporcionado\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "5 · Groups",
+      "description": "⚠️ Ningún endpoint pide token. `GET /get/all` es la peor fuga de datos de la API.",
+      "item": [
+        {
+          "name": "Listar grupos  [SIN AUTH]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/groups/get/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "groups",
+                "get",
+                "all"
+              ]
+            },
+            "description": "🔓☢️ **Sin token y sin filtro de tenant.** Devuelve cada grupo con sus usuarios embebidos: **nombre, email y rol** de todo el mundo, de todas las organizaciones.\n\nEs la fuga más grave que tiene la API hoy. Probala sin login.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/get/all",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "get",
+                    "all"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"grp-uc-a\",\n    \"tenant_id\": \"tenant-uc\",\n    \"name\": \"Ingeniería de Sistemas\",\n    \"description\": \"Grupo principal de Ing. de Sistemas - UC\",\n    \"users\": [\n      {\n        \"id\": \"u-stu-uc1\",\n        \"firstname\": \"Juliana\",\n        \"lastname\": \"López\",\n        \"email\": \"j.lopez@ucentral.edu.co\",\n        \"role\": \"student\"\n      }\n    ],\n    \"courses\": [\n      {\n        \"id\": \"crs-poo\",\n        \"name\": \"Programación Orientada a Objetos\",\n        \"instructor\": \"a.garcia@ucentral.edu.co\",\n        \"status\": \"Abierto\"\n      }\n    ]\n  }\n]"
+            }
+          ]
+        },
+        {
+          "name": "Grupo por id  [SIN AUTH]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/groups/get/id/grp-uc-a",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "groups",
+                "get",
+                "id",
+                "grp-uc-a"
+              ]
+            },
+            "description": "🔓 Funciona, pero sin token. Devuelve el grupo con sus usuarios y cursos.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "404",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/get/id/grp-uc-a",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "get",
+                    "id",
+                    "grp-uc-a"
+                  ]
+                }
+              },
+              "status": "Not Found",
+              "code": 404,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "cookie": [],
+              "body": "Grupo no encontrado"
+            }
+          ]
+        },
+        {
+          "name": "Crear grupo  [SIN AUTH]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/groups/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "groups",
+                "create"
+              ]
+            },
+            "description": "🔓 Funciona sin token.\n\nEl schema zod es `.strict()` sobre `{id, name, description}`, pero `userIds` se lee **aparte** del schema para poblar `users_groups`. Por eso podés mandarlo en el mismo body sin que la validación se queje.\n\n⚠️ **No guarda `tenant_id`**, aunque la tabla lo tiene. Los grupos creados por la API quedan huérfanos de organización — el seed sí se lo pone.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bootcamp Backend\",\n  \"description\": \"Cohorte de agosto\",\n  \"userIds\": [\n    \"u-stu-uc1\",\n    \"u-stu-uc2\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  pm.collectionVariables.set('nuevoGroupId', pm.response.json().id);",
+                  "  console.log('✓ Grupo: ' + pm.response.json().id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "response": [
+            {
+              "name": "201 Created",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/create",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Bootcamp Backend\",\n  \"description\": \"Cohorte de agosto\",\n  \"userIds\": [\n    \"u-stu-uc1\",\n    \"u-stu-uc2\"\n  ]\n}"
+                }
+              },
+              "status": "Created",
+              "code": 201,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"id\": \"7de91b\",\n  \"name\": \"Bootcamp Backend\",\n  \"description\": \"Cohorte de agosto\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Actualizar grupo  [SIN AUTH]",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/groups/update/{{nuevoGroupId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "groups",
+                "update",
+                "{{nuevoGroupId}}"
+              ]
+            },
+            "description": "🔓 Solo `name` y `description`.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Bootcamp Backend 2026-2\",\n  \"description\": \"Cohorte actualizada\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/update/{{nuevoGroupId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "update",
+                    "{{nuevoGroupId}}"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"name\": \"Bootcamp Backend 2026-2\",\n  \"description\": \"Cohorte actualizada\"\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Grupo 7de91b actualizado correctamente\",\n  \"updatedData\": {\n    \"name\": \"Bootcamp Backend 2026-2\"\n  }\n}"
+            }
+          ]
+        },
+        {
+          "name": "Inscribir usuarios  [SIN AUTH]",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/groups/{{nuevoGroupId}}/add-users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "groups",
+                "{{nuevoGroupId}}",
+                "add-users"
+              ]
+            },
+            "description": "🔓 Hace **upsert** con `onConflict: id_user,id_group`, así que repetir la llamada es idempotente: no revienta por duplicados.\n\nSi algún `userId` no existe, falla por la foreign key.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userIds\": [\n    \"u-stu-uc3\",\n    \"u-stu-uc4\",\n    \"u-ins-uc2\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/{{nuevoGroupId}}/add-users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "{{nuevoGroupId}}",
+                    "add-users"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userIds\": [\n    \"u-stu-uc3\",\n    \"u-stu-uc4\",\n    \"u-ins-uc2\"\n  ]\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Usuarios agregados al grupo correctamente\"\n}"
+            },
+            {
+              "name": "400 grupo no existe",
+              "originalRequest": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/{{nuevoGroupId}}/add-users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "{{nuevoGroupId}}",
+                    "add-users"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userIds\": [\n    \"u-stu-uc3\",\n    \"u-stu-uc4\",\n    \"u-ins-uc2\"\n  ]\n}"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"Grupo no encontrado\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Quitar usuarios  [SIN AUTH]",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/groups/{{nuevoGroupId}}/remove-users",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "groups",
+                "{{nuevoGroupId}}",
+                "remove-users"
+              ]
+            },
+            "description": "🔓 Es un **DELETE con body**. Postman lo soporta, pero varios clientes HTTP lo descartan — tenelo en cuenta desde el front.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"userIds\": [\n    \"u-stu-uc4\"\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/{{nuevoGroupId}}/remove-users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "{{nuevoGroupId}}",
+                    "remove-users"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userIds\": [\n    \"u-stu-uc4\"\n  ]\n}"
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"message\": \"Usuarios eliminados del grupo correctamente\"\n}"
+            },
+            {
+              "name": "400 lista vacía",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/{{nuevoGroupId}}/remove-users",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "{{nuevoGroupId}}",
+                    "remove-users"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"userIds\": [\n    \"u-stu-uc4\"\n  ]\n}"
+                }
+              },
+              "status": "Bad Request",
+              "code": 400,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"Debe enviar una lista de userIds\"\n}"
+            }
+          ]
+        },
+        {
+          "name": "Eliminar grupo  [SIN AUTH]",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/groups/delete/{{nuevoGroupId}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "groups",
+                "delete",
+                "{{nuevoGroupId}}"
+              ]
+            },
+            "description": "🔓 El `ON DELETE CASCADE` limpia solo `users_groups` y `groups_courses`. Los usuarios y cursos no se tocan.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "200 OK",
+              "originalRequest": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/delete/{{nuevoGroupId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "delete",
+                    "{{nuevoGroupId}}"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "cookie": [],
+              "body": "Grupo eliminado 7de91b correctamente"
+            }
+          ]
+        },
+        {
+          "name": "Mis grupos  [ROTO]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/groups/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "groups",
+                "me"
+              ]
+            },
+            "description": "❌ **Roto.** La ruta no monta `verifyJWT`, entonces `req.user` nunca existe y el controller corta con 401 — mandes el token que mandes.\n\nFalla cerrado (no filtra data), pero el endpoint es inservible.\n\nFix: `router.get(\"/me\", verifyJWT, GroupController.getMyGroups)`. Compará con `coursesRoutes.js`, que sí lo hace bien."
+          },
+          "response": [
+            {
+              "name": "401 (siempre)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/groups/me",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "groups",
+                    "me"
+                  ]
+                }
+              },
+              "status": "Unauthorized",
+              "code": 401,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "{\n  \"error\": \"No autenticado\"\n}"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "6 · Activities",
+      "description": "❌ Módulo entero roto: se montó el service como handler en vez del controller.",
+      "item": [
+        {
+          "name": "Listar actividades  [CUELGA]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/activities/get/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "activities",
+                "get",
+                "all"
+              ]
+            },
+            "description": "🕐 **Nunca responde.** Verificado contra producción: timeout a los 30s.\n\n`routes/activitiesRoutes.js` importa `../services/actividades.js` (el **service**) y lo monta como handler. `ActivitiesService.getAll()` consulta bien la BD, pero devuelve los datos en vez de llamar a `res.json()`. La petición queda abierta hasta que el cliente corta.\n\nFix: importar `../controllers/actividades.js`.",
+            "auth": {
+              "type": "noauth"
+            }
+          }
+        },
+        {
+          "name": "Crear actividad  [ROTO]",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/activities/create",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "activities",
+                "create"
+              ]
+            },
+            "description": "❌ **Roto.** Mismo bug que el listado: el service tiene firma `create(data, file)` y Express le pasa `(req, res)`.\n\nToma el objeto `res` como si fuera el archivo (es truthy) y llama a Google Drive con `undefined`.\n\nY hay un segundo bug esperando: el controller correcto importa `../services/activitiesService.js`, que **no existe** — el archivo se llama `actividades.js`. Arreglar la ruta sin arreglar ese import cambia el cuelgue por un crash.\n\nEl multipart de acá abajo es el formato que espera el controller una vez arreglado: campo `data` con el JSON como string, campo `file` con el binario.",
+            "auth": {
+              "type": "noauth"
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "data",
+                  "value": "{\"name\":\"taller-herencia\",\"type\":\"Tarea\",\"title\":\"Taller de Herencia y Polimorfismo\",\"description\":\"Resolver los 5 ejercicios del PDF.\",\"deliverable\":true,\"adjunto\":\"https://drive.google.com/file/d/1abcDEF/view\"}",
+                  "type": "text",
+                  "description": "JSON en string con los campos de la actividad"
+                },
+                {
+                  "key": "file",
+                  "src": [],
+                  "type": "file",
+                  "description": "Opcional. Si lo mandás, se sube a Drive y su URL sobrescribe `adjunto`."
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "7 · Gamification",
+      "description": "❌ El único endpoint devuelve 500.",
+      "item": [
+        {
+          "name": "Ranking  [ROTO]",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/gamification/ranking",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "gamification",
+                "ranking"
+              ]
+            },
+            "description": "❌ **500 en producción**, verificado.\n\n🔓 Además no pide token y **no filtra por tenant**: mezclaría estudiantes de todas las organizaciones en un mismo ranking. Para un producto multi-tenant eso no tiene sentido.\n\nEl filtro `.not(\"role\", \"in\", \"(admin,superadmin,instructor)\")` también excluye a cualquier usuario con `role` NULL, por la semántica de NOT IN en SQL.",
+            "auth": {
+              "type": "noauth"
+            }
+          },
+          "response": [
+            {
+              "name": "500 (actual)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/gamification/ranking",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "gamification",
+                    "ranking"
+                  ]
+                }
+              },
+              "status": "Internal Server Error",
+              "code": 500,
+              "_postman_previewlanguage": "text",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "text/plain"
+                }
+              ],
+              "cookie": [],
+              "body": "Error al obtener los grupos"
+            },
+            {
+              "name": "200 (esperado)",
+              "originalRequest": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/gamification/ranking",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "gamification",
+                    "ranking"
+                  ]
+                }
+              },
+              "status": "OK",
+              "code": 200,
+              "_postman_previewlanguage": "json",
+              "header": [
+                {
+                  "key": "Content-Type",
+                  "value": "application/json"
+                }
+              ],
+              "cookie": [],
+              "body": "[\n  {\n    \"id\": \"u-stu-un5\",\n    \"firstname\": \"Felipe\",\n    \"lastname\": \"Guerrero\",\n    \"level\": 3\n  },\n  {\n    \"id\": \"u-stu-uc5\",\n    \"firstname\": \"Natalia\",\n    \"lastname\": \"Herrera\",\n    \"level\": 3\n  },\n  {\n    \"id\": \"u-stu-uc3\",\n    \"firstname\": \"Valentina\",\n    \"lastname\": \"Ríos\",\n    \"level\": 2\n  }\n]"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
