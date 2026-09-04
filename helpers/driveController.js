@@ -2,10 +2,11 @@
 const { google } = require("googleapis");
 const { Readable } = require('stream');
 
-// Configuración de Google Drive API
+// Configuración de Google Drive API.
+// Las credenciales se leen del entorno: nunca deben escribirse en el código.
 const oAuth2Client = new google.auth.OAuth2(
-  "93795014782-iq9pi0sqeei1290k81lugr3nhclhej26.apps.googleusercontent.com",  // Tu client_id
-  "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",  // Tu client_secret
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET
 );
 
 oAuth2Client.setCredentials({

@@ -9,6 +9,8 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: `${process.env.URL_BACKEND}/api/auth/google/callback`,
+      // Guarda un state aleatorio en la sesión y lo verifica al volver: evita CSRF.
+      state: true,
     },
     (accessToken, refreshToken, profile, done) => {
       done(null, profile);
@@ -23,6 +25,8 @@ passport.use(
       clientSecret: process.env.MICROSOFT_CLIENT_SECRET,
       callbackURL: `${process.env.URL_BACKEND}/api/auth/microsoft/callback`,
       scope: ["user.read"],
+      // Guarda un state aleatorio en la sesión y lo verifica al volver: evita CSRF.
+      state: true,
     },
     (accessToken, refreshToken, profile, done) => {
       done(null, profile);

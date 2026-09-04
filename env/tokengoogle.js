@@ -1,11 +1,17 @@
+require("dotenv").config();
 const { google } = require("googleapis");
 const readline = require("readline");
 
-// Configura tus credenciales
+// Las credenciales se leen del .env; nunca deben escribirse en el código.
+if (!process.env.GOOGLE_CLIENT_ID || !process.env.GOOGLE_CLIENT_SECRET) {
+  console.error("Faltan GOOGLE_CLIENT_ID y/o GOOGLE_CLIENT_SECRET en el .env");
+  process.exit(1);
+}
+
 const oAuth2Client = new google.auth.OAuth2(
-  "93795014782-iq9pi0sqeei1290k81lugr3nhclhej26.apps.googleusercontent.com", // Reemplaza esto por tu client_id
-  "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", // Reemplaza esto por tu client_secret
-  "http://localhost:3000" // Redirect URI, puede ser cualquier valor (ej: http://localhost)
+  process.env.GOOGLE_CLIENT_ID,
+  process.env.GOOGLE_CLIENT_SECRET,
+  "http://localhost:3000" // Redirect URI: cualquiera registrada en la consola de Google
 );
 
 // Genera la URL para autorizar tu aplicación

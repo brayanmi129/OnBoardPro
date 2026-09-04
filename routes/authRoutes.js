@@ -4,6 +4,14 @@ const router = express.Router();
 const AuthController = require("../controllers/authController.js");
 const verifyJWT = require("../middlewares/jwt.js");
 
+// A dónde se devuelve al usuario si el proveedor rechaza la autenticación.
+// El token viaja en la query (?token=) porque es lo que espera el frontend
+// Angular. Pendiente: pasarlo a un código de un solo uso para que deje de
+// quedar registrado en los logs de Render, Vercel y Cloudflare.
+const FRONT = process.env.URL_FRONT || "http://localhost:5173";
+const FALLO_GOOGLE = `${FRONT}/?token=Fail&reason=${encodeURIComponent("No se pudo autenticar con Google.")}`;
+const FALLO_MICROSOFT = `${FRONT}/?token=Fail&reason=${encodeURIComponent("No se pudo autenticar con Microsoft.")}`;
+
 /**
  * @swagger
  * tags:
@@ -74,7 +82,10 @@ router.post("/localuser", (req, res) => AuthController.login(req, res));
  */
 router.get(
   "/google",
-  passport.authenticate("google", { scope: ["profile", "email"], prompt: "select_account" })
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    prompt: "select_account",
+  })
 );
 
 /**
@@ -104,7 +115,7 @@ router.get(
  */
 router.get(
   "/google/callback",
-  passport.authenticate("google", { failureRedirect: "...", session: false }),
+  passport.authenticate("google", { failureRedirect: FALLO_GOOGLE, session: false }),
   (req, res) => AuthController.google(req, res)
 );
 
@@ -121,7 +132,10 @@ router.get(
  */
 router.get(
   "/microsoft",
-  passport.authenticate("microsoft", { scope: ["user.read"], prompt: "select_account" })
+  passport.authenticate("microsoft", {
+    scope: ["user.read"],
+    prompt: "select_account",
+  })
 );
 
 /**
@@ -151,7 +165,7 @@ router.get(
  */
 router.get(
   "/microsoft/callback",
-  passport.authenticate("microsoft", { session: false, failureRedirect: "..." }),
+  passport.authenticate("microsoft", { session: false, failureRedirect: FALLO_MICROSOFT }),
   (req, res) => AuthController.microsoft(req, res)
 );
 

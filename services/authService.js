@@ -47,8 +47,15 @@ class AuthService {
 
   async OAuthGoogle(profile) {
     try {
-      const email = profile?.emails?.[0]?.value;
+      const cuenta = profile?.emails?.[0];
+      const email = cuenta?.value;
       if (!email) throw new Error("No se encontró el email en el perfil de Google.");
+
+      // Las cuentas se unifican por correo: si el proveedor no confirma que le
+      // pertenece, alguien podría reclamar un usuario que ya existe.
+      if (cuenta.verified === false) {
+        return { error: "Google no ha verificado este correo." };
+      }
 
       const domain = email.split("@")[1];
       const tenant = await TenantService.getByDomain(domain);
