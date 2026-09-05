@@ -163,6 +163,48 @@
       font: inherit; cursor: pointer;
     }
 
+
+    /* ── MI PERFIL ─────────────────────────────────────── */
+    .perfil-hero {
+      display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; padding: 24px 26px;
+    }
+    .avatar-xl {
+      width: 76px; height: 76px; border-radius: 22px; flex: none;
+      display: grid; place-items: center;
+      background: var(--primary); color: #fff;
+      font-size: 27px; font-weight: 600; letter-spacing: -.02em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.2), 0 6px 18px rgba(79,70,229,.26);
+    }
+    .perfil-hero-txt h2 { font-size: 23px; font-weight: 600; letter-spacing: -.02em; }
+    .perfil-hero-txt p { font-size: 14.5px; margin-top: 3px; }
+
+    .datos {
+      display: grid; gap: 2px 32px;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+    }
+    .dato { padding: 11px 0; border-bottom: 1px solid var(--border); }
+    .dato dt {
+      font-size: 11.5px; font-weight: 600; letter-spacing: .045em;
+      text-transform: uppercase; color: var(--muted); margin-bottom: 3px;
+    }
+    .dato dd { font-size: 14.5px; color: var(--text); }
+    .dato-vacio { color: var(--muted); font-style: italic; }
+
+    .pendiente {
+      display: flex; gap: 12px; align-items: flex-start;
+      background: var(--primary-soft); border-radius: 10px;
+      padding: 13px 15px; margin-bottom: 18px;
+    }
+    .pendiente .ico { width: 18px; height: 18px; color: var(--primary); margin-top: 1px; flex: none; }
+    .pendiente strong { font-size: 13.5px; font-weight: 600; }
+    .pendiente p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-top: 3px; max-width: 62ch; }
+
+    .form-mock { border: none; opacity: .55; }
+    .form-mock .btn { margin-top: 4px; }
+    .form-row { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
     /* ── LOGIN ─────────────────────────────────────────── */
     #login-screen {
       min-height: 100dvh;
@@ -373,12 +415,6 @@
       flex-shrink: 0;
     }
     .topbar h2 { font-size: 18px; font-weight: 700; }
-    .topbar-right { display: flex; gap: 8px; align-items: center; }
-    .api-pill {
-      font-size: 12px; background: #f1f5f9; border: 1px solid var(--border);
-      border-radius: 20px; padding: 4px 12px; color: var(--muted);
-      font-family: monospace;
-    }
 
     #content { flex: 1; overflow-y: auto; padding: 28px; }
 
@@ -649,10 +685,6 @@
   <div id="main">
     <div class="topbar">
       <h2 id="page-title">Dashboard</h2>
-      <div class="topbar-right">
-        <span class="api-pill" id="api-pill">localhost:3000</span>
-        <button class="btn btn-ghost" onclick="refreshPage()" title="Recargar" style="font-size:18px;padding:5px 10px">↻</button>
-      </div>
     </div>
     <div id="content">
       <div class="sk-cards"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
@@ -699,6 +731,7 @@ const ICO = {
   cross:      '<path d="M18 6 6 18M6 6l12 12"/>',
   attach:     '<path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.67 3.67 0 0 1 5.18 5.18l-9.2 9.19a1.83 1.83 0 0 1-2.59-2.59l8.49-8.48"/>',
   warn:       '<path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
+  perfil:     '<circle cx="12" cy="8" r="4"/><path d="M5.5 21a7 7 0 0 1 13 0"/>',
   logo:       '<path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
 };
 const icon = (n, cls = "") => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICO[n] || ""}</svg>`;
@@ -863,7 +896,6 @@ function showApp() {
   pintarIconos();
   $("login-screen").style.display = "none";
   $("app").style.display = "grid";
-  $("api-pill").textContent = API.replace(/https?:\/\//, "");
   updateSidebar();
   navigate("dashboard");
 }
@@ -876,20 +908,24 @@ const MENU = {
     { g: "Plataforma",   items: [["dashboard","Resumen","dashboard"], ["tenants","Empresas","org"], ["users","Usuarios","users"]] },
     { g: "Contenido",    items: [["courses","Cursos","courses"], ["groups","Grupos","groups"], ["activities","Actividades","activities"]] },
     { g: "Gamificación", items: [["ranking","Ranking","ranking"]] },
+    { g: "Cuenta",       items: [["perfil","Mi perfil","perfil"]] },
   ],
   admin: [
     { g: "Mi empresa",   items: [["dashboard","Resumen","dashboard"], ["users","Personas","users"], ["groups","Equipos","groups"]] },
     { g: "Contenido",    items: [["courses","Cursos","courses"], ["activities","Actividades","activities"]] },
     { g: "Gamificación", items: [["ranking","Ranking","ranking"]] },
+    { g: "Cuenta",       items: [["perfil","Mi perfil","perfil"]] },
   ],
   instructor: [
     { g: "Docencia",     items: [["dashboard","Resumen","dashboard"], ["courses","Mis cursos","courses"], ["activities","Actividades","activities"]] },
     { g: "Personas",     items: [["groups","Equipos","groups"]] },
     { g: "Gamificación", items: [["ranking","Ranking","ranking"]] },
+    { g: "Cuenta",       items: [["perfil","Mi perfil","perfil"]] },
   ],
   student: [
     { g: "Mi formación", items: [["dashboard","Mi progreso","dashboard"], ["courses","Mis cursos","courses"]] },
     { g: "Gamificación", items: [["ranking","Ranking","ranking"]] },
+    { g: "Cuenta",       items: [["perfil","Mi perfil","perfil"]] },
   ],
 };
 const permitido = sec => (MENU[state.user?.role] || MENU.student).some(g => g.items.some(i => i[0] === sec));
@@ -927,6 +963,7 @@ const pageTitles = {
   groups:     "Grupos",
   activities: "Actividades",
   ranking:    "Ranking",
+  perfil:     "Mi perfil",
 };
 
 const renderers = {
@@ -937,6 +974,7 @@ const renderers = {
   groups:     renderGroups,
   activities: renderActivities,
   ranking:    renderRanking,
+  perfil:     renderPerfil,
 };
 
 function navigate(section) {
@@ -950,7 +988,6 @@ function navigate(section) {
   renderers[section]?.();
 }
 
-function refreshPage() { navigate(state.section); }
 
 // ═══════════════════════════════════════════════════════════════════════════
 // RENDER HELPERS
@@ -1055,6 +1092,110 @@ function fichaCurso(titulo, sub, estado) {
     <p class="muted small">${escHtml(sub)}</p>
     <span class="badge ${estado === "Abierto" || estado === "Activa" ? "b-student" : "b-default"}">${escHtml(estado ?? "—")}</span>
   </article>`;
+}
+
+// ── Mi perfil (HU-069) ──────────────────────────────────────────────────────
+// Los datos son reales, vienen de /api/auth/me. La edición todavía no existe
+// en el backend (HU-070) y el cambio de contraseña tampoco (HU-071), así que
+// esos bloques se muestran deshabilitados en lugar de fingir que funcionan.
+async function renderPerfil() {
+  try {
+    await loadMe(); updateSidebar();
+    const u = state.user;
+    const nombre = [u.firstname, u.lastname].filter(Boolean).join(" ") || u.email;
+    const ini = ((u.firstname?.[0] ?? "") + (u.lastname?.[0] ?? "")).toUpperCase() || "?";
+    const sig = (u.level + 1) * 100;
+    const pct = Math.min(100, Math.round((u.xp / sig) * 100));
+    const esAprendiz = u.role === "student";
+
+    const dato = (etiqueta, valor, vacio = "Sin definir") => `
+      <div class="dato">
+        <dt>${etiqueta}</dt>
+        <dd class="${valor ? "" : "dato-vacio"}">${valor ? escHtml(String(valor)) : vacio}</dd>
+      </div>`;
+
+    setContent(`
+      <div class="perfil-hero">
+        <div class="avatar-xl">${ini}</div>
+        <div class="perfil-hero-txt">
+          <h2>${escHtml(nombre)}</h2>
+          <p class="muted">${escHtml(u.email)}</p>
+          <div style="margin-top:9px">${roleBadge(u.role)} ${statusBadge(u.status)}</div>
+        </div>
+      </div>
+
+      ${esAprendiz ? `
+        <div class="stats-grid" style="margin-top:16px">
+          ${tarjetaCifra(`${icon("level")} ${u.level}`, "Nivel")}
+          ${tarjetaCifra(`${icon("xp")} ${u.xp}`, "Puntos",
+            `${u.xp} de ${sig} para el nivel ${u.level + 1}
+             <div class="xp-bar" style="margin-top:6px"><div class="xp-fill" style="width:${pct}%"></div></div>`)}
+          ${tarjetaCifra(`${icon("streak")} ${u.streak ?? 0}`, "Días seguidos")}
+          ${tarjetaCifra(`${icon("missions")} ${u.missions ?? "0/0"}`, "Actividades")}
+        </div>` : ""}
+
+      <h3 class="sec-h">Datos de la cuenta</h3>
+      <div class="card">
+        <dl class="datos">
+          ${dato("Nombre", u.firstname)}
+          ${dato("Apellido", u.lastname)}
+          ${dato("Correo electrónico", u.email)}
+          ${dato("Teléfono", u.phonumber, "Sin registrar")}
+          ${dato("Rol", ROL_ES[u.role] ?? u.role)}
+          ${dato("Estado", u.status === "Active" ? "Activa" : "Inactiva")}
+          ${dato("Empresa", u.tenantId, "— (acceso de plataforma)")}
+          ${dato("Identificador", u.id)}
+        </dl>
+      </div>
+
+      <h3 class="sec-h">Editar mis datos</h3>
+      <div class="card">
+        <div class="pendiente">
+          ${icon("warn")}
+          <div>
+            <strong>Todavía no disponible</strong>
+            <p>Editar el perfil propio llega con HU-070. Hoy el backend solo permite
+               que un administrador modifique usuarios, así que un aprendiz o un
+               instructor no puede cambiar sus propios datos.</p>
+          </div>
+        </div>
+        <fieldset disabled class="form-mock">
+          <div class="form-row">
+            <div class="field"><label>Nombre</label><div class="wrap">
+              <input value="${escHtml(u.firstname ?? "")}"></div></div>
+            <div class="field"><label>Apellido</label><div class="wrap">
+              <input value="${escHtml(u.lastname ?? "")}"></div></div>
+          </div>
+          <div class="field"><label>Teléfono</label><div class="wrap">
+            <input value="${escHtml(u.phonumber ?? "")}" placeholder="+57 300 0000000"></div></div>
+          <button class="btn btn-primary">Guardar cambios</button>
+        </fieldset>
+      </div>
+
+      <h3 class="sec-h">Seguridad</h3>
+      <div class="card">
+        <div class="pendiente">
+          ${icon("warn")}
+          <div>
+            <strong>Todavía no disponible</strong>
+            <p>Cambiar la contraseña llega con HU-071, en el sprint 2. Requiere
+               verificar la contraseña actual, que hoy el backend no comprueba.</p>
+          </div>
+        </div>
+        <fieldset disabled class="form-mock">
+          <div class="field"><label>Contraseña actual</label><div class="wrap">
+            <input type="password" placeholder="••••••••"></div></div>
+          <div class="form-row">
+            <div class="field"><label>Nueva contraseña</label><div class="wrap">
+              <input type="password" placeholder="Mínimo 8 caracteres"></div></div>
+            <div class="field"><label>Repetir contraseña</label><div class="wrap">
+              <input type="password" placeholder="Repetila"></div></div>
+          </div>
+          <button class="btn btn-primary">Actualizar contraseña</button>
+        </fieldset>
+      </div>
+    `);
+  } catch (err) { setContent(errorBox(err)); }
 }
 
 // ── Aprendiz: su avance ──────────────────────────────────────────────────
