@@ -61,6 +61,108 @@
     .nav-icon .ico { width: 17px; height: 17px; }
     .stat-value .ico { width: 19px; height: 19px; stroke-width: 1.9; }
 
+
+    /* ── DIÁLOGO DE CONFIRMACIÓN ───────────────────────── */
+    .confirm-backdrop {
+      position: fixed; inset: 0; z-index: 60;
+      display: grid; place-items: center; padding: 20px;
+      background: rgba(28,25,23,.42);
+      backdrop-filter: blur(3px);
+      animation: fadeIn .14s ease-out;
+    }
+    .confirm-box {
+      background: var(--card); border-radius: 14px; padding: 24px;
+      width: 100%; max-width: 400px;
+      box-shadow: 0 18px 44px rgba(28,25,23,.24);
+      animation: popIn .16s cubic-bezier(.2,.9,.3,1.2);
+    }
+    .confirm-box h3 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+    .confirm-box p { font-size: 14px; color: var(--muted); margin-top: 8px; line-height: 1.6; }
+    .confirm-acts { display: flex; gap: 9px; justify-content: flex-end; margin-top: 22px; }
+    @keyframes fadeIn { from { opacity: 0 } }
+    @keyframes popIn { from { opacity: 0; transform: translateY(8px) scale(.97) } }
+
+    /* ── AVISO FLOTANTE ────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 22px; left: 50%; transform: translateX(-50%);
+      z-index: 70; max-width: min(440px, calc(100vw - 32px));
+      padding: 12px 18px; border-radius: 10px;
+      font-size: 14px; line-height: 1.5;
+      background: var(--text); color: #fafaf9;
+      box-shadow: 0 10px 30px rgba(28,25,23,.26);
+      animation: toastIn .2s cubic-bezier(.2,.9,.3,1.1);
+    }
+    .toast-error { background: var(--danger); }
+    .toast.out { opacity: 0; transform: translate(-50%, 8px); transition: opacity .3s, transform .3s; }
+    @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px) } }
+
+    /* ── SKELETON ──────────────────────────────────────── */
+    /* Imita la forma del contenido en vez de un spinner genérico */
+    .sk { border-radius: 6px; background: var(--border); position: relative; overflow: hidden; }
+    .sk::after {
+      content: ""; position: absolute; inset: 0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.72), transparent);
+      animation: shimmer 1.25s infinite;
+    }
+    @keyframes shimmer { from { transform: translateX(-100%) } to { transform: translateX(100%) } }
+    .sk-row { display: grid; grid-template-columns: 1.6fr 1fr 1fr .6fr; gap: 14px; padding: 14px 16px; border-bottom: 1px solid var(--border); }
+    .sk-row .sk { height: 13px; }
+    .sk-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+    .sk-cards .sk { height: 84px; border-radius: 10px; }
+    @media (prefers-reduced-motion: reduce) {
+      .sk::after, .toast, .confirm-box, .confirm-backdrop { animation: none; }
+    }
+
+
+    /* ── PANELES POR ROL ───────────────────────────────── */
+    .perfil-head { display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+    .perfil-nombre { font-size: 20px; font-weight: 600; letter-spacing: -.015em; }
+    .avatar-lg {
+      width: 56px; height: 56px; border-radius: 16px; flex: none;
+      display: grid; place-items: center;
+      background: var(--primary); color: #fff;
+      font-size: 20px; font-weight: 600; letter-spacing: -.02em;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+    }
+    .sec-h {
+      font-size: 13px; font-weight: 600; letter-spacing: .04em;
+      text-transform: uppercase; color: var(--muted);
+      margin: 26px 0 12px;
+    }
+    .card-grid {
+      display: grid; gap: 14px;
+      grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+    }
+    .course-card {
+      display: flex; flex-direction: column; align-items: flex-start; gap: 7px;
+      background: var(--card); border-radius: 12px; padding: 17px 18px;
+      border: 1px solid var(--border);
+      transition: border-color .15s, transform .15s, box-shadow .15s;
+    }
+    .course-card:hover {
+      border-color: #d6d3d1; transform: translateY(-2px); box-shadow: var(--shadow-md);
+    }
+    .course-card h4 { font-size: 15px; font-weight: 600; line-height: 1.35; text-wrap: balance; }
+    .course-card p { margin: 0; }
+    .course-card .badge { margin-top: auto; }
+
+    .empty-box {
+      display: grid; place-items: center; gap: 9px; text-align: center;
+      padding: 46px 24px; background: var(--card);
+      border: 1px dashed var(--border); border-radius: 12px;
+    }
+    .empty-ico { color: var(--muted); opacity: .55; }
+    .empty-ico .ico { width: 30px; height: 30px; stroke-width: 1.4; }
+    .empty-box h4 { font-size: 15px; font-weight: 600; }
+    .empty-box p { font-size: 13.5px; color: var(--muted); max-width: 44ch; line-height: 1.6; }
+
+    /* Navegación construida por rol */
+    #nav-main { display: block; }
+    #nav-main .nav-item {
+      width: 100%; text-align: left; background: none; border: none;
+      font: inherit; cursor: pointer;
+    }
+
     /* ── LOGIN ─────────────────────────────────────────── */
     #login-screen {
       min-height: 100dvh;
@@ -229,11 +331,11 @@
       border-bottom: 1px solid rgba(255,255,255,0.08);
     }
     .sidebar-logo h2  { color: white; font-size: 17px; font-weight: 700; }
-    .sidebar-logo span{ font-size: 11px; color: rgba(165,180,252,0.6); }
+    .sidebar-logo span{ font-size: 11px; color: rgba(255,255,255,0.42); }
 
     .nav-label {
       font-size: 10px; font-weight: 700; letter-spacing: 1px;
-      color: rgba(165,180,252,0.45); text-transform: uppercase;
+      color: rgba(255,255,255,0.34); text-transform: uppercase;
       padding: 18px 20px 6px;
     }
     .nav-item {
@@ -432,12 +534,12 @@
     </div>
 
     <div class="brand-body">
-      <h2>Formación que la gente quiere terminar.</h2>
-      <p>Cursos, evaluaciones y juegos en una sola plataforma, con el progreso de cada persona medido de verdad.</p>
+      <h2>La formación interna que tu equipo sí termina.</h2>
+      <p>Onboarding y capacitación en una sola plataforma, con el avance de cada colaborador medido de verdad.</p>
       <ul class="brand-list">
         <li>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          Cada organización con su espacio y sus datos separados
+          Cada empresa con su espacio y sus datos separados
         </li>
         <li>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -445,7 +547,7 @@
         </li>
         <li>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
-          Puntos, niveles y medallas para sostener el hábito
+          Puntos, niveles y medallas para sostener la constancia
         </li>
       </ul>
     </div>
@@ -464,7 +566,7 @@
 
       <header>
         <h1>Iniciar sesión</h1>
-        <p>Entrá con tu cuenta institucional o tus credenciales.</p>
+        <p>Entrá con la cuenta de tu empresa o tus credenciales.</p>
       </header>
 
       <div id="login-alert" role="alert" aria-live="polite"></div>
@@ -474,7 +576,7 @@
           <label for="in-email">Correo electrónico</label>
           <div class="wrap">
             <input id="in-email" type="email" inputmode="email" autocomplete="username"
-                   placeholder="nombre@organizacion.edu.co" required>
+                   placeholder="nombre@empresa.com" required>
           </div>
         </div>
 
@@ -527,37 +629,10 @@
   <aside id="sidebar">
     <div class="sidebar-logo">
       <h2><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;vertical-align:-3px;margin-right:7px"><path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>OnBoardPro</h2>
-      <span>Dev Panel</span>
+      <span id="s-tenant">Panel</span>
     </div>
 
-    <div class="nav-label">Principal</div>
-    <div class="nav-item active" data-nav="dashboard" onclick="navigate('dashboard')">
-      <span class="nav-icon" data-ico="dashboard"></span> Dashboard
-    </div>
-
-    <div class="nav-label">Plataforma</div>
-    <div class="nav-item superadmin-only" data-nav="tenants" onclick="navigate('tenants')" style="display:none">
-      <span class="nav-icon" data-ico="org"></span> Tenants
-    </div>
-    <div class="nav-item admin-only" data-nav="users" onclick="navigate('users')" style="display:none">
-      <span class="nav-icon" data-ico="users"></span> Usuarios
-    </div>
-
-    <div class="nav-label">Contenido</div>
-    <div class="nav-item" data-nav="courses" onclick="navigate('courses')">
-      <span class="nav-icon" data-ico="courses"></span> Cursos
-    </div>
-    <div class="nav-item" data-nav="groups" onclick="navigate('groups')">
-      <span class="nav-icon" data-ico="groups"></span> Grupos
-    </div>
-    <div class="nav-item" data-nav="activities" onclick="navigate('activities')">
-      <span class="nav-icon" data-ico="activities"></span> Actividades
-    </div>
-
-    <div class="nav-label">Gamificación</div>
-    <div class="nav-item" data-nav="ranking" onclick="navigate('ranking')">
-      <span class="nav-icon" data-ico="ranking"></span> Ranking
-    </div>
+    <nav id="nav-main" aria-label="Secciones"></nav>
 
     <div class="sidebar-footer">
       <div class="sidebar-user">
@@ -581,7 +656,7 @@
       </div>
     </div>
     <div id="content">
-      <div class="empty-state"><span class="icon">⏳</span>Cargando...</div>
+      <div class="sk-cards"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>
     </div>
   </div>
 </div>
@@ -682,20 +757,32 @@ function avisar(msg, tipo = "error") {
   setTimeout(() => t.remove(), 4000);
 }
 
+const ROL_ES = { superadmin: "Superadmin", admin: "Administrador", instructor: "Instructor", student: "Colaborador" };
+
 const state = { token: null, user: null, section: "dashboard" };
 
 // ═══════════════════════════════════════════════════════════════════════════
 // API HELPER
 // ═══════════════════════════════════════════════════════════════════════════
-async function api(method, path, body) {
-  const res = await fetch(`${API}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
-    },
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+async function api(method, path, body, ms = 15000) {
+  // Hay endpoints que hoy no responden nunca; sin límite la interfaz se congela.
+  const corte = AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined;
+  let res;
+  try {
+    res = await fetch(`${API}${path}`, {
+      method,
+      signal: corte,
+      headers: {
+        "Content-Type": "application/json",
+        ...(state.token ? { Authorization: `Bearer ${state.token}` } : {}),
+      },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+  } catch (e) {
+    throw { message: e.name === "TimeoutError"
+      ? `El servidor no respondió en ${ms / 1000} s (${path}).`
+      : `No se pudo conectar con el servidor.` };
+  }
   const data = await res.json().catch(() => ({ message: res.statusText }));
   if (!res.ok) throw data;
   return data;
@@ -774,11 +861,49 @@ function loginAlert(msg) {
 // APP SHELL
 // ═══════════════════════════════════════════════════════════════════════════
 function showApp() {
+  pintarIconos();
   $("login-screen").style.display = "none";
   $("app").style.display = "grid";
   $("api-pill").textContent = API.replace(/https?:\/\//, "");
   updateSidebar();
   navigate("dashboard");
+}
+
+
+// Qué ve cada rol. Un rol nunca ve una sección que no le corresponde, ni
+// siquiera escribiendo la ruta: navigate() lo verifica.
+const MENU = {
+  superadmin: [
+    { g: "Plataforma",   items: [["dashboard","Resumen","dashboard"], ["tenants","Empresas","org"], ["users","Usuarios","users"]] },
+    { g: "Contenido",    items: [["courses","Cursos","courses"], ["groups","Grupos","groups"], ["activities","Actividades","activities"]] },
+    { g: "Gamificación", items: [["ranking","Ranking","ranking"]] },
+  ],
+  admin: [
+    { g: "Mi empresa",   items: [["dashboard","Resumen","dashboard"], ["users","Personas","users"], ["groups","Equipos","groups"]] },
+    { g: "Contenido",    items: [["courses","Cursos","courses"], ["activities","Actividades","activities"]] },
+    { g: "Gamificación", items: [["ranking","Ranking","ranking"]] },
+  ],
+  instructor: [
+    { g: "Docencia",     items: [["dashboard","Resumen","dashboard"], ["courses","Mis cursos","courses"], ["activities","Actividades","activities"]] },
+    { g: "Personas",     items: [["groups","Equipos","groups"]] },
+    { g: "Gamificación", items: [["ranking","Ranking","ranking"]] },
+  ],
+  student: [
+    { g: "Mi formación", items: [["dashboard","Mi progreso","dashboard"], ["courses","Mis cursos","courses"]] },
+    { g: "Gamificación", items: [["ranking","Ranking","ranking"]] },
+  ],
+};
+const permitido = sec => (MENU[state.user?.role] || MENU.student).some(g => g.items.some(i => i[0] === sec));
+
+function construirMenu() {
+  const grupos = MENU[state.user?.role] || MENU.student;
+  $("nav-main").innerHTML = grupos.map(g => `
+    <div class="nav-label">${g.g}</div>
+    ${g.items.map(([sec, txt, ico]) =>
+      `<button class="nav-item" data-nav="${sec}" onclick="navigate('${sec}')">
+         <span class="nav-icon">${icon(ico)}</span> ${txt}
+       </button>`).join("")}
+  `).join("");
 }
 
 function updateSidebar() {
@@ -787,13 +912,9 @@ function updateSidebar() {
   const initials = ((u.firstname?.[0] ?? "") + (u.lastname?.[0] ?? "")).toUpperCase() || u.email?.[0]?.toUpperCase() || "?";
   $("s-avatar").textContent = initials;
   $("s-name").textContent   = [u.firstname, u.lastname].filter(Boolean).join(" ") || u.email;
-  $("s-role").textContent   = u.role;
+  $("s-role").textContent   = ROL_ES[u.role] ?? u.role;
 
-  // Visibilidad por rol
-  const isSA    = u.role === "superadmin";
-  const isAdmin = ["admin", "superadmin"].includes(u.role);
-  document.querySelectorAll(".superadmin-only").forEach(el => el.style.display = isSA    ? "flex" : "none");
-  document.querySelectorAll(".admin-only").forEach(el =>      el.style.display = isAdmin ? "flex" : "none");
+  construirMenu();
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -801,7 +922,7 @@ function updateSidebar() {
 // ═══════════════════════════════════════════════════════════════════════════
 const pageTitles = {
   dashboard:  "Dashboard",
-  tenants:    "Tenants",
+  tenants:    "Empresas",
   users:      "Usuarios",
   courses:    "Cursos",
   groups:     "Grupos",
@@ -820,12 +941,13 @@ const renderers = {
 };
 
 function navigate(section) {
+  if (!permitido(section)) section = "dashboard";
   state.section = section;
   $("page-title").textContent = pageTitles[section] ?? section;
   document.querySelectorAll(".nav-item").forEach(el => {
     el.classList.toggle("active", el.dataset.nav === section);
   });
-  setContent(`<div class="empty-state"><span class="icon">⏳</span>Cargando...</div>`);
+  setContent(`<div class="sk-cards"><div class="sk"></div><div class="sk"></div><div class="sk"></div><div class="sk"></div></div>`);
   renderers[section]?.();
 }
 
@@ -834,6 +956,16 @@ function refreshPage() { navigate(state.section); }
 // ═══════════════════════════════════════════════════════════════════════════
 // RENDER HELPERS
 // ═══════════════════════════════════════════════════════════════════════════
+
+// Marca de carga con la forma del contenido que va a llegar
+function esqueleto(filas = 5) {
+  return `<div class="card" style="padding:0">${
+    Array.from({ length: filas }, () =>
+      `<div class="sk-row"><span class="sk"></span><span class="sk"></span><span class="sk"></span><span class="sk"></span></div>`
+    ).join("")
+  }</div>`;
+}
+
 function setContent(html) { $("content").innerHTML = html; }
 
 function badge(val, cssClass) {
@@ -874,54 +1006,177 @@ function tr(...cells) {
 // ═══════════════════════════════════════════════════════════════════════════
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
+// Cada rol entra buscando responder una pregunta distinta:
+//   colaborador → ¿cómo voy?              instructor → ¿qué tengo que revisar?
+//   administrador → ¿cómo va mi empresa?  superadmin → ¿cómo va la plataforma?
 async function renderDashboard() {
+  const r = state.user?.role;
+  if (r === "student")    return renderPanelColaborador();
+  if (r === "instructor") return renderPanelInstructor();
+  if (r === "superadmin") return renderPanelSuperadmin();
+  return renderPanelAdmin();
+}
+
+function tarjetaCifra(valor, etiqueta, pie = "") {
+  return `<div class="stat-card">
+    <div class="stat-value">${valor}</div>
+    <div class="stat-label">${etiqueta}</div>
+    ${pie ? `<div class="small muted" style="margin-top:5px">${pie}</div>` : ""}
+  </div>`;
+}
+
+function cabeceraPerfil(u) {
+  const nombre = [u.firstname, u.lastname].filter(Boolean).join(" ") || u.email;
+  const ini = ((u.firstname?.[0] ?? "") + (u.lastname?.[0] ?? "")).toUpperCase() || "?";
+  return `<div class="card perfil-head">
+    <div class="avatar-lg">${ini}</div>
+    <div style="flex:1;min-width:180px">
+      <div class="perfil-nombre">${escHtml(nombre)}</div>
+      <div class="muted small">${escHtml(u.email)}</div>
+      <div style="margin-top:7px">${roleBadge(u.role)} ${statusBadge(u.status)}</div>
+    </div>
+  </div>`;
+}
+
+function vacio(titulo, detalle) {
+  return `<div class="empty-box">
+    <span class="empty-ico">${icon("courses")}</span>
+    <h4>${escHtml(titulo)}</h4>
+    <p>${detalle}</p>
+  </div>`;
+}
+
+function errorBox(err) {
+  return `<div class="alert alert-error">${escHtml(err?.message || "No se pudo cargar la información.")}</div>`;
+}
+
+function fichaCurso(titulo, sub, estado) {
+  return `<article class="course-card">
+    <h4>${escHtml(titulo)}</h4>
+    <p class="muted small">${escHtml(sub)}</p>
+    <span class="badge ${estado === "Abierto" || estado === "Activa" ? "b-student" : "b-default"}">${escHtml(estado ?? "—")}</span>
+  </article>`;
+}
+
+// ── Colaborador: su avance ──────────────────────────────────────────────────
+async function renderPanelColaborador() {
   try {
-    await loadMe();
-    updateSidebar();
+    await loadMe(); updateSidebar();
     const u = state.user;
-    const xpNext = (u.level + 1) * 100;
-    const xpPct  = Math.min(100, Math.round((u.xp / xpNext) * 100));
-    const name   = [u.firstname, u.lastname].filter(Boolean).join(" ") || u.email;
-    const initials = ((u.firstname?.[0] ?? "") + (u.lastname?.[0] ?? "")).toUpperCase() || "?";
+    const sig = (u.level + 1) * 100;
+    const pct = Math.min(100, Math.round((u.xp / sig) * 100));
+    let cursos = [];
+    try { cursos = await api("GET", "/api/courses/me"); } catch { /* aún sin cursos */ }
 
     setContent(`
-      <div class="card" style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
-        <div style="width:60px;height:60px;border-radius:50%;background:var(--primary);display:flex;align-items:center;justify-content:center;color:white;font-size:22px;font-weight:800;flex-shrink:0">${initials}</div>
-        <div style="flex:1">
-          <div style="font-size:20px;font-weight:700">${name}</div>
-          <div class="muted small">${u.email}</div>
-          <div style="margin-top:6px">${roleBadge(u.role)} ${statusBadge(u.status)}</div>
-        </div>
-        <div style="text-align:right">
-          <div class="small muted">Tenant ID</div>
-          <code class="small">${u.tenantId || "— (plataforma)"}</code>
-        </div>
-      </div>
-
+      ${cabeceraPerfil(u)}
       <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-value">${icon("level")} ${u.level}</div>
-          <div class="stat-label">Nivel</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${icon("xp")} ${u.xp}</div>
-          <div class="stat-label">XP</div>
-          <div class="xp-bar"><div class="xp-fill" style="width:${xpPct}%"></div></div>
-          <div class="small muted" style="margin-top:4px">${u.xp} / ${xpNext} → nivel ${u.level+1}</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${icon("streak")} ${u.streak ?? 0}</div>
-          <div class="stat-label">Racha</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-value">${icon("missions")} ${u.missions ?? "0/0"}</div>
-          <div class="stat-label">Misiones</div>
-        </div>
+        ${tarjetaCifra(`${icon("level")} ${u.level}`, "Nivel")}
+        ${tarjetaCifra(`${icon("xp")} ${u.xp}`, "Puntos",
+          `${u.xp} de ${sig} para el nivel ${u.level + 1}
+           <div class="xp-bar" style="margin-top:6px"><div class="xp-fill" style="width:${pct}%"></div></div>`)}
+        ${tarjetaCifra(`${icon("streak")} ${u.streak ?? 0}`, "Días seguidos")}
+        ${tarjetaCifra(`${icon("missions")} ${u.missions ?? "0/0"}`, "Actividades")}
       </div>
+      <h3 class="sec-h">Mis cursos</h3>
+      ${cursos.length
+        ? `<div class="card-grid">${cursos.map(c =>
+            fichaCurso(c.name, c.instructor ?? "Sin instructor asignado", c.status)).join("")}</div>`
+        : vacio("Todavía no tenés cursos asignados",
+                "Cuando tu empresa te asigne uno, o lo asigne a tu equipo, aparecerá acá.")}
     `);
-  } catch (err) {
-    setContent(`<div class="alert alert-error">${err.message || "Error al cargar el dashboard"}</div>`);
-  }
+  } catch (err) { setContent(errorBox(err)); }
+}
+
+// ── Instructor: qué tiene que atender ───────────────────────────────────────
+async function renderPanelInstructor() {
+  try {
+    await loadMe(); updateSidebar();
+    const u = state.user;
+    let todos = [];
+    try { todos = await api("GET", "/api/courses/get/all"); } catch { /* sin acceso */ }
+    const mios = todos.filter(c => c.instructor === u.email);
+    const abiertos = mios.filter(c => c.status === "Abierto").length;
+    const acts = mios.reduce((a, c) => a + (c.actividades?.length ?? 0), 0);
+
+    setContent(`
+      ${cabeceraPerfil(u)}
+      <div class="stats-grid">
+        ${tarjetaCifra(`${icon("courses")} ${mios.length}`, "Cursos a mi cargo")}
+        ${tarjetaCifra(`${icon("check")} ${abiertos}`, "Abiertos")}
+        ${tarjetaCifra(`${icon("activities")} ${acts}`, "Actividades publicadas")}
+        ${tarjetaCifra(`${icon("missions")} —`, "Entregas por calificar", "Disponible cuando se implementen las entregas")}
+      </div>
+      <h3 class="sec-h">Cursos a mi cargo</h3>
+      ${mios.length
+        ? `<div class="card-grid">${mios.map(c =>
+            fichaCurso(c.name, `${c.actividades?.length ?? 0} actividades · equipo ${c.grupo ?? "sin asignar"}`, c.status)).join("")}</div>`
+        : vacio("No tenés cursos asignados",
+                `Un curso es tuyo cuando su instructor es ${escHtml(u.email)}. Pedile a un administrador que te asigne.`)}
+    `);
+  } catch (err) { setContent(errorBox(err)); }
+}
+
+// ── Administrador: cómo va su empresa ───────────────────────────────────────
+async function renderPanelAdmin() {
+  try {
+    await loadMe(); updateSidebar();
+    const u = state.user;
+    const [us, gr, cu] = await Promise.all([
+      api("GET", "/api/users/get/all").catch(() => []),
+      api("GET", "/api/groups/get/all").catch(() => []),
+      api("GET", "/api/courses/get/all").catch(() => []),
+    ]);
+    const porRol = r => us.filter(x => x.role === r).length;
+    const media = us.length ? Math.round(us.reduce((a, x) => a + (x.xp || 0), 0) / us.length) : 0;
+
+    setContent(`
+      ${cabeceraPerfil(u)}
+      <div class="stats-grid">
+        ${tarjetaCifra(`${icon("users")} ${us.length}`, "Personas",
+          `${porRol("student")} colaboradores · ${porRol("instructor")} instructores`)}
+        ${tarjetaCifra(`${icon("groups")} ${gr.length}`, "Equipos")}
+        ${tarjetaCifra(`${icon("courses")} ${cu.length}`, "Cursos")}
+        ${tarjetaCifra(`${icon("xp")} ${media}`, "Puntos promedio", "Por persona")}
+      </div>
+      <h3 class="sec-h">Cursos de la empresa</h3>
+      ${cu.length
+        ? `<div class="card-grid">${cu.slice(0, 6).map(c =>
+            fichaCurso(c.name, c.instructor ?? "Sin instructor asignado", c.status)).join("")}</div>`
+        : vacio("No hay cursos todavía", "Creá el primero desde la sección Cursos.")}
+    `);
+  } catch (err) { setContent(errorBox(err)); }
+}
+
+// ── Superadmin: estado de la plataforma ─────────────────────────────────────
+async function renderPanelSuperadmin() {
+  try {
+    await loadMe(); updateSidebar();
+    const u = state.user;
+    const [tn, us] = await Promise.all([
+      api("GET", "/api/tenants/get/all").catch(() => []),
+      api("GET", "/api/users/get/all").catch(() => []),
+    ]);
+    const activas = tn.filter(t => t.active).length;
+    const huerfanos = us.filter(x => !x.tenantId && x.role !== "superadmin").length;
+
+    setContent(`
+      ${cabeceraPerfil(u)}
+      <div class="stats-grid">
+        ${tarjetaCifra(`${icon("org")} ${tn.length}`, "Empresas", `${activas} activas`)}
+        ${tarjetaCifra(`${icon("users")} ${us.length}`, "Usuarios totales",
+          huerfanos ? `${huerfanos} sin empresa asignada` : "Todos con empresa")}
+        ${tarjetaCifra(`${icon("check")} ${us.filter(x => x.status === "Active").length}`, "Cuentas activas")}
+        ${tarjetaCifra(`${icon("level")} ${us.filter(x => x.role === "admin").length}`, "Administradores")}
+      </div>
+      <h3 class="sec-h">Empresas</h3>
+      ${tn.length
+        ? `<div class="card-grid">${tn.map(t =>
+            fichaCurso(t.name, `${t.domain} · ${us.filter(x => x.tenantId === t.id).length} personas`,
+                       t.active ? "Activa" : "Inactiva")).join("")}</div>`
+        : vacio("No hay empresas registradas", "Creá la primera desde la sección Empresas.")}
+    `);
+  } catch (err) { setContent(errorBox(err)); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -950,8 +1205,8 @@ async function renderTenants() {
 
 function openCreateTenant() {
   openModal("Nuevo tenant", `
-    <div class="form-group"><label>Nombre</label><input id="f-tn-name" placeholder="Universidad Central"></div>
-    <div class="form-group"><label>Dominio de email</label><input id="f-tn-domain" placeholder="ucentral.edu.co"></div>
+    <div class="form-group"><label>Nombre</label><input id="f-tn-name" placeholder="Nombre de la empresa"></div>
+    <div class="form-group"><label>Dominio de email</label><input id="f-tn-domain" placeholder="empresa.com"></div>
   `, async () => {
     await api("POST", "/api/tenants/create", {
       name:   $("f-tn-name").value,
@@ -998,8 +1253,8 @@ function openCreateUser() {
       <div class="form-group"><label>Nombre</label><input id="f-u-fn" placeholder="Juan"></div>
       <div class="form-group"><label>Apellido</label><input id="f-u-ln" placeholder="Pérez"></div>
     </div>
-    <div class="form-group"><label>Email</label><input id="f-u-email" type="email" placeholder="juan@ucentral.edu.co"></div>
-    <div class="form-group"><label>Contraseña <span class="hint">(vacío = solo OAuth)</span></label><input id="f-u-pw" type="password" placeholder="contraseña123"></div>
+    <div class="form-group"><label>Email</label><input id="f-u-email" type="email" placeholder="nombre@empresa.com"></div>
+    <div class="form-group"><label>Contraseña <span class="hint">(vacío = solo OAuth)</span></label><input id="f-u-pw" type="password" placeholder="Mínimo 8 caracteres"></div>
     <div class="form-group"><label>Rol</label>
       <select id="f-u-role">
         <option value="student">Student</option>
@@ -1054,7 +1309,7 @@ async function renderCourses() {
 
 function openCreateCourse() {
   openModal("Nuevo curso", `
-    <div class="form-group"><label>Nombre del curso</label><input id="f-c-name" placeholder="Inducción corporativa"></div>
+    <div class="form-group"><label>Nombre del curso</label><input id="f-c-name" placeholder="Inducción para nuevos ingresos"></div>
     <div class="form-group"><label>Instructor ID <span class="hint">(opcional)</span></label><input id="f-c-inst" placeholder="a1b2c3"></div>
     <div class="form-group"><label>Estado</label>
       <select id="f-c-status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
@@ -1094,7 +1349,7 @@ async function renderGroups() {
 
 function openCreateGroup() {
   openModal("Nuevo grupo", `
-    <div class="form-group"><label>Nombre del grupo</label><input id="f-g-name" placeholder="Grupo A - Ingeniería 2025"></div>
+    <div class="form-group"><label>Nombre del grupo</label><input id="f-g-name" placeholder="Equipo de Ventas"></div>
   `, async () => {
     await api("POST", "/api/groups/create", { name: $("f-g-name").value });
     closeModal(); renderGroups();
