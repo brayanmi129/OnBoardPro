@@ -54,6 +54,13 @@
       outline-offset: 2px;
     }
 
+
+    /* ── ICONOS ────────────────────────────────────────── */
+    .ico { width: 1em; height: 1em; flex: none; stroke: currentColor;
+           fill: none; stroke-width: 1.75; stroke-linecap: round; stroke-linejoin: round; }
+    .nav-icon .ico { width: 17px; height: 17px; }
+    .stat-value .ico { width: 19px; height: 19px; stroke-width: 1.9; }
+
     /* ── LOGIN ─────────────────────────────────────────── */
     #login-screen {
       min-height: 100dvh;
@@ -519,37 +526,37 @@
   <!-- SIDEBAR -->
   <aside id="sidebar">
     <div class="sidebar-logo">
-      <h2>🎓 OnBoardPro</h2>
+      <h2><svg class="ico" viewBox="0 0 24 24" aria-hidden="true" style="width:18px;height:18px;vertical-align:-3px;margin-right:7px"><path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/></svg>OnBoardPro</h2>
       <span>Dev Panel</span>
     </div>
 
     <div class="nav-label">Principal</div>
     <div class="nav-item active" data-nav="dashboard" onclick="navigate('dashboard')">
-      <span class="nav-icon">📊</span> Dashboard
+      <span class="nav-icon" data-ico="dashboard"></span> Dashboard
     </div>
 
     <div class="nav-label">Plataforma</div>
     <div class="nav-item superadmin-only" data-nav="tenants" onclick="navigate('tenants')" style="display:none">
-      <span class="nav-icon">🏢</span> Tenants
+      <span class="nav-icon" data-ico="org"></span> Tenants
     </div>
     <div class="nav-item admin-only" data-nav="users" onclick="navigate('users')" style="display:none">
-      <span class="nav-icon">👥</span> Usuarios
+      <span class="nav-icon" data-ico="users"></span> Usuarios
     </div>
 
     <div class="nav-label">Contenido</div>
     <div class="nav-item" data-nav="courses" onclick="navigate('courses')">
-      <span class="nav-icon">📚</span> Cursos
+      <span class="nav-icon" data-ico="courses"></span> Cursos
     </div>
     <div class="nav-item" data-nav="groups" onclick="navigate('groups')">
-      <span class="nav-icon">🗂️</span> Grupos
+      <span class="nav-icon" data-ico="groups"></span> Grupos
     </div>
     <div class="nav-item" data-nav="activities" onclick="navigate('activities')">
-      <span class="nav-icon">📝</span> Actividades
+      <span class="nav-icon" data-ico="activities"></span> Actividades
     </div>
 
     <div class="nav-label">Gamificación</div>
     <div class="nav-item" data-nav="ranking" onclick="navigate('ranking')">
-      <span class="nav-icon">🏆</span> Ranking
+      <span class="nav-icon" data-ico="ranking"></span> Ranking
     </div>
 
     <div class="sidebar-footer">
@@ -560,7 +567,7 @@
           <div class="user-role"  id="s-role">...</div>
         </div>
       </div>
-      <button class="btn btn-logout" onclick="logout()">🚪 Cerrar sesión</button>
+      <button class="btn btn-logout" onclick="logout()" data-ico-prefix="logout">Cerrar sesión</button>
     </div>
   </aside>
 
@@ -597,6 +604,83 @@
 // ═══════════════════════════════════════════════════════════════════════════
 const API = window.location.origin;
 const $ = id => document.getElementById(id);
+
+
+// Iconos de trazo uniforme. Reemplazan a los emojis, que no heredan el color,
+// no escalan con la tipografía y se dibujan distinto en cada sistema operativo.
+const ICO = {
+  dashboard:  '<path d="M3 3v18h18"/><path d="m7 15 3.5-4 3 2.5L21 7"/>',
+  org:        '<path d="M3 21h18"/><path d="M5 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M15 9h2a2 2 0 0 1 2 2v10"/><path d="M9 7h2M9 11h2M9 15h2"/>',
+  users:      '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/>',
+  courses:    '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/>',
+  groups:     '<rect x="3" y="4" width="7" height="7" rx="1.5"/><rect x="14" y="4" width="7" height="7" rx="1.5"/><rect x="3" y="15" width="7" height="5" rx="1.5"/><rect x="14" y="15" width="7" height="5" rx="1.5"/>',
+  activities: '<path d="M15 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7Z"/><path d="M15 3v4h4"/><path d="M9 13h6M9 17h4"/>',
+  ranking:    '<path d="M4 4h16v5a8 8 0 0 1-16 0Z"/><path d="M4 6H2v2a3 3 0 0 0 3 3"/><path d="M20 6h2v2a3 3 0 0 1-3 3"/><path d="M12 17v4M8 21h8"/>',
+  logout:     '<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/>',
+  level:      '<path d="m12 3 2.6 5.6 6.1.8-4.5 4.2 1.2 6-5.4-3-5.4 3 1.2-6L3.3 9.4l6.1-.8Z"/>',
+  xp:         '<path d="m13 2-8 12h6l-1 8 8-12h-6Z"/>',
+  streak:     '<path d="M12 22a7 7 0 0 0 7-7c0-4-3-6-4-9-2 2-3 3-4 3s-2-2-2-4c-2 1.5-4 4.5-4 10a7 7 0 0 0 7 7Z"/>',
+  missions:   '<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="m9 14 2 2 4-4"/>',
+  check:      '<path d="M20 6 9 17l-5-5"/>',
+  cross:      '<path d="M18 6 6 18M6 6l12 12"/>',
+  attach:     '<path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.67 3.67 0 0 1 5.18 5.18l-9.2 9.19a1.83 1.83 0 0 1-2.59-2.59l8.49-8.48"/>',
+  warn:       '<path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
+  logo:       '<path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
+};
+const icon = (n, cls = "") => `<svg class="ico ${cls}" viewBox="0 0 24 24" aria-hidden="true">${ICO[n] || ""}</svg>`;
+
+
+// Rellena los iconos declarados en el marcado con data-ico
+function pintarIconos(raiz = document) {
+  raiz.querySelectorAll("[data-ico]").forEach(el => {
+    if (!el.firstChild) el.innerHTML = icon(el.dataset.ico);
+  });
+  raiz.querySelectorAll("[data-ico-prefix]").forEach(el => {
+    if (!el.querySelector("svg")) el.insertAdjacentHTML("afterbegin", icon(el.dataset.icoPrefix));
+    el.removeAttribute("data-ico-prefix");
+  });
+}
+
+
+// Confirmación dentro de la interfaz. El skill desaconseja confirm() del
+// navegador: no se puede estilar y rompe la continuidad visual.
+function confirmar({ titulo, detalle, accion = "Eliminar", peligro = true }) {
+  return new Promise(resolve => {
+    const fondo = document.createElement("div");
+    fondo.className = "confirm-backdrop";
+    fondo.innerHTML = `
+      <div class="confirm-box" role="alertdialog" aria-modal="true" aria-label="${escHtml(titulo)}">
+        <h3>${escHtml(titulo)}</h3>
+        ${detalle ? `<p>${escHtml(detalle)}</p>` : ""}
+        <div class="confirm-acts">
+          <button class="btn btn-ghost" data-r="0">Cancelar</button>
+          <button class="btn ${peligro ? "btn-danger" : "btn-primary"}" data-r="1">${escHtml(accion)}</button>
+        </div>
+      </div>`;
+    const cerrar = v => { document.removeEventListener("keydown", tecla); fondo.remove(); resolve(v); };
+    const tecla = e => { if (e.key === "Escape") cerrar(false); };
+    fondo.addEventListener("click", e => {
+      if (e.target === fondo) return cerrar(false);
+      const b = e.target.closest("[data-r]");
+      if (b) cerrar(b.dataset.r === "1");
+    });
+    document.addEventListener("keydown", tecla);
+    document.body.appendChild(fondo);
+    fondo.querySelector('[data-r="1"]').focus();
+  });
+}
+
+// Aviso breve, no bloqueante, en lugar de alert()
+function avisar(msg, tipo = "error") {
+  document.querySelector(".toast")?.remove();
+  const t = document.createElement("div");
+  t.className = `toast toast-${tipo}`;
+  t.setAttribute("role", "status");
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.classList.add("out"), 3600);
+  setTimeout(() => t.remove(), 4000);
+}
 
 const state = { token: null, user: null, section: "dashboard" };
 
@@ -716,13 +800,13 @@ function updateSidebar() {
 // NAVIGATION
 // ═══════════════════════════════════════════════════════════════════════════
 const pageTitles = {
-  dashboard:  "📊 Dashboard",
-  tenants:    "🏢 Tenants",
-  users:      "👥 Usuarios",
-  courses:    "📚 Cursos",
-  groups:     "🗂️ Grupos",
-  activities: "📝 Actividades",
-  ranking:    "🏆 Ranking",
+  dashboard:  "Dashboard",
+  tenants:    "Tenants",
+  users:      "Usuarios",
+  courses:    "Cursos",
+  groups:     "Grupos",
+  activities: "Actividades",
+  ranking:    "Ranking",
 };
 
 const renderers = {
@@ -816,21 +900,21 @@ async function renderDashboard() {
 
       <div class="stats-grid">
         <div class="stat-card">
-          <div class="stat-value">⭐ ${u.level}</div>
+          <div class="stat-value">${icon("level")} ${u.level}</div>
           <div class="stat-label">Nivel</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">✨ ${u.xp}</div>
+          <div class="stat-value">${icon("xp")} ${u.xp}</div>
           <div class="stat-label">XP</div>
           <div class="xp-bar"><div class="xp-fill" style="width:${xpPct}%"></div></div>
           <div class="small muted" style="margin-top:4px">${u.xp} / ${xpNext} → nivel ${u.level+1}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">🔥 ${u.streak ?? 0}</div>
+          <div class="stat-value">${icon("streak")} ${u.streak ?? 0}</div>
           <div class="stat-label">Racha</div>
         </div>
         <div class="stat-card">
-          <div class="stat-value">📋 ${u.missions ?? "0/0"}</div>
+          <div class="stat-value">${icon("missions")} ${u.missions ?? "0/0"}</div>
           <div class="stat-label">Misiones</div>
         </div>
       </div>
@@ -878,9 +962,9 @@ function openCreateTenant() {
 }
 
 async function deleteTenant(id, name) {
-  if (!confirm(`¿Eliminar el tenant "${name}"? Esta acción no se puede deshacer.`)) return;
+  if (!await confirmar({ titulo: `Eliminar ${name}`, detalle: "Se eliminarán también sus grupos y cursos. Los usuarios quedarán sin organización asignada." })) return;
   try { await api("DELETE", `/api/tenants/delete/${id}`); renderTenants(); }
-  catch (err) { alert(err.message); }
+  catch (err) { avisar(err.message); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -894,7 +978,7 @@ async function renderUsers() {
       `<strong>${[u.firstname,u.lastname].filter(Boolean).join(" ") || "—"}</strong><br><span class="small muted">${u.email}</span>`,
       roleBadge(u.role),
       statusBadge(u.status),
-      `⭐${u.level}  ✨${u.xp}xp`,
+      `${icon("level")} ${u.level} · ${icon("xp")} ${u.xp} xp`,
       `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${escHtml(u.email)}')">Eliminar</button>`,
     )).join("");
 
@@ -941,9 +1025,9 @@ function openCreateUser() {
 }
 
 async function deleteUser(id, email) {
-  if (!confirm(`¿Eliminar al usuario "${email}"?`)) return;
+  if (!await confirmar({ titulo: "Eliminar usuario", detalle: `${email} perderá el acceso a la plataforma.` })) return;
   try { await api("DELETE", `/api/users/delete/${id}`); renderUsers(); }
-  catch (err) { alert(err.message); }
+  catch (err) { avisar(err.message); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1018,9 +1102,9 @@ function openCreateGroup() {
 }
 
 async function deleteGroup(id, name) {
-  if (!confirm(`¿Eliminar el grupo "${name}"?`)) return;
+  if (!await confirmar({ titulo: `Eliminar ${name}`, detalle: "Sus integrantes y cursos no se borran, solo dejan de estar asociados." })) return;
   try { await api("DELETE", `/api/groups/delete/${id}`); renderGroups(); }
-  catch (err) { alert(err.message); }
+  catch (err) { avisar(err.message); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1034,16 +1118,16 @@ async function renderActivities() {
       `<strong>${a.title || "—"}</strong>`,
       a.course_id ? `<code class="small">${a.course_id}</code>` : "—",
       a.type ? badge(a.type) : "—",
-      `✨ ${a.xp ?? 0} xp`,
-      a.deliverable ? "✅ Sí" : "❌ No",
-      a.attachment ? `<a href="${a.attachment}" target="_blank" class="btn btn-ghost btn-sm">📎 Ver</a>` : "—",
+      `${icon("xp")} ${a.xp ?? 0} xp`,
+      a.deliverable ? `${icon("check")} Sí` : `${icon("cross")} No`,
+      a.attachment ? `<a href="${a.attachment}" target="_blank" class="btn btn-ghost btn-sm">${icon("attach")} Ver</a>` : "—",
     )).join("");
 
     setContent(
       sectionHeader(`${acts.length} actividad(es)`) +
       tableWrap(["ID","Título","Curso ID","Tipo","XP","Entregable","Archivo"], rows) +
       `<div class="alert alert-warning" style="margin-top:16px">
-        ⚠️ Crear actividades requiere subir un archivo (multipart/form-data).
+        ${icon("warn")} Crear actividades requiere subir un archivo (multipart/form-data).
         Usa <a href="${API}/api-docs" target="_blank" style="color:inherit;font-weight:700">Swagger UI</a> para esa operación.
       </div>`
     );
@@ -1058,13 +1142,13 @@ async function renderActivities() {
 async function renderRanking() {
   try {
     const ranking = await api("GET", "/api/gamification/ranking");
-    const medals = ["🥇","🥈","🥉"];
+    const medals = ["1","2","3"];  // posición en disco, sin emojis de podio
     const rows = ranking.map((u, i) => tr(
       `<strong style="color:var(--primary);font-size:16px">${medals[i] ?? `#${i+1}`}</strong>`,
       `<strong>${[u.firstname,u.lastname].filter(Boolean).join(" ") || "—"}</strong><br><span class="small muted">${u.email}</span>`,
-      `⭐ ${u.level}`,
-      `✨ ${u.xp}`,
-      `🔥 ${u.streak ?? 0}`,
+      `${icon("level")} ${u.level}`,
+      `${icon("xp")} ${u.xp}`,
+      `${icon("streak")} ${u.streak ?? 0}`,
       roleBadge(u.role),
     )).join("");
 
