@@ -6,34 +6,34 @@
   <title>OnBoardPro</title>
   <meta name="description" content="Plataforma de formación con gamificación para organizaciones.">
   <meta name="color-scheme" content="light">
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23155e52'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='18' font-weight='700' fill='%23fff' text-anchor='middle'%3EO%3C/text%3E%3C/svg%3E">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%234f46e5'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='18' font-weight='700' fill='%23fff' text-anchor='middle'%3EO%3C/text%3E%3C/svg%3E">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
-    /* Un solo acento (verde pino desaturado) sobre grises cálidos.
-       Nada de violeta: es la huella más reconocible del diseño generado. */
+    /* Un solo acento (índigo) sobre grises fríos, para que toda la
+       interfaz pertenezca a la misma familia de color. */
     :root {
-      --primary:       #155e52;
-      --primary-dark:  #0f4740;
-      --primary-soft:  #e6f0ed;
-      --sidebar-bg:    #1c1b19;
-      --sidebar-text:  #a8a29e;
-      --sidebar-hover: rgba(255,255,255,0.06);
-      --sidebar-active:#2b2a27;
-      --bg:            #f6f5f3;
+      --primary:       #4f46e5;
+      --primary-dark:  #3730a3;
+      --primary-soft:  #eef2ff;
+      --sidebar-bg:    #1e1b4b;
+      --sidebar-text:  #a5b4fc;
+      --sidebar-hover: rgba(255,255,255,0.07);
+      --sidebar-active:#312e81;
+      --bg:            #f4f6fb;
       --card:          #ffffff;
-      --text:          #1c1917;
-      --muted:         #78716c;
-      --border:        #e7e5e4;
-      --danger:        #b4372f;
-      --success:       #3f7d4e;
+      --text:          #0f172a;
+      --muted:         #64748b;
+      --border:        #e2e8f0;
+      --danger:        #dc2626;
+      --success:       #16a34a;
       --radius:        8px;
-      /* Sombras tintadas con el tono del fondo, no negro puro */
-      --shadow-sm:     0 1px 2px rgba(28,25,23,.07);
-      --shadow-md:     0 4px 14px rgba(28,25,23,.09);
+      /* Sombras tintadas con el azul del fondo, no negro puro */
+      --shadow-sm:     0 1px 2px rgba(30,27,75,.08);
+      --shadow-md:     0 4px 14px rgba(30,27,75,.10);
     }
 
     body {
@@ -66,14 +66,14 @@
     .confirm-backdrop {
       position: fixed; inset: 0; z-index: 60;
       display: grid; place-items: center; padding: 20px;
-      background: rgba(28,25,23,.42);
+      background: rgba(15,23,42,.44);
       backdrop-filter: blur(3px);
       animation: fadeIn .14s ease-out;
     }
     .confirm-box {
       background: var(--card); border-radius: 14px; padding: 24px;
       width: 100%; max-width: 400px;
-      box-shadow: 0 18px 44px rgba(28,25,23,.24);
+      box-shadow: 0 18px 44px rgba(30,27,75,.26);
       animation: popIn .16s cubic-bezier(.2,.9,.3,1.2);
     }
     .confirm-box h3 { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
@@ -89,7 +89,7 @@
       padding: 12px 18px; border-radius: 10px;
       font-size: 14px; line-height: 1.5;
       background: var(--text); color: #fafaf9;
-      box-shadow: 0 10px 30px rgba(28,25,23,.26);
+      box-shadow: 0 10px 30px rgba(30,27,75,.28);
       animation: toastIn .2s cubic-bezier(.2,.9,.3,1.1);
     }
     .toast-error { background: var(--danger); }
@@ -140,7 +140,7 @@
       transition: border-color .15s, transform .15s, box-shadow .15s;
     }
     .course-card:hover {
-      border-color: #d6d3d1; transform: translateY(-2px); box-shadow: var(--shadow-md);
+      border-color: #c7cede; transform: translateY(-2px); box-shadow: var(--shadow-md);
     }
     .course-card h4 { font-size: 15px; font-weight: 600; line-height: 1.35; text-wrap: balance; }
     .course-card p { margin: 0; }
@@ -178,11 +178,10 @@
       flex-direction: column;
       justify-content: space-between;
       padding: 56px 64px;
-      color: #d6d3d1;
-      /* Base neutra con un único halo del acento, no un degradado de dos tintes */
+      color: #c7d2fe;
       background:
-        radial-gradient(760px 520px at 18% 12%, rgba(21,94,82,.34), transparent 64%),
-        #171614;
+        radial-gradient(820px 560px at 16% 10%, rgba(99,102,241,.42), transparent 64%),
+        linear-gradient(155deg, #1e1b4b 0%, #2c2870 60%, #3730a3 100%);
       overflow: hidden;
     }
     /* Grano sutil: rompe la planitud digital */
@@ -201,7 +200,7 @@
     }
     .brand-mark {
       display: inline-flex; align-items: center; gap: 11px;
-      font-size: 18px; font-weight: 600; color: #fafaf9; letter-spacing: -.01em;
+      font-size: 18px; font-weight: 600; color: #fff; letter-spacing: -.01em;
       position: relative; z-index: 1;
     }
     .brand-mark .glyph {
@@ -209,27 +208,27 @@
       display: grid; place-items: center;
       background: var(--primary); color: #fff;
       font-size: 16px; font-weight: 700;
-      box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 6px 18px rgba(21,94,82,.38);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.18), 0 6px 20px rgba(79,70,229,.42);
     }
     .brand-body { position: relative; z-index: 1; max-width: 30ch; }
     .brand-body h2 {
       font-size: clamp(30px, 3.4vw, 42px); line-height: 1.1; font-weight: 600;
-      color: #fafaf9; letter-spacing: -.03em; margin-bottom: 18px;
+      color: #fff; letter-spacing: -.03em; margin-bottom: 18px;
       text-wrap: balance;
     }
     .brand-body p {
-      font-size: 16px; line-height: 1.7; color: #a8a29e;
+      font-size: 16px; line-height: 1.7; color: #b6bff5;
       max-width: 46ch; text-wrap: pretty;
     }
     .brand-list { list-style: none; margin-top: 34px; display: grid; gap: 14px; }
     .brand-list li {
       display: flex; align-items: flex-start; gap: 12px;
-      font-size: 14.5px; line-height: 1.55; color: #d6d3d1;
+      font-size: 14.5px; line-height: 1.55; color: #d5dbfb;
     }
-    .brand-list svg { flex: none; margin-top: 3px; color: #5f9e91; }
+    .brand-list svg { flex: none; margin-top: 3px; color: #a5b4fc; }
     .brand-foot {
       position: relative; z-index: 1;
-      font-size: 12.5px; color: #78716c;
+      font-size: 12.5px; color: #8b95d9;
     }
 
     /* Panel derecho: formulario */
@@ -263,10 +262,10 @@
       outline: none; transition: border-color .15s, box-shadow .15s;
     }
     .field input::placeholder { color: #94a3b8; }
-    .field input:hover { border-color: #cbd5e1; }
+    .field input:hover { border-color: #c7cede; }
     .field input:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(21,94,82,.15);
+      box-shadow: 0 0 0 3px rgba(79,70,229,.15);
     }
     .field input[type=password] { padding-right: 44px; }
     .peek {
@@ -280,7 +279,7 @@
     #login-screen .btn-primary {
       width: 100%; justify-content: center;
       padding: 11px 16px; font-size: 15px; font-weight: 600; border-radius: 8px;
-      box-shadow: 0 1px 2px rgba(15,23,42,.10);
+      box-shadow: var(--shadow-sm);
     }
     #login-screen .btn-primary:hover { background: var(--primary-dark); opacity: 1; }
     #login-screen .btn-primary:disabled { opacity: .6; cursor: progress; }
@@ -300,7 +299,7 @@
       gap: 10px; transition: background .15s, border-color .15s;
     }
     #login-screen .btn-oauth:hover {
-      background: var(--bg); border-color: #cbd5e1; opacity: 1;
+      background: var(--bg); border-color: #c7cede; opacity: 1;
     }
 
 
@@ -535,7 +534,7 @@
 
     <div class="brand-body">
       <h2>La formación interna que tu equipo sí termina.</h2>
-      <p>Onboarding y capacitación en una sola plataforma, con el avance de cada colaborador medido de verdad.</p>
+      <p>Onboarding y capacitación en una sola plataforma, con el avance de cada aprendiz medido de verdad.</p>
       <ul class="brand-list">
         <li>
           <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
@@ -757,7 +756,7 @@ function avisar(msg, tipo = "error") {
   setTimeout(() => t.remove(), 4000);
 }
 
-const ROL_ES = { superadmin: "Superadmin", admin: "Administrador", instructor: "Instructor", student: "Colaborador" };
+const ROL_ES = { superadmin: "Superadmin", admin: "Administrador", instructor: "Instructor", student: "Aprendiz" };
 
 const state = { token: null, user: null, section: "dashboard" };
 
@@ -1007,11 +1006,11 @@ function tr(...cells) {
 // DASHBOARD
 // ═══════════════════════════════════════════════════════════════════════════
 // Cada rol entra buscando responder una pregunta distinta:
-//   colaborador → ¿cómo voy?              instructor → ¿qué tengo que revisar?
+//   aprendiz    → ¿cómo voy?              instructor → ¿qué tengo que revisar?
 //   administrador → ¿cómo va mi empresa?  superadmin → ¿cómo va la plataforma?
 async function renderDashboard() {
   const r = state.user?.role;
-  if (r === "student")    return renderPanelColaborador();
+  if (r === "student")    return renderPanelAprendiz();
   if (r === "instructor") return renderPanelInstructor();
   if (r === "superadmin") return renderPanelSuperadmin();
   return renderPanelAdmin();
@@ -1058,8 +1057,8 @@ function fichaCurso(titulo, sub, estado) {
   </article>`;
 }
 
-// ── Colaborador: su avance ──────────────────────────────────────────────────
-async function renderPanelColaborador() {
+// ── Aprendiz: su avance ──────────────────────────────────────────────────
+async function renderPanelAprendiz() {
   try {
     await loadMe(); updateSidebar();
     const u = state.user;
@@ -1134,7 +1133,7 @@ async function renderPanelAdmin() {
       ${cabeceraPerfil(u)}
       <div class="stats-grid">
         ${tarjetaCifra(`${icon("users")} ${us.length}`, "Personas",
-          `${porRol("student")} colaboradores · ${porRol("instructor")} instructores`)}
+          `${porRol("student")} aprendices · ${porRol("instructor")} instructores`)}
         ${tarjetaCifra(`${icon("groups")} ${gr.length}`, "Equipos")}
         ${tarjetaCifra(`${icon("courses")} ${cu.length}`, "Cursos")}
         ${tarjetaCifra(`${icon("xp")} ${media}`, "Puntos promedio", "Por persona")}
