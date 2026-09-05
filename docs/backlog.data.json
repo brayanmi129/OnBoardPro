@@ -24,6 +24,79 @@
       "Parcial": "Existe parte de la funcionalidad o falta el aislamiento por tenant.",
       "Roto": "El endpoint existe pero falla siempre. Diagnóstico en docs/openapi.json.",
       "No iniciado": "No hay una sola línea de código."
+    },
+    "plan": {
+      "sprints": [
+        {
+          "n": 1,
+          "ini": "2026-09-07",
+          "fin": "2026-09-11",
+          "meta": "Entrar a la plataforma por cualquiera de los tres medios. Es lo que más avanzado está, así que se cierra de entrada."
+        },
+        {
+          "n": 2,
+          "ini": "2026-09-14",
+          "fin": "2026-09-18",
+          "meta": "La cuenta queda segura: se recupera si se pierde, se cambia la contraseña y se frena la fuerza bruta."
+        },
+        {
+          "n": 3,
+          "ini": "2026-09-21",
+          "fin": "2026-09-25",
+          "meta": "Cada organización solo ve lo suyo, y el administrador da de alta a su gente."
+        },
+        {
+          "n": 4,
+          "ini": "2026-09-28",
+          "fin": "2026-10-02",
+          "meta": "Gestión completa de personas y su perfil."
+        },
+        {
+          "n": 5,
+          "ini": "2026-10-05",
+          "fin": "2026-10-09",
+          "meta": "Las personas se organizan en grupos y existen los primeros cursos."
+        },
+        {
+          "n": 6,
+          "ini": "2026-10-12",
+          "fin": "2026-10-16",
+          "meta": "Cursos con instructor, asignados a grupos completos."
+        },
+        {
+          "n": 7,
+          "ini": "2026-10-19",
+          "fin": "2026-10-23",
+          "meta": "El curso tiene estructura por secciones y el aprendiz ve lo que le toca."
+        },
+        {
+          "n": 8,
+          "ini": "2026-10-26",
+          "fin": "2026-10-30",
+          "meta": "Hay contenido real: actividades, material consultable y banco de preguntas."
+        },
+        {
+          "n": 9,
+          "ini": "2026-11-02",
+          "fin": "2026-11-06",
+          "meta": "El aprendiz entrega y el instructor ve qué tiene pendiente."
+        },
+        {
+          "n": 10,
+          "ini": "2026-11-09",
+          "fin": "2026-11-13",
+          "meta": "Ciclo cerrado de calificación con retroalimentación, y el progreso empieza a dar puntos."
+        },
+        {
+          "n": 11,
+          "ini": "2026-11-16",
+          "fin": "2026-11-20",
+          "meta": "Gamificación visible: nivel, ranking y un juego jugable. Estabilización y demo."
+        }
+      ],
+      "spMvp": 165,
+      "spPost": 127,
+      "actualizado": "2026-09-04"
     }
   },
   "epicas": [
@@ -122,7 +195,8 @@
       "dependencias": [],
       "estado": "Implementado",
       "endpoints": "POST /api/tenants/create",
-      "sprint": 1
+      "sprint": 2,
+      "mvp": true
     },
     {
       "id": "HU-002",
@@ -143,7 +217,8 @@
       ],
       "estado": "Implementado",
       "endpoints": "GET /api/tenants/get/all, GET /api/tenants/get/id/{id}",
-      "sprint": 1
+      "sprint": 2,
+      "mvp": true
     },
     {
       "id": "HU-003",
@@ -164,7 +239,8 @@
       ],
       "estado": "Implementado",
       "endpoints": "PUT /api/tenants/update/{id}",
-      "sprint": 1
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-004",
@@ -186,7 +262,8 @@
       ],
       "estado": "Implementado",
       "endpoints": "PUT /api/tenants/update/{id} (active=false)",
-      "sprint": 2
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-005",
@@ -208,7 +285,8 @@
       ],
       "estado": "Implementado",
       "endpoints": "DELETE /api/tenants/delete/{id}",
-      "sprint": 3
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-006",
@@ -231,8 +309,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "Transversal. Hoy solo el módulo de usuarios lo cumple.",
-      "sprint": 1,
-      "notas": "Riesgo alto. El schema ya tiene tenant_id en groups y courses, pero ningún servicio lo escribe ni lo filtra. La tabla activities ni siquiera tiene la columna."
+      "sprint": 3,
+      "notas": "Riesgo alto. El schema ya tiene tenant_id en groups y courses, pero ningún servicio lo escribe ni lo filtra. La tabla activities ni siquiera tiene la columna.",
+      "mvp": true
     },
     {
       "id": "HU-007",
@@ -252,7 +331,8 @@
       "dependencias": [],
       "estado": "Implementado",
       "endpoints": "POST /api/auth/localuser",
-      "sprint": 1
+      "sprint": 1,
+      "mvp": true
     },
     {
       "id": "HU-008",
@@ -274,7 +354,8 @@
       ],
       "estado": "Implementado",
       "endpoints": "GET /api/auth/google",
-      "sprint": 1
+      "sprint": 1,
+      "mvp": true
     },
     {
       "id": "HU-009",
@@ -295,7 +376,8 @@
       ],
       "estado": "Implementado",
       "endpoints": "GET /api/auth/microsoft",
-      "sprint": 1
+      "sprint": 1,
+      "mvp": true
     },
     {
       "id": "HU-010",
@@ -318,7 +400,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. Requiere además integrar un servicio de correo.",
-      "sprint": 3
+      "sprint": 2,
+      "mvp": true
     },
     {
       "id": "HU-011",
@@ -339,7 +422,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 2
+      "sprint": 1,
+      "mvp": true
     },
     {
       "id": "HU-012",
@@ -360,7 +444,8 @@
       ],
       "estado": "Parcial",
       "endpoints": "El JWT ya expira en 3h, pero no existe mecanismo de refresco.",
-      "sprint": 4
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-013",
@@ -382,7 +467,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. Hoy el login admite intentos ilimitados.",
-      "sprint": 2
+      "sprint": 2,
+      "mvp": true
     },
     {
       "id": "HU-014",
@@ -405,7 +491,8 @@
       ],
       "estado": "Implementado",
       "endpoints": "POST /api/users/create",
-      "sprint": 1
+      "sprint": 3,
+      "mvp": true
     },
     {
       "id": "HU-015",
@@ -428,8 +515,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "GET /api/users/get/all, /get/role/{role}, /get/email/{email}",
-      "sprint": 2,
-      "notas": "Falta paginación y búsqueda por texto; el filtrado por rol y tenant ya funciona."
+      "sprint": 4,
+      "notas": "Falta paginación y búsqueda por texto; el filtrado por rol y tenant ya funciona.",
+      "mvp": true
     },
     {
       "id": "HU-016",
@@ -452,8 +540,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "PUT /api/users/update/{id}",
-      "sprint": 2,
-      "notas": "No valida que el usuario objetivo pertenezca al tenant de quien edita."
+      "sprint": 5,
+      "notas": "No valida que el usuario objetivo pertenezca al tenant de quien edita.",
+      "mvp": true
     },
     {
       "id": "HU-017",
@@ -476,8 +565,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "DELETE /api/users/delete/{id}",
-      "sprint": 2,
-      "notas": "Devuelve 500 cuando el usuario no existe, y no valida tenant."
+      "sprint": 5,
+      "notas": "Devuelve 500 cuando el usuario no existe, y no valida tenant.",
+      "mvp": true
     },
     {
       "id": "HU-018",
@@ -499,8 +589,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "PUT /api/users/update/{id}",
-      "sprint": 2,
-      "notas": "El cambio funciona, pero no hay registro de auditoría ni invalidación del token vigente."
+      "sprint": 5,
+      "notas": "El cambio funciona, pero no hay registro de auditoría ni invalidación del token vigente.",
+      "mvp": true
     },
     {
       "id": "HU-019",
@@ -523,8 +614,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 4,
-      "notas": "Alto impacto para clientes educativos: dar de alta 300 estudiantes a mano no es viable."
+      "sprint": null,
+      "notas": "Alto impacto para clientes educativos: dar de alta 300 estudiantes a mano no es viable.",
+      "mvp": false
     },
     {
       "id": "HU-020",
@@ -545,8 +637,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "POST /api/groups/create",
-      "sprint": 2,
-      "notas": "Funciona, pero no guarda tenant_id: los grupos creados por la API quedan huérfanos de organización."
+      "sprint": 3,
+      "notas": "Funciona, pero no guarda tenant_id: los grupos creados por la API quedan huérfanos de organización.",
+      "mvp": true
     },
     {
       "id": "HU-021",
@@ -568,8 +661,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "GET /api/groups/get/all, GET /api/groups/get/id/{id}",
-      "sprint": 2,
-      "notas": "Riesgo alto: hoy responde sin token y sin filtrar por organización. Expone correos y roles de todos los usuarios."
+      "sprint": 5,
+      "notas": "Riesgo alto: hoy responde sin token y sin filtrar por organización. Expone correos y roles de todos los usuarios.",
+      "mvp": true
     },
     {
       "id": "HU-022",
@@ -590,8 +684,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "PUT /api/groups/update/{id}, DELETE /api/groups/delete/{id}",
-      "sprint": 3,
-      "notas": "Funciona, pero sin autenticación."
+      "sprint": null,
+      "notas": "Funciona, pero sin autenticación.",
+      "mvp": false
     },
     {
       "id": "HU-023",
@@ -614,8 +709,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "POST /api/groups/{id}/add-users, DELETE /api/groups/{id}/remove-users",
-      "sprint": 2,
-      "notas": "La lógica de upsert está bien resuelta. Falta autenticación y validación de organización."
+      "sprint": 4,
+      "notas": "La lógica de upsert está bien resuelta. Falta autenticación y validación de organización.",
+      "mvp": true
     },
     {
       "id": "HU-024",
@@ -638,8 +734,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. La tabla groups_courses existe pero no hay endpoint que la escriba.",
-      "sprint": 3,
-      "notas": "Hueco importante: es el mecanismo central de asignación y hoy solo se puede poblar con el seed."
+      "sprint": 5,
+      "notas": "Hueco importante: es el mecanismo central de asignación y hoy solo se puede poblar con el seed.",
+      "mvp": true
     },
     {
       "id": "HU-025",
@@ -660,8 +757,9 @@
       ],
       "estado": "Roto",
       "endpoints": "GET /api/groups/me",
-      "sprint": 3,
-      "notas": "La ruta no monta el middleware de autenticación, por lo que siempre responde 401. Corrección de una línea."
+      "sprint": 6,
+      "notas": "La ruta no monta el middleware de autenticación, por lo que siempre responde 401. Corrección de una línea.",
+      "mvp": true
     },
     {
       "id": "HU-026",
@@ -684,7 +782,8 @@
       "estado": "Roto",
       "endpoints": "POST /api/courses/create",
       "sprint": 3,
-      "notas": "El controlador pasa el objeto request completo al servicio en lugar del cuerpo. Falla siempre."
+      "notas": "El controlador pasa el objeto request completo al servicio en lugar del cuerpo. Falla siempre.",
+      "mvp": true
     },
     {
       "id": "HU-027",
@@ -707,8 +806,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "GET /api/courses/get/all, GET /api/courses/get/id/{id}",
-      "sprint": 3,
-      "notas": "El listado responde sin token y sin filtrar. La consulta por id está rota: pasa el request como identificador."
+      "sprint": 4,
+      "notas": "El listado responde sin token y sin filtrar. La consulta por id está rota: pasa el request como identificador.",
+      "mvp": true
     },
     {
       "id": "HU-028",
@@ -729,7 +829,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. No existe endpoint de actualización de cursos.",
-      "sprint": 3
+      "sprint": 8,
+      "mvp": true
     },
     {
       "id": "HU-029",
@@ -751,7 +852,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 4
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-030",
@@ -773,8 +875,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "El campo instructor existe en la tabla, pero se guarda como texto libre y no hay endpoint dedicado.",
-      "sprint": 3,
-      "notas": "El campo guarda un correo en vez de una referencia al usuario. Conviene cambiarlo a clave foránea."
+      "sprint": 9,
+      "notas": "El campo guarda un correo en vez de una referencia al usuario. Conviene cambiarlo a clave foránea.",
+      "mvp": true
     },
     {
       "id": "HU-031",
@@ -796,8 +899,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "GET /api/courses/me",
-      "sprint": 3,
-      "notas": "La resolución grupo a curso ya funciona. Falta el porcentaje de avance."
+      "sprint": 9,
+      "notas": "La resolución grupo a curso ya funciona. Falta el porcentaje de avance.",
+      "mvp": true
     },
     {
       "id": "HU-032",
@@ -820,8 +924,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. Requiere tabla nueva y migrar courses.actividades.",
-      "sprint": 5,
-      "notas": "Cambio estructural. Hoy el curso guarda las actividades en un arreglo plano de texto, sin orden ni agrupación."
+      "sprint": 4,
+      "notas": "Cambio estructural. Hoy el curso guarda las actividades en un arreglo plano de texto, sin orden ni agrupación.",
+      "mvp": true
     },
     {
       "id": "HU-033",
@@ -843,7 +948,8 @@
       ],
       "estado": "Parcial",
       "endpoints": "El campo status con valores Abierto y Cerrado existe, pero nada lo verifica al servir contenido.",
-      "sprint": 5
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-034",
@@ -866,7 +972,8 @@
       "estado": "Roto",
       "endpoints": "POST /api/activities/create",
       "sprint": 5,
-      "notas": "La ruta monta el servicio en lugar del controlador. Además el controlador correcto importa un archivo que no existe."
+      "notas": "La ruta monta el servicio en lugar del controlador. Además el controlador correcto importa un archivo que no existe.",
+      "mvp": true
     },
     {
       "id": "HU-035",
@@ -888,8 +995,9 @@
       ],
       "estado": "Roto",
       "endpoints": "GET /api/activities/get/all",
-      "sprint": 5,
-      "notas": "El endpoint nunca responde: la petición queda abierta hasta que el cliente corta por tiempo."
+      "sprint": 10,
+      "notas": "El endpoint nunca responde: la petición queda abierta hasta que el cliente corta por tiempo.",
+      "mvp": true
     },
     {
       "id": "HU-036",
@@ -911,7 +1019,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. No existen endpoints de actualización ni borrado de actividades.",
-      "sprint": 5
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-037",
@@ -934,8 +1043,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "La integración con Google Drive funciona, pero la ruta que la invoca está rota.",
-      "sprint": 5,
-      "notas": "Los archivos de Drive se publican como accesibles para cualquiera con el enlace. Revisar si es aceptable para contenido de clientes."
+      "sprint": 7,
+      "notas": "Los archivos de Drive se publican como accesibles para cualquiera con el enlace. Revisar si es aceptable para contenido de clientes.",
+      "mvp": true
     },
     {
       "id": "HU-038",
@@ -956,7 +1066,8 @@
       ],
       "estado": "Parcial",
       "endpoints": "El enlace se guarda en el campo adjunto, pero no hay control de acceso.",
-      "sprint": 5
+      "sprint": 10,
+      "mvp": true
     },
     {
       "id": "HU-039",
@@ -977,7 +1088,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 6
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-040",
@@ -1001,8 +1113,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. No existe la noción de progreso por aprendiz.",
-      "sprint": 6,
-      "notas": "Pieza faltante clave: sin registro de progreso no hay gamificación posible."
+      "sprint": 7,
+      "notas": "Pieza faltante clave: sin registro de progreso no hay gamificación posible.",
+      "mvp": true
     },
     {
       "id": "HU-041",
@@ -1025,8 +1138,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 7,
-      "notas": "Las preguntas se guardan con una estructura común para que después puedan reaprovecharse en un juego, pero el instructor nunca tiene que gestionar un banco aparte: carga lo que pide el examen y ya."
+      "sprint": 6,
+      "notas": "Las preguntas se guardan con una estructura común para que después puedan reaprovecharse en un juego, pero el instructor nunca tiene que gestionar un banco aparte: carga lo que pide el examen y ya.",
+      "mvp": true
     },
     {
       "id": "HU-042",
@@ -1048,8 +1162,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 7,
-      "notas": ""
+      "sprint": null,
+      "notas": "",
+      "mvp": false
     },
     {
       "id": "HU-043",
@@ -1071,8 +1186,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 7,
-      "notas": "Es la pieza que evita duplicar trabajo cuando un curso tiene examen y varios juegos sobre el mismo tema. Vale la pena en cuanto haya más de dos actividades por sección."
+      "sprint": null,
+      "notas": "Es la pieza que evita duplicar trabajo cuando un curso tiene examen y varios juegos sobre el mismo tema. Vale la pena en cuanto haya más de dos actividades por sección.",
+      "mvp": false
     },
     {
       "id": "HU-044",
@@ -1096,7 +1212,8 @@
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
       "sprint": 8,
-      "notas": "Es el motor común: presentar preguntas, recoger respuestas y controlar tiempo e intentos. El concurso del sprint 11 lo reutiliza entero, solo cambia la presentación."
+      "notas": "Es el motor común: presentar preguntas, recoger respuestas y controlar tiempo e intentos. El concurso del sprint 11 lo reutiliza entero, solo cambia la presentación.",
+      "mvp": true
     },
     {
       "id": "HU-045",
@@ -1119,8 +1236,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 8,
-      "notas": ""
+      "sprint": 9,
+      "notas": "",
+      "mvp": true
     },
     {
       "id": "HU-046",
@@ -1143,7 +1261,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. No existe el concepto de entrega en el modelo de datos.",
-      "sprint": 6
+      "sprint": 6,
+      "mvp": true
     },
     {
       "id": "HU-047",
@@ -1165,7 +1284,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 6
+      "sprint": 10,
+      "mvp": true
     },
     {
       "id": "HU-048",
@@ -1188,8 +1308,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 6,
-      "notas": "Es el punto donde se conectan entregas y gamificación: el XP se otorga al calificar, no al subir."
+      "sprint": 7,
+      "notas": "Es el punto donde se conectan entregas y gamificación: el XP se otorga al calificar, no al subir.",
+      "mvp": true
     },
     {
       "id": "HU-049",
@@ -1210,7 +1331,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 6
+      "sprint": 11,
+      "mvp": true
     },
     {
       "id": "HU-050",
@@ -1231,7 +1353,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 9
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-051",
@@ -1252,7 +1375,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. La tabla de actividades no tiene columna de XP.",
-      "sprint": 6
+      "sprint": 6,
+      "mvp": true
     },
     {
       "id": "HU-052",
@@ -1277,7 +1401,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno. El campo xp existe en usuarios, pero nada lo incrementa.",
-      "sprint": 6
+      "sprint": 8,
+      "mvp": true
     },
     {
       "id": "HU-053",
@@ -1299,7 +1424,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 7
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-054",
@@ -1321,7 +1447,8 @@
       ],
       "estado": "Parcial",
       "endpoints": "El campo level existe y se lee, pero nada lo actualiza.",
-      "sprint": 7
+      "sprint": 10,
+      "mvp": true
     },
     {
       "id": "HU-055",
@@ -1343,8 +1470,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 8,
-      "notas": "Imprescindible antes de lanzar los juegos: un juego rejugable sin tope convierte el XP en una fuente infinita."
+      "sprint": null,
+      "notas": "Imprescindible antes de lanzar los juegos: un juego rejugable sin tope convierte el XP en una fuente infinita.",
+      "mvp": false
     },
     {
       "id": "HU-056",
@@ -1365,7 +1493,8 @@
       ],
       "estado": "Parcial",
       "endpoints": "Los campos se devuelven en el perfil, pero siempre valen cero porque nada los alimenta.",
-      "sprint": 7
+      "sprint": 11,
+      "mvp": true
     },
     {
       "id": "HU-057",
@@ -1388,8 +1517,9 @@
       ],
       "estado": "Roto",
       "endpoints": "GET /api/gamification/ranking",
-      "sprint": 7,
-      "notas": "Devuelve error en producción. Además no filtra por organización: hoy mezclaría aprendices de clientes distintos."
+      "sprint": 11,
+      "notas": "Devuelve error en producción. Además no filtra por organización: hoy mezclaría aprendices de clientes distintos.",
+      "mvp": true
     },
     {
       "id": "HU-058",
@@ -1411,7 +1541,8 @@
       ],
       "estado": "Parcial",
       "endpoints": "El campo streak existe pero nada lo calcula.",
-      "sprint": 9
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-059",
@@ -1433,7 +1564,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 8
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-060",
@@ -1456,8 +1588,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 8,
-      "notas": "El catálogo cerrado de condiciones es la decisión clave: permite crear medallas nuevas sin escribir código. Un motor de reglas libre costaría varias veces más y nadie lo usaría."
+      "sprint": null,
+      "notas": "El catálogo cerrado de condiciones es la decisión clave: permite crear medallas nuevas sin escribir código. Un motor de reglas libre costaría varias veces más y nadie lo usaría.",
+      "mvp": false
     },
     {
       "id": "HU-061",
@@ -1480,8 +1613,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 8,
-      "notas": "Acotar la evaluación a cinco disparadores es lo que hace que el sistema sea barato: sin eso habría que revisar todas las condiciones de todos los usuarios continuamente."
+      "sprint": null,
+      "notas": "Acotar la evaluación a cinco disparadores es lo que hace que el sistema sea barato: sin eso habría que revisar todas las condiciones de todos los usuarios continuamente.",
+      "mvp": false
     },
     {
       "id": "HU-062",
@@ -1502,7 +1636,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 8
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-063",
@@ -1525,8 +1660,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 9,
-      "notas": ""
+      "sprint": null,
+      "notas": "",
+      "mvp": false
     },
     {
       "id": "HU-064",
@@ -1549,8 +1685,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 10,
-      "notas": "El de mayor complejidad algorítmica del grupo. Conviene dejarlo para el final, cuando los demás ya validaron el flujo."
+      "sprint": null,
+      "notas": "El de mayor complejidad algorítmica del grupo. Conviene dejarlo para el final, cuando los demás ya validaron el flujo.",
+      "mvp": false
     },
     {
       "id": "HU-065",
@@ -1574,7 +1711,8 @@
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
       "sprint": 9,
-      "notas": "Reutiliza el mismo motor de presentación y calificación del examen: cambia la piel, no la mecánica. Por eso es el juego más barato de los llamativos y el mejor candidato para el MVP."
+      "notas": "Reutiliza el mismo motor de presentación y calificación del examen: cambia la piel, no la mecánica. Por eso es el juego más barato de los llamativos y el mejor candidato para el MVP.",
+      "mvp": true
     },
     {
       "id": "HU-066",
@@ -1597,8 +1735,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 10,
-      "notas": "El más barato de construir de los cuatro. Buen candidato para validar el flujo de autogeneración antes de invertir en el crucigrama."
+      "sprint": null,
+      "notas": "El más barato de construir de los cuatro. Buen candidato para validar el flujo de autogeneración antes de invertir en el crucigrama.",
+      "mvp": false
     },
     {
       "id": "HU-067",
@@ -1622,8 +1761,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 9,
-      "notas": "El segundo criterio no es un detalle: sin él, un juego rejugable convierte los puntos en una fuente infinita y el ranking deja de medir aprendizaje."
+      "sprint": 10,
+      "notas": "El segundo criterio no es un detalle: sin él, un juego rejugable convierte los puntos en una fuente infinita y el ranking deja de medir aprendizaje.",
+      "mvp": true
     },
     {
       "id": "HU-068",
@@ -1644,8 +1784,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 9,
-      "notas": ""
+      "sprint": null,
+      "notas": "",
+      "mvp": false
     },
     {
       "id": "HU-069",
@@ -1666,7 +1807,8 @@
       ],
       "estado": "Implementado",
       "endpoints": "GET /api/auth/me",
-      "sprint": 1
+      "sprint": 1,
+      "mvp": true
     },
     {
       "id": "HU-070",
@@ -1688,8 +1830,9 @@
       ],
       "estado": "Parcial",
       "endpoints": "PUT /api/users/update/{id} exige rol administrador, así que un aprendiz no puede editarse a sí mismo.",
-      "sprint": 4,
-      "notas": "Hace falta un endpoint propio de autoservicio con una lista blanca de campos editables."
+      "sprint": null,
+      "notas": "Hace falta un endpoint propio de autoservicio con una lista blanca de campos editables.",
+      "mvp": false
     },
     {
       "id": "HU-071",
@@ -1711,7 +1854,8 @@
       ],
       "estado": "Parcial",
       "endpoints": "El cambio existe dentro de la actualización general, sin verificar la contraseña actual.",
-      "sprint": 4
+      "sprint": 2,
+      "mvp": true
     },
     {
       "id": "HU-072",
@@ -1732,7 +1876,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 10
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-073",
@@ -1754,7 +1899,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 9
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-074",
@@ -1776,7 +1922,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 9
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-075",
@@ -1798,7 +1945,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 10
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-076",
@@ -1820,7 +1968,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 10
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-077",
@@ -1842,7 +1991,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 10
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-078",
@@ -1864,7 +2014,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 11
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-079",
@@ -1885,7 +2036,8 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Ninguno.",
-      "sprint": 11
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-080",
@@ -1905,8 +2057,9 @@
       "dependencias": [],
       "estado": "No iniciado",
       "endpoints": "helpers/driveController.js",
-      "sprint": 1,
-      "notas": "Crítico. El identificador y el secreto de cliente están escritos en el código de un repositorio público."
+      "sprint": null,
+      "notas": "Crítico. El identificador y el secreto de cliente están escritos en el código de un repositorio público.",
+      "mvp": false
     },
     {
       "id": "HU-081",
@@ -1927,8 +2080,9 @@
       "dependencias": [],
       "estado": "No iniciado",
       "endpoints": "Siete endpoints de cursos, grupos, actividades y ranking responden hoy sin token.",
-      "sprint": 1,
-      "notas": "El listado de grupos devuelve nombre, correo y rol de todos los usuarios de todas las organizaciones."
+      "sprint": null,
+      "notas": "El listado de grupos devuelve nombre, correo y rol de todos los usuarios de todas las organizaciones.",
+      "mvp": false
     },
     {
       "id": "HU-082",
@@ -1949,8 +2103,9 @@
       "dependencias": [],
       "estado": "No iniciado",
       "endpoints": "Afecta a cursos, actividades y al servicio de autenticación.",
-      "sprint": 2,
-      "notas": "Seis endpoints rotos provienen de este único malentendido de diseño, no de seis errores distintos."
+      "sprint": null,
+      "notas": "Seis endpoints rotos provienen de este único malentendido de diseño, no de seis errores distintos.",
+      "mvp": false
     },
     {
       "id": "HU-083",
@@ -1970,7 +2125,8 @@
       "dependencias": [],
       "estado": "No iniciado",
       "endpoints": "Hoy conviven ocho formatos distintos de error a lo largo de los controladores.",
-      "sprint": 2
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-084",
@@ -1990,8 +2146,9 @@
       "dependencias": [],
       "estado": "No iniciado",
       "endpoints": "Transversal.",
-      "sprint": 1,
-      "notas": "Es la causa exacta de la caída total en el despliegue de Azure: el error real era ilegible."
+      "sprint": null,
+      "notas": "Es la causa exacta de la caída total en el despliegue de Azure: el error real era ilegible.",
+      "mvp": false
     },
     {
       "id": "HU-085",
@@ -2013,8 +2170,9 @@
       ],
       "estado": "No iniciado",
       "endpoints": "Hoy el comando de pruebas solo devuelve un error de marcador de posición.",
-      "sprint": 2,
-      "notas": "La ausencia de pruebas es la razón directa de que un endpoint que nunca responde llegara a producción."
+      "sprint": null,
+      "notas": "La ausencia de pruebas es la razón directa de que un endpoint que nunca responde llegara a producción.",
+      "mvp": false
     },
     {
       "id": "HU-086",
@@ -2035,7 +2193,8 @@
       "dependencias": [],
       "estado": "No iniciado",
       "endpoints": "index.js",
-      "sprint": 3
+      "sprint": null,
+      "mvp": false
     },
     {
       "id": "HU-087",
@@ -2057,7 +2216,8 @@
       ],
       "estado": "Parcial",
       "endpoints": "docs/openapi.json y docs/OnBoardPro.postman_collection.json cubren hoy las 33 rutas.",
-      "sprint": 4
+      "sprint": null,
+      "mvp": false
     }
   ],
   "disparadores": [

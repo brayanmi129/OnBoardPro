@@ -1,0 +1,901 @@
+﻿Summary,Issue Type,Description,Priority,Story Points,Epic Name,Epic Link,Labels,Sprint
+Plataforma y Multi-tenancy,Epic,"Que varias organizaciones convivan en la misma instalación sin verse entre sí. Es el cimiento comercial del producto.
+
+Historias: 6  ·  Puntos: 20",Medium,,Plataforma y Multi-tenancy,,epica,
+Autenticación y Acceso,Epic,"Entrar al sistema de forma segura por credenciales propias o proveedores corporativos.
+
+Historias: 7  ·  Puntos: 23",Medium,,Autenticación y Acceso,,epica,
+Usuarios y Roles,Epic,"Administrar las personas de cada organización y lo que cada una puede hacer.
+
+Historias: 6  ·  Puntos: 19",Medium,,Usuarios y Roles,,epica,
+Grupos,Epic,"Agrupar aprendices para asignarles cursos en bloque, en vez de uno por uno.
+
+Historias: 6  ·  Puntos: 15",Medium,,Grupos,,epica,
+Cursos y Estructura de Contenido,Epic,"Organizar el contenido formativo en cursos con secciones ordenados.
+
+Historias: 8  ·  Puntos: 28",Medium,,Cursos y Estructura de Contenido,,epica,
+Actividades y Recursos Multimedia,Epic,"Cargar y consumir el material de apoyo: videos, PDFs, enlaces.
+
+Historias: 7  ·  Puntos: 25",Medium,,Actividades y Recursos Multimedia,,epica,
+Evaluaciones,Epic,"El examen de siempre y el motor que presenta preguntas y las califica. Ese mismo motor es el que después reutilizan los juegos.
+
+Historias: 5  ·  Puntos: 31",Medium,,Evaluaciones,,epica,
+Entregas y Calificación,Epic,"Que el aprendiz entregue trabajos y el instructor los califique con retroalimentación.
+
+Historias: 5  ·  Puntos: 18",Medium,,Entregas y Calificación,,epica,
+Gamificación: XP y Niveles,Epic,"La economía de puntos que sostiene toda la motivación del producto.
+
+Historias: 8  ·  Puntos: 28",Medium,,Gamificación: XP y Niveles,,epica,
+Gamificación: Logros,Epic,"Metas desbloqueables que premian conductas específicas.
+
+Historias: 4  ·  Puntos: 15",Medium,,Gamificación: Logros,,epica,
+Juegos Autogenerables,Epic,"El instructor elige qué juego quiere, carga solo los datos que ese juego pide, y el sistema lo arma e inserta en la sección.
+
+Historias: 6  ·  Puntos: 29",Medium,,Juegos Autogenerables,,epica,
+Perfil de Usuario,Epic,"Que cada persona gestione sus datos y vea su progreso.
+
+Historias: 4  ·  Puntos: 10",Medium,,Perfil de Usuario,,epica,
+Notificaciones,Epic,"Avisar de lo que requiere atención sin que el usuario tenga que entrar a buscarlo.
+
+Historias: 3  ·  Puntos: 13",Medium,,Notificaciones,,epica,
+Reportes y Analítica,Epic,"Datos de avance y uso. Es lo que justifica la renovación del contrato ante un cliente.
+
+Historias: 4  ·  Puntos: 18",Medium,,Reportes y Analítica,,epica,
+HU-001 · Crear organización,Story,"Como superadmin, quiero registrar una nueva organización con su nombre y dominio de correo, para habilitar a un cliente nuevo en la plataforma.
+
+CRITERIOS DE ACEPTACIÓN
+1. Dado que soy superadmin, cuando envío nombre y dominio válidos, entonces la organización queda creada y activa.
+2. El dominio se normaliza a minúsculas y es único: un dominio repetido devuelve error explicativo.
+3. Un usuario que no sea superadmin recibe 403.
+
+Valor de negocio: 5/5  ·  Prioridad: Must",Highest,3,,Plataforma y Multi-tenancy,MVP,Sprint 1
+HU-007 · Iniciar sesión con correo y contraseña,Story,"Como usuario, quiero entrar con mi correo y contraseña, para acceder a la plataforma.
+
+CRITERIOS DE ACEPTACIÓN
+1. Con credenciales válidas recibo un token y mis datos, sin la contraseña.
+2. Con contraseña incorrecta recibo 401 y un mensaje que no revela si el correo existe.
+3. Un usuario creado solo por OAuth recibe un mensaje indicándole que use su proveedor.
+
+Valor de negocio: 5/5  ·  Prioridad: Must",Highest,3,,Autenticación y Acceso,MVP,Sprint 1
+HU-008 · Iniciar sesión con Google,Story,"Como usuario, quiero entrar con mi cuenta institucional de Google, para no tener que recordar otra contraseña.
+
+CRITERIOS DE ACEPTACIÓN
+1. El dominio del correo debe corresponder a una organización activa; si no, se rechaza con motivo explícito.
+2. Si es mi primer ingreso, se crea mi usuario con rol aprendiz en esa organización.
+3. Al terminar vuelvo al frontend con un token válido.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-001",Highest,3,,Autenticación y Acceso,MVP,Sprint 1
+HU-009 · Iniciar sesión con Microsoft,Story,"Como usuario, quiero entrar con mi cuenta institucional de Microsoft, para no tener que recordar otra contraseña.
+
+CRITERIOS DE ACEPTACIÓN
+1. Mismo comportamiento que Google respecto al dominio y alta automática.
+2. El correo se toma de 'mail' y, si viene vacío, de 'userPrincipalName'.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-001",Highest,3,,Autenticación y Acceso,MVP,Sprint 1
+HU-011 · Cerrar sesión,Story,"Como usuario, quiero salir de mi cuenta, para proteger mi información en equipos compartidos.
+
+CRITERIOS DE ACEPTACIÓN
+1. El token se descarta en el cliente y se redirige al login.
+2. Volver atrás en el navegador no restaura la sesión.
+
+Valor de negocio: 3/5  ·  Prioridad: Must
+
+Depende de: HU-007",Highest,1,,Autenticación y Acceso,MVP,Sprint 1
+HU-069 · Ver mi perfil,Story,"Como usuario, quiero consultar mis datos personales, para verificar que están correctos.
+
+CRITERIOS DE ACEPTACIÓN
+1. Veo nombre, correo, rol, organización y datos de contacto.
+2. No se muestra ningún dato sensible de autenticación.
+
+Valor de negocio: 3/5  ·  Prioridad: Must
+
+Depende de: HU-007",Highest,1,,Perfil de Usuario,MVP,Sprint 1
+HU-002 · Consultar organizaciones,Story,"Como superadmin, quiero ver el listado de todas las organizaciones, para administrar los clientes de la plataforma.
+
+CRITERIOS DE ACEPTACIÓN
+1. El listado muestra nombre, dominio, estado y fecha de creación.
+2. Solo accesible para superadmin.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-001",Highest,2,,Plataforma y Multi-tenancy,MVP,Sprint 2
+HU-010 · Recuperar contraseña olvidada,Story,"Como usuario, quiero restablecer mi contraseña desde el correo, para recuperar el acceso sin depender de un administrador.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se envía un enlace con token de un solo uso y caducidad de 1 hora.
+2. La respuesta es idéntica exista o no el correo, para no filtrar qué cuentas hay.
+3. Al usar el enlace se exige una contraseña que cumpla la política mínima.
+4. El token queda invalidado tras el primer uso.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-007",Highest,5,,Autenticación y Acceso,MVP,Sprint 2
+HU-013 · Limitar intentos fallidos de inicio de sesión,Story,"Como sistema, quiero bloquear temporalmente tras varios intentos fallidos, para impedir ataques de fuerza bruta contra las contraseñas.
+
+CRITERIOS DE ACEPTACIÓN
+1. Tras 5 intentos fallidos desde la misma IP se aplica una espera creciente.
+2. El bloqueo se registra para auditoría.
+3. Un inicio de sesión exitoso reinicia el contador.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-007",Highest,3,,Autenticación y Acceso,MVP,Sprint 2
+HU-071 · Cambiar mi contraseña,Story,"Como usuario, quiero cambiar mi contraseña estando dentro, para mantener segura mi cuenta.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se exige la contraseña actual antes de permitir el cambio.
+2. La nueva debe cumplir la política mínima de seguridad.
+3. Se notifica el cambio al correo registrado.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-069",Highest,3,,Perfil de Usuario,MVP,Sprint 2
+HU-006 · Aislamiento de datos entre organizaciones,Story,"Como sistema, quiero que toda consulta devuelva únicamente datos de la organización del usuario autenticado, para impedir que un cliente vea información de otro.
+
+CRITERIOS DE ACEPTACIÓN
+1. Grupos, cursos, actividades y ranking se filtran por la organización del token.
+2. Un admin de la organización A no obtiene ningún registro de la B, ni siquiera conociendo el id.
+3. El superadmin es la única excepción y puede consultar todo.
+4. Existe una prueba automatizada que lo verifica para cada módulo.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-001
+
+Nota: Riesgo alto. El schema ya tiene tenant_id en groups y courses, pero ningún servicio lo escribe ni lo filtra. La tabla activities ni siquiera tiene la columna.",Highest,8,,Plataforma y Multi-tenancy,MVP,Sprint 3
+HU-014 · Crear usuario,Story,"Como administrador, quiero dar de alta a una persona en mi organización, para que pueda acceder a los cursos.
+
+CRITERIOS DE ACEPTACIÓN
+1. El correo es único en todo el sistema; si se repite, error claro.
+2. La contraseña se almacena cifrada, nunca en texto plano.
+3. El usuario queda siempre en mi organización, aunque envíe otra en la petición.
+4. Solo un superadmin puede crear otro superadmin.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-001",Highest,3,,Usuarios y Roles,MVP,Sprint 3
+HU-020 · Crear grupo,Story,"Como administrador, quiero crear un grupo dentro de mi organización, para administrar aprendices en bloque.
+
+CRITERIOS DE ACEPTACIÓN
+1. El grupo queda asociado a mi organización de forma automática.
+2. Opcionalmente puedo añadir aprendices en el mismo paso.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-001
+
+Nota: Funciona, pero no guarda tenant_id: los grupos creados por la API quedan huérfanos de organización.",Highest,3,,Grupos,MVP,Sprint 3
+HU-026 · Crear curso,Story,"Como administrador / instructor, quiero registrar un curso nuevo, para ofrecer contenido formativo.
+
+CRITERIOS DE ACEPTACIÓN
+1. El curso queda en mi organización y en estado borrador hasta publicarlo.
+2. El instructor asignado debe ser un usuario existente con rol instructor.
+3. Un instructor solo puede crear cursos en su organización.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-001
+
+Nota: El controlador pasa el objeto request completo al servicio en lugar del cuerpo. Falla siempre.",Highest,3,,Cursos y Estructura de Contenido,MVP,Sprint 3
+HU-015 · Consultar usuarios con filtros,Story,"Como administrador, quiero ver, buscar y filtrar las personas de mi organización, para gestionarlas con agilidad.
+
+CRITERIOS DE ACEPTACIÓN
+1. Puedo filtrar por rol y estado, y buscar por nombre o correo.
+2. El listado se pagina a partir de 50 registros.
+3. Nunca se expone el hash de la contraseña.
+4. Un admin solo ve su organización; el superadmin ve todas.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-014
+
+Nota: Falta paginación y búsqueda por texto; el filtrado por rol y tenant ya funciona.",Highest,3,,Usuarios y Roles,MVP,Sprint 4
+HU-023 · Gestionar integrantes de un grupo,Story,"Como administrador, quiero añadir y quitar aprendices de un grupo, para reflejar los cambios de matrícula.
+
+CRITERIOS DE ACEPTACIÓN
+1. Puedo añadir varios de una vez desde un buscador.
+2. Añadir a alguien que ya está no genera duplicados ni error.
+3. Solo puedo añadir personas de mi organización.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-020, HU-014
+
+Nota: La lógica de upsert está bien resuelta. Falta autenticación y validación de organización.",Highest,3,,Grupos,MVP,Sprint 4
+HU-027 · Consultar cursos,Story,"Como administrador / instructor, quiero ver el catálogo de cursos de mi organización, para gestionar la oferta formativa.
+
+CRITERIOS DE ACEPTACIÓN
+1. El admin ve todos los cursos de su organización.
+2. El instructor ve únicamente los cursos que tiene asignados.
+3. Se puede buscar por nombre y filtrar por estado.
+4. Requiere autenticación.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-026
+
+Nota: El listado responde sin token y sin filtrar. La consulta por id está rota: pasa el request como identificador.",Highest,3,,Cursos y Estructura de Contenido,MVP,Sprint 4
+HU-032 · Organizar el curso en secciones,Story,"Como instructor, quiero dividir el curso en secciones ordenados, para que el aprendiz siga una secuencia lógica en vez de una lista plana.
+
+CRITERIOS DE ACEPTACIÓN
+1. Puedo crear, renombrar y eliminar secciones dentro de un curso.
+2. Cada sección agrupa actividades, recursos, evaluaciones y juegos.
+3. Puedo reordenar secciones y sus contenidos arrastrando.
+4. Un sección vacío no se muestra al aprendiz.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-026
+
+Nota: Cambio estructural. Hoy el curso guarda las actividades en un arreglo plano de texto, sin orden ni agrupación.",Highest,8,,Cursos y Estructura de Contenido,MVP,Sprint 4
+HU-016 · Editar usuario,Story,"Como administrador, quiero actualizar los datos de una persona, para mantener la información al día.
+
+CRITERIOS DE ACEPTACIÓN
+1. Puedo actualizar campos sueltos sin enviar el registro completo.
+2. Si cambio la contraseña, se vuelve a cifrar.
+3. Un admin no puede promover a nadie a superadmin.
+4. Un admin no puede editar usuarios de otra organización.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-014
+
+Nota: No valida que el usuario objetivo pertenezca al tenant de quien edita.",Highest,3,,Usuarios y Roles,MVP,Sprint 5
+HU-017 · Eliminar usuario,Story,"Como administrador, quiero dar de baja a una persona, para depurar la base de usuarios.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se pide confirmación antes de borrar.
+2. Si no existe, la respuesta es 404, no 500.
+3. Un admin no puede borrar usuarios de otra organización.
+4. Se advierte qué pasa con sus entregas y su progreso.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-014
+
+Nota: Devuelve 500 cuando el usuario no existe, y no valida tenant.",Medium,2,,Usuarios y Roles,MVP,Sprint 5
+HU-018 · Asignar y cambiar rol,Story,"Como administrador, quiero definir si alguien es aprendiz, instructor o administrador, para controlar qué puede hacer cada persona.
+
+CRITERIOS DE ACEPTACIÓN
+1. Los roles disponibles dependen de mi propio rol: un admin no puede crear superadmins.
+2. El cambio de rol se refleja en el siguiente inicio de sesión del afectado.
+3. El cambio queda registrado en auditoría con autor y fecha.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-014
+
+Nota: El cambio funciona, pero no hay registro de auditoría ni invalidación del token vigente.",Highest,3,,Usuarios y Roles,MVP,Sprint 5
+HU-021 · Consultar grupos,Story,"Como administrador, quiero ver los grupos de mi organización con sus integrantes y cursos, para saber cómo está distribuida la gente.
+
+CRITERIOS DE ACEPTACIÓN
+1. Cada grupo muestra el número de integrantes y los cursos asignados.
+2. Solo veo grupos de mi organización.
+3. Requiere autenticación.
+
+Valor de negocio: 3/5  ·  Prioridad: Must
+
+Depende de: HU-020
+
+Nota: Riesgo alto: hoy responde sin token y sin filtrar por organización. Expone correos y roles de todos los usuarios.",Highest,3,,Grupos,MVP,Sprint 5
+HU-024 · Asignar cursos a un grupo,Story,"Como administrador, quiero vincular uno o varios cursos a un grupo completo, para no asignar el curso persona por persona.
+
+CRITERIOS DE ACEPTACIÓN
+1. Al asignar un curso al grupo, todos sus integrantes lo ven de inmediato.
+2. Quitar el curso del grupo retira el acceso, sin borrar el progreso ya logrado.
+3. Solo puedo asignar cursos de mi organización.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-020, HU-027
+
+Nota: Hueco importante: es el mecanismo central de asignación y hoy solo se puede poblar con el seed.",Highest,3,,Grupos,MVP,Sprint 5
+HU-034 · Crear actividad o recurso,Story,"Como instructor, quiero añadir una actividad dentro de un sección, para estructurar el contenido del curso.
+
+CRITERIOS DE ACEPTACIÓN
+1. Puedo elegir el tipo: recurso, tarea entregable, evaluación o juego.
+2. La actividad queda dentro del sección y la organización correctos.
+3. Los campos obligatorios se validan antes de guardar.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-032
+
+Nota: La ruta monta el servicio en lugar del controlador. Además el controlador correcto importa un archivo que no existe.",Highest,3,,Actividades y Recursos Multimedia,MVP,Sprint 5
+HU-025 · Ver mis grupos,Story,"Como aprendiz, quiero ver a qué grupos pertenezco, para entender de dónde vienen mis cursos.
+
+CRITERIOS DE ACEPTACIÓN
+1. Veo el nombre y descripción de cada grupo al que pertenezco.
+2. Requiere sesión iniciada.
+
+Valor de negocio: 2/5  ·  Prioridad: Could
+
+Depende de: HU-023
+
+Nota: La ruta no monta el middleware de autenticación, por lo que siempre responde 401. Corrección de una línea.",Low,1,,Grupos,MVP,Sprint 6
+HU-041 · Crear un examen,Story,"Como instructor, quiero crear un examen dentro de una sección, cargando sus preguntas con opciones y la respuesta correcta, para evaluar formalmente lo aprendido, como en cualquier plataforma de formación.
+
+CRITERIOS DE ACEPTACIÓN
+1. Al crear la actividad elijo el tipo examen, y el formulario me pide preguntas, opciones y cuál es la correcta.
+2. Configuro puntaje total, tiempo límite e intentos permitidos.
+3. Puedo previsualizar el examen tal como lo verá el aprendiz antes de publicarlo.
+4. El examen queda dentro de la sección y el curso correctos.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-034
+
+Nota: Las preguntas se guardan con una estructura común para que después puedan reaprovecharse en un juego, pero el instructor nunca tiene que gestionar un banco aparte: carga lo que pide el examen y ya.",Highest,8,,Evaluaciones,MVP,Sprint 6
+HU-046 · Subir entrega,Story,"Como aprendiz, quiero adjuntar mi trabajo en una actividad entregable, para cumplir con lo asignado.
+
+CRITERIOS DE ACEPTACIÓN
+1. Solo disponible en actividades de tipo entregable.
+2. Se validan formato y tamaño antes de subir.
+3. La entrega queda en estado entregado, con fecha y hora.
+4. Puedo reemplazarla mientras el plazo siga abierto y no esté calificada.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-034",Highest,5,,Entregas y Calificación,MVP,Sprint 6
+HU-051 · Definir el XP de una actividad,Story,"Como instructor, quiero asignar cuántos puntos otorga cada actividad, para calibrar la dificultad y el incentivo.
+
+CRITERIOS DE ACEPTACIÓN
+1. El valor es un entero positivo dentro de un rango configurable por la organización.
+2. Se puede cambiar después, sin afectar el XP ya otorgado.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-034",Highest,2,,Gamificación: XP y Niveles,MVP,Sprint 6
+HU-037 · Subir material de apoyo,Story,"Como instructor, quiero adjuntar archivos a una actividad, para entregar el material de estudio.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se aceptan PDF, imágenes y video, con un límite de tamaño explícito.
+2. Un formato o tamaño no permitido se rechaza con mensaje claro antes de subir.
+3. Se muestra el progreso de carga.
+4. El archivo queda accesible solo para quien tiene acceso al curso.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-034
+
+Nota: Los archivos de Drive se publican como accesibles para cualquiera con el enlace. Revisar si es aceptable para contenido de clientes.",Highest,5,,Actividades y Recursos Multimedia,MVP,Sprint 7
+HU-040 · Marcar actividad como completada,Story,"Como aprendiz, quiero marcar que terminé una actividad de tipo recurso, para llevar el control de mi avance y recibir mi XP.
+
+CRITERIOS DE ACEPTACIÓN
+1. Solo aplica a recursos; las tareas y evaluaciones se completan al entregarlas o resolverlas.
+2. Al marcarla se acredita el XP configurado, una sola vez.
+3. Desmarcarla no retira el XP ya otorgado.
+4. El avance del curso se recalcula al instante.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-034, HU-042
+
+Nota: Pieza faltante clave: sin registro de progreso no hay gamificación posible.",Highest,5,,Actividades y Recursos Multimedia,MVP,Sprint 7
+HU-048 · Calificar y retroalimentar entrega,Story,"Como instructor, quiero poner nota y comentario a una entrega, para evaluar y orientar la mejora del aprendiz.
+
+CRITERIOS DE ACEPTACIÓN
+1. La nota se valida contra el rango configurado en la actividad.
+2. El comentario de retroalimentación es obligatorio.
+3. Al guardar, la entrega pasa a calificada y se acredita el XP de la actividad.
+4. El aprendiz recibe una notificación.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-046
+
+Nota: Es el punto donde se conectan entregas y gamificación: el XP se otorga al calificar, no al subir.",Highest,5,,Entregas y Calificación,MVP,Sprint 7
+HU-028 · Editar curso,Story,"Como administrador / instructor, quiero modificar los datos de un curso, para mantener la información vigente.
+
+CRITERIOS DE ACEPTACIÓN
+1. El instructor solo puede editar cursos que tiene asignados.
+2. Los cambios se reflejan de inmediato para los aprendices.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-026",Highest,3,,Cursos y Estructura de Contenido,MVP,Sprint 8
+HU-044 · Presentar y responder una evaluación,Story,"Como aprendiz, quiero resolver el examen dentro de la plataforma, para demostrar lo aprendido.
+
+CRITERIOS DE ACEPTACIÓN
+1. El cronómetro es visible y al agotarse la evaluación se envía automáticamente.
+2. Las respuestas se van guardando para no perderlas si se corta la conexión.
+3. No puedo superar el número de intentos configurado.
+4. El orden de preguntas y opciones puede aleatorizarse.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-041
+
+Nota: Es el motor común: presentar preguntas, recoger respuestas y controlar tiempo e intentos. El concurso del sprint 11 lo reutiliza entero, solo cambia la presentación.",Highest,8,,Evaluaciones,MVP,Sprint 8
+HU-052 · Acreditar XP al completar,Story,"Como sistema, quiero sumar el XP al aprendiz cuando corresponde, para reflejar su progreso real.
+
+CRITERIOS DE ACEPTACIÓN
+1. En recursos, al marcarlos completados.
+2. En entregas, al momento de ser calificadas, nunca al subir el archivo.
+3. En exámenes y juegos, en proporción al resultado obtenido.
+4. Cada acreditación queda registrada con su origen, para poder auditarla.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-040, HU-048, HU-051",Highest,5,,Gamificación: XP y Niveles,MVP,Sprint 8
+HU-030 · Asignar instructor a un curso,Story,"Como administrador, quiero designar quién dicta cada curso, para definir responsables.
+
+CRITERIOS DE ACEPTACIÓN
+1. Solo se pueden seleccionar usuarios con rol instructor de mi organización.
+2. El instructor asignado pasa a ver el curso en su listado.
+3. Se puede reasignar a otro instructor.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-026
+
+Nota: El campo guarda un correo en vez de una referencia al usuario. Conviene cambiarlo a clave foránea.",Highest,3,,Cursos y Estructura de Contenido,MVP,Sprint 9
+HU-031 · Ver mis cursos asignados,Story,"Como aprendiz, quiero ver únicamente los cursos que me corresponden, para entrar directo a lo mío sin ruido.
+
+CRITERIOS DE ACEPTACIÓN
+1. Veo los cursos asignados a mí o a cualquiera de mis grupos, sin duplicados.
+2. No veo cursos de otros grupos ni de otras organizaciones.
+3. Cada curso muestra mi porcentaje de avance.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-024
+
+Nota: La resolución grupo a curso ya funciona. Falta el porcentaje de avance.",Highest,3,,Cursos y Estructura de Contenido,MVP,Sprint 9
+HU-045 · Calificar la evaluación y acreditar puntos,Story,"Como sistema, quiero calcular la nota al enviar y otorgar los puntos correspondientes, para dar resultado inmediato sin trabajo del instructor.
+
+CRITERIOS DE ACEPTACIÓN
+1. La nota se calcula al instante para preguntas de opción múltiple.
+2. El aprendiz ve qué acertó y qué falló, si el instructor lo habilitó.
+3. Los puntos se acreditan en proporción a la nota obtenida.
+4. El resultado queda en el histórico del aprendiz.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-044",Highest,5,,Evaluaciones,MVP,Sprint 9
+HU-065 · Crear actividad de concurso de preguntas,Story,"Como instructor, quiero crear una actividad de tipo concurso de preguntas indicando las preguntas con sus opciones y la correcta, para reforzar el tema de forma lúdica sin tener que diseñar el juego a mano.
+
+CRITERIOS DE ACEPTACIÓN
+1. Al crear la actividad elijo concurso de preguntas y el formulario me pide exactamente las preguntas con sus opciones y la correcta.
+2. Configuro cuántas preguntas, el tiempo por pregunta y si la dificultad va en aumento.
+3. Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.
+4. Queda insertado como una actividad más dentro de la sección.
+
+Valor de negocio: 4/5  ·  Prioridad: Should
+
+Depende de: HU-034
+
+Nota: Reutiliza el mismo motor de presentación y calificación del examen: cambia la piel, no la mecánica. Por eso es el juego más barato de los llamativos y el mejor candidato para el MVP.",Medium,5,,Juegos Autogenerables,MVP,Sprint 9
+HU-035 · Consultar actividades de un curso,Story,"Como usuario, quiero ver las actividades disponibles, para saber qué tengo que hacer.
+
+CRITERIOS DE ACEPTACIÓN
+1. Las actividades se muestran agrupadas por sección y en orden.
+2. El aprendiz solo ve actividades de cursos que tiene asignados.
+3. Cada actividad indica su estado: pendiente, entregada o completada.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-034
+
+Nota: El endpoint nunca responde: la petición queda abierta hasta que el cliente corta por tiempo.",Highest,3,,Actividades y Recursos Multimedia,MVP,Sprint 10
+HU-038 · Ver y descargar material,Story,"Como usuario, quiero abrir o descargar los archivos de una actividad, para estudiar el material.
+
+CRITERIOS DE ACEPTACIÓN
+1. Los PDFs y videos se previsualizan sin salir de la plataforma.
+2. Solo accedo a material de cursos que tengo asignados.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-037",Highest,3,,Actividades y Recursos Multimedia,MVP,Sprint 10
+HU-047 · Consultar entregas pendientes,Story,"Como instructor, quiero ver qué entregas tengo por calificar, para organizar mi trabajo.
+
+CRITERIOS DE ACEPTACIÓN
+1. Puedo filtrar por pendientes y ordenar por fecha de entrega.
+2. Solo veo entregas de cursos que tengo asignados.
+3. Se muestra un contador de pendientes.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-046",Highest,3,,Entregas y Calificación,MVP,Sprint 10
+HU-054 · Subir de nivel automáticamente,Story,"Como sistema, quiero recalcular el nivel cuando el XP cruza un umbral, para que el progreso se sienta inmediato.
+
+CRITERIOS DE ACEPTACIÓN
+1. El nivel se recalcula en la misma operación que acredita el XP.
+2. Al subir de nivel se muestra una celebración en la interfaz y se emite una notificación.
+3. El nivel nunca baja aunque se ajuste la tabla a la baja.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-052",Highest,3,,Gamificación: XP y Niveles,MVP,Sprint 10
+HU-067 · Jugar y ganar puntos,Story,"Como aprendiz, quiero jugar los juegos de mi curso y ganar puntos según cómo me vaya, para aprender de forma entretenida.
+
+CRITERIOS DE ACEPTACIÓN
+1. Los puntos dependen del desempeño, no de la simple participación.
+2. Al repetir el juego, el puntaje completo solo se otorga la primera vez.
+3. Mi mejor resultado queda registrado en el histórico.
+4. El juego funciona en móvil.
+
+Valor de negocio: 5/5  ·  Prioridad: Must
+
+Depende de: HU-065, HU-052
+
+Nota: El segundo criterio no es un detalle: sin él, un juego rejugable convierte los puntos en una fuente infinita y el ranking deja de medir aprendizaje.",Highest,5,,Juegos Autogenerables,MVP,Sprint 10
+HU-049 · Ver mi calificación y retroalimentación,Story,"Como aprendiz, quiero consultar la nota y el comentario del instructor, para saber cómo me fue y qué mejorar.
+
+CRITERIOS DE ACEPTACIÓN
+1. La nota y el comentario solo son visibles una vez calificada la entrega.
+2. Se muestra la fecha de calificación y el XP obtenido.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-048",Highest,2,,Entregas y Calificación,MVP,Sprint 11
+HU-056 · Ver mi XP y nivel,Story,"Como aprendiz, quiero consultar mi puntaje y nivel actual, para monitorear mi progreso.
+
+CRITERIOS DE ACEPTACIÓN
+1. Veo XP total, nivel actual y cuánto falta para el siguiente.
+2. Veo el detalle de las últimas acreditaciones y su origen.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-052",Medium,2,,Gamificación: XP y Niveles,MVP,Sprint 11
+HU-057 · Ver tabla de posiciones,Story,"Como aprendiz, quiero ver el ranking de mi organización, para compararme y motivarme.
+
+CRITERIOS DE ACEPTACIÓN
+1. El ranking solo incluye aprendices de mi organización.
+2. Se ordena por XP y muestra mi posición destacada.
+3. Se puede filtrar por grupo y por periodo.
+4. Instructores y administradores quedan excluidos.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-052
+
+Nota: Devuelve error en producción. Además no filtra por organización: hoy mezclaría aprendices de clientes distintos.",Medium,3,,Gamificación: XP y Niveles,MVP,Sprint 11
+HU-003 · Editar organización,Story,"Como superadmin, quiero actualizar el nombre o dominio de una organización, para corregir datos o reflejar cambios del cliente.
+
+CRITERIOS DE ACEPTACIÓN
+1. Solo se aplican nombre, dominio y estado activo; el resto se ignora.
+2. Cambiar el dominio a uno ya usado devuelve error.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-001",Medium,2,,Plataforma y Multi-tenancy,Post-MVP,
+HU-004 · Activar o desactivar organización,Story,"Como superadmin, quiero suspender el acceso de una organización sin borrar sus datos, para gestionar impagos o bajas temporales.
+
+CRITERIOS DE ACEPTACIÓN
+1. Con la organización inactiva, el login OAuth de ese dominio queda bloqueado.
+2. Los datos existentes se conservan intactos.
+3. Debe quedar claro en la UI que los usuarios ya creados aún pueden entrar con contraseña.
+
+Valor de negocio: 4/5  ·  Prioridad: Should
+
+Depende de: HU-001",Medium,2,,Plataforma y Multi-tenancy,Post-MVP,
+HU-005 · Eliminar organización,Story,"Como superadmin, quiero borrar definitivamente una organización, para cerrar la cuenta de un cliente que se va.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se pide confirmación explícita escribiendo el nombre de la organización.
+2. Se advierte que se borran en cascada sus grupos y cursos.
+3. Los usuarios no se borran: quedan sin organización asignada.
+
+Valor de negocio: 2/5  ·  Prioridad: Could
+
+Depende de: HU-001",Low,3,,Plataforma y Multi-tenancy,Post-MVP,
+HU-012 · Renovar sesión antes de que expire,Story,"Como usuario, quiero seguir trabajando sin que se me corte la sesión de golpe, para no perder lo que estoy haciendo.
+
+CRITERIOS DE ACEPTACIÓN
+1. El token dura 3 horas y se renueva de forma transparente mientras haya actividad.
+2. Tras el periodo de inactividad se pide iniciar sesión de nuevo con aviso previo.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-007",Medium,5,,Autenticación y Acceso,Post-MVP,
+HU-019 · Carga masiva de usuarios desde archivo,Story,"Como administrador, quiero importar muchas personas desde un CSV o Excel, para no dar de alta uno por uno al inicio de cada periodo.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se puede descargar una plantilla con las columnas esperadas.
+2. Antes de importar se muestra una previsualización con los errores detectados por fila.
+3. Las filas válidas se importan aunque otras fallen, y se entrega un resumen final.
+4. Los correos duplicados se reportan sin interrumpir el proceso.
+
+Valor de negocio: 4/5  ·  Prioridad: Should
+
+Depende de: HU-014
+
+Nota: Alto impacto para clientes educativos: dar de alta 300 estudiantes a mano no es viable.",Medium,5,,Usuarios y Roles,Post-MVP,
+HU-022 · Editar y eliminar grupo,Story,"Como administrador, quiero renombrar o borrar un grupo, para mantener la estructura organizada entre periodos.
+
+CRITERIOS DE ACEPTACIÓN
+1. Al borrar se pide confirmación y se avisa cuántos aprendices quedarán sin ese grupo.
+2. Borrar el grupo no borra a sus integrantes ni los cursos.
+
+Valor de negocio: 2/5  ·  Prioridad: Should
+
+Depende de: HU-020
+
+Nota: Funciona, pero sin autenticación.",Medium,2,,Grupos,Post-MVP,
+HU-029 · Eliminar o archivar curso,Story,"Como administrador, quiero retirar un curso del catálogo, para depurar contenido que ya no se dicta.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se pide confirmación y se avisa cuántos aprendices lo tienen asignado.
+2. Se prefiere archivar sobre borrar, para conservar el histórico de progreso.
+3. Un curso archivado deja de aparecer para los aprendices.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-026",Medium,3,,Cursos y Estructura de Contenido,Post-MVP,
+HU-033 · Publicar o despublicar un curso,Story,"Como administrador / instructor, quiero controlar cuándo el curso se hace visible, para prepararlo con calma antes de abrirlo.
+
+CRITERIOS DE ACEPTACIÓN
+1. Un curso en borrador solo lo ven quienes lo administran.
+2. Al publicar se valida que tenga al menos un sección con contenido.
+3. Despublicar no borra el progreso ya registrado.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-032",Medium,2,,Cursos y Estructura de Contenido,Post-MVP,
+HU-036 · Editar y eliminar actividad,Story,"Como instructor, quiero corregir o retirar una actividad, para mantener el contenido actualizado.
+
+CRITERIOS DE ACEPTACIÓN
+1. Solo puedo modificar actividades de cursos que tengo asignados.
+2. Al eliminar se advierte si ya existen entregas asociadas.
+3. Se prefiere ocultar frente a borrar cuando ya hay entregas.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-034",Medium,3,,Actividades y Recursos Multimedia,Post-MVP,
+HU-039 · Eliminar material de apoyo,Story,"Como instructor, quiero quitar un archivo de una actividad, para retirar material obsoleto.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se pide confirmación.
+2. El archivo se elimina también del almacenamiento externo, no solo la referencia.
+
+Valor de negocio: 2/5  ·  Prioridad: Could
+
+Depende de: HU-037",Low,3,,Actividades y Recursos Multimedia,Post-MVP,
+HU-042 · Importar preguntas desde un archivo,Story,"Como instructor, quiero cargar las preguntas de un examen desde un archivo, para no escribir cincuenta preguntas a mano.
+
+CRITERIOS DE ACEPTACIÓN
+1. Hay una plantilla descargable con las columnas esperadas.
+2. Se previsualizan los errores por fila antes de confirmar la importación.
+3. Las filas válidas se importan aunque otras fallen.
+
+Valor de negocio: 4/5  ·  Prioridad: Should
+
+Depende de: HU-041",Medium,5,,Evaluaciones,Post-MVP,
+HU-043 · Reutilizar preguntas ya cargadas,Story,"Como instructor, quiero reaprovechar en una actividad nueva las preguntas o términos que ya cargué en otra del mismo curso, para no volver a escribir el mismo contenido para cada examen o juego.
+
+CRITERIOS DE ACEPTACIÓN
+1. Al crear una actividad puedo elegir entre cargar contenido nuevo o tomarlo de otra actividad del curso.
+2. Solo se ofrecen actividades cuyo contenido es compatible con el tipo que estoy creando.
+3. Editar el contenido en una actividad no altera el de la otra.
+
+Valor de negocio: 4/5  ·  Prioridad: Should
+
+Depende de: HU-041
+
+Nota: Es la pieza que evita duplicar trabajo cuando un curso tiene examen y varios juegos sobre el mismo tema. Vale la pena en cuanto haya más de dos actividades por sección.",Medium,5,,Evaluaciones,Post-MVP,
+HU-050 · Permitir reenvío de una entrega,Story,"Como instructor, quiero reabrir una entrega ya calificada, para dar una segunda oportunidad cuando corresponde.
+
+CRITERIOS DE ACEPTACIÓN
+1. Al reabrir, la entrega vuelve a estado pendiente y se conserva el histórico de la nota anterior.
+2. El aprendiz recibe una notificación indicando el motivo.
+
+Valor de negocio: 2/5  ·  Prioridad: Could
+
+Depende de: HU-048",Low,3,,Entregas y Calificación,Post-MVP,
+HU-053 · Configurar la tabla de niveles,Story,"Como administrador, quiero definir cuánto XP requiere cada nivel, para ajustar la curva de progresión a mi organización.
+
+CRITERIOS DE ACEPTACIÓN
+1. Puedo definir los umbrales de cada nivel y su nombre.
+2. Cambiar la tabla recalcula el nivel de todos los usuarios de la organización.
+3. Cada organización tiene su propia configuración.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-052",Medium,5,,Gamificación: XP y Niveles,Post-MVP,
+HU-055 · Reglas de tope y antiabuso de XP,Story,"Como sistema, quiero limitar cuánto XP se puede ganar repitiendo lo mismo, para que el ranking mida aprendizaje y no insistencia.
+
+CRITERIOS DE ACEPTACIÓN
+1. Una actividad otorga XP completo solo en el primer intento; las repeticiones dan un porcentaje reducido o cero.
+2. Existe un tope diario de XP configurable por organización.
+3. Los intentos que no otorgan XP se lo indican al aprendiz de forma clara.
+
+Valor de negocio: 4/5  ·  Prioridad: Must
+
+Depende de: HU-052
+
+Nota: Imprescindible antes de lanzar los juegos: un juego rejugable sin tope convierte el XP en una fuente infinita.",Highest,5,,Gamificación: XP y Niveles,Post-MVP,
+HU-058 · Racha de días activos,Story,"Como aprendiz, quiero que se registre mi constancia diaria, para mantener el hábito de estudio.
+
+CRITERIOS DE ACEPTACIÓN
+1. La racha aumenta con al menos una actividad completada por día.
+2. Se reinicia tras un día sin actividad.
+3. Se otorga XP extra en hitos de racha configurables.
+
+Valor de negocio: 3/5  ·  Prioridad: Could
+
+Depende de: HU-052",Low,3,,Gamificación: XP y Niveles,Post-MVP,
+HU-059 · Crear logro,Story,"Como administrador / instructor, quiero definir un logro con nombre, descripción e insignia, para dar metas concretas a los aprendices.
+
+CRITERIOS DE ACEPTACIÓN
+1. El logro pertenece a mi organización.
+2. Puedo subir o elegir una insignia.
+3. El logro queda inactivo hasta definirle una condición.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-001",Medium,3,,Gamificación: Logros,Post-MVP,
+HU-060 · Definir la condición de una medalla,Story,"Como administrador / instructor, quiero elegir de una lista qué hay que cumplir para ganar una medalla y con qué valores, para premiar conductas concretas sin depender del equipo técnico para cada medalla nueva.
+
+CRITERIOS DE ACEPTACIÓN
+1. Elijo el tipo de condición de un catálogo cerrado de nueve opciones y solo completo sus valores.
+2. El sistema me muestra cuántas personas cumplirían la condición hoy, antes de activarla.
+3. Una medalla sin condición definida queda inactiva y no se puede desbloquear.
+4. Cambiar la condición no retira las medallas ya otorgadas.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-059
+
+Nota: El catálogo cerrado de condiciones es la decisión clave: permite crear medallas nuevas sin escribir código. Un motor de reglas libre costaría varias veces más y nadie lo usaría.",Medium,5,,Gamificación: Logros,Post-MVP,
+HU-061 · Desbloquear logro automáticamente,Story,"Como sistema, quiero otorgar el logro en cuanto se cumple la condición, para que la recompensa se sienta inmediata.
+
+CRITERIOS DE ACEPTACIÓN
+1. La evaluación ocurre solo en los cinco momentos definidos, no de forma continua.
+2. Una medalla se otorga una única vez por persona y no se puede perder.
+3. Al desbloquearla se notifica en el momento y aparece en el perfil.
+4. Las medallas de ranking se evalúan al cierre del periodo, no en tiempo real.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-060
+
+Nota: Acotar la evaluación a cinco disparadores es lo que hace que el sistema sea barato: sin eso habría que revisar todas las condiciones de todos los usuarios continuamente.",Medium,5,,Gamificación: Logros,Post-MVP,
+HU-062 · Ver mis logros,Story,"Como aprendiz, quiero ver los logros que gané y los que me faltan, para saber qué puedo perseguir.
+
+CRITERIOS DE ACEPTACIÓN
+1. Los desbloqueados muestran la fecha de obtención.
+2. Los pendientes muestran la condición y mi avance hacia ella.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-061",Medium,2,,Gamificación: Logros,Post-MVP,
+HU-063 · Crear actividad de sopa de letras,Story,"Como instructor, quiero crear una actividad de tipo sopa de letras indicando la lista de términos, para reforzar el tema de forma lúdica sin tener que diseñar el juego a mano.
+
+CRITERIOS DE ACEPTACIÓN
+1. Al crear la actividad elijo sopa de letras y el formulario me pide exactamente la lista de términos.
+2. Configuro el tamaño de la cuadrícula y si admite diagonales e inversos; si algún término no cabe, el sistema avisa antes de guardar.
+3. Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.
+4. Queda insertado como una actividad más dentro de la sección.
+
+Valor de negocio: 4/5  ·  Prioridad: Should
+
+Depende de: HU-034",Medium,5,,Juegos Autogenerables,Post-MVP,
+HU-064 · Crear actividad de crucigrama,Story,"Como instructor, quiero crear una actividad de tipo crucigrama indicando los términos con su definición, para reforzar el tema de forma lúdica sin tener que diseñar el juego a mano.
+
+CRITERIOS DE ACEPTACIÓN
+1. Al crear la actividad elijo crucigrama y el formulario me pide exactamente los términos con su definición.
+2. El término es la respuesta y su definición la pista; el sistema cruza las palabras, las numera y reporta las que no pudo ubicar.
+3. Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.
+4. Queda insertado como una actividad más dentro de la sección.
+
+Valor de negocio: 4/5  ·  Prioridad: Could
+
+Depende de: HU-034
+
+Nota: El de mayor complejidad algorítmica del grupo. Conviene dejarlo para el final, cuando los demás ya validaron el flujo.",Low,8,,Juegos Autogenerables,Post-MVP,
+HU-066 · Crear actividad de parejas o memoria,Story,"Como instructor, quiero crear una actividad de parejas indicando los términos con su definición, para reforzar el tema de forma lúdica sin tener que diseñar el juego a mano.
+
+CRITERIOS DE ACEPTACIÓN
+1. Al crear la actividad elijo parejas y el formulario me pide exactamente los términos con su definición.
+2. El tablero empareja cada término con su definición y mide tiempo e intentos.
+3. Puedo previsualizarlo y volver a generarlo hasta que me guste antes de publicarlo.
+4. Queda insertado como una actividad más dentro de la sección.
+
+Valor de negocio: 4/5  ·  Prioridad: Could
+
+Depende de: HU-034
+
+Nota: El más barato de construir de los cuatro. Buen candidato para validar el flujo de autogeneración antes de invertir en el crucigrama.",Low,3,,Juegos Autogenerables,Post-MVP,
+HU-068 · Configurar dificultad y recompensa del juego,Story,"Como instructor, quiero ajustar la dificultad y el XP de cada juego, para equilibrarlo con el resto del curso.
+
+CRITERIOS DE ACEPTACIÓN
+1. Configuro nivel de dificultad, tiempo límite y puntos máximos que otorga.
+2. Puedo previsualizar el juego con esa configuración antes de publicarlo.
+
+Valor de negocio: 3/5  ·  Prioridad: Could
+
+Depende de: HU-067",Low,3,,Juegos Autogenerables,Post-MVP,
+HU-070 · Editar mi perfil,Story,"Como usuario, quiero actualizar mis datos personales, para mantenerlos vigentes.
+
+CRITERIOS DE ACEPTACIÓN
+1. Puedo cambiar nombre, apellido y teléfono.
+2. No puedo cambiar mi rol, mi organización ni mi XP.
+3. El correo solo se cambia con verificación del nuevo.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-069
+
+Nota: Hace falta un endpoint propio de autoservicio con una lista blanca de campos editables.",Medium,3,,Perfil de Usuario,Post-MVP,
+HU-072 · Cambiar mi foto de perfil,Story,"Como usuario, quiero subir una foto, para personalizar mi cuenta.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se aceptan imágenes con límite de tamaño y se recortan a cuadrado.
+2. La foto aparece en el ranking y en los comentarios.
+
+Valor de negocio: 1/5  ·  Prioridad: Could
+
+Depende de: HU-070",Low,3,,Perfil de Usuario,Post-MVP,
+HU-073 · Centro de notificaciones,Story,"Como usuario, quiero ver en un solo lugar lo que requiere mi atención, para no perderme nada importante.
+
+CRITERIOS DE ACEPTACIÓN
+1. Hay un indicador con el número de notificaciones sin leer.
+2. Puedo marcarlas como leídas individualmente o todas.
+3. Cada notificación enlaza al contenido que la originó.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-007",Medium,5,,Notificaciones,Post-MVP,
+HU-074 · Notificar eventos relevantes,Story,"Como sistema, quiero avisar cuando ocurre algo que le importa al usuario, para mantener el compromiso con la plataforma.
+
+CRITERIOS DE ACEPTACIÓN
+1. Se notifica al aprendiz cuando su entrega es calificada, cuando desbloquea un logro y cuando sube de nivel.
+2. Se notifica al instructor cuando recibe una entrega nueva.
+3. Se notifica la publicación de una actividad nueva en un curso asignado.
+
+Valor de negocio: 3/5  ·  Prioridad: Should
+
+Depende de: HU-073",Medium,5,,Notificaciones,Post-MVP,
+HU-075 · Configurar mis preferencias de notificación,Story,"Como usuario, quiero elegir qué avisos recibo y por qué canal, para no saturarme.
+
+CRITERIOS DE ACEPTACIÓN
+1. Puedo activar o desactivar cada tipo de notificación por separado.
+2. Puedo elegir entre notificación dentro de la plataforma y correo.
+3. Las preferencias se respetan en todos los envíos.
+
+Valor de negocio: 2/5  ·  Prioridad: Could
+
+Depende de: HU-074",Low,3,,Notificaciones,Post-MVP,
+HU-076 · Panel de progreso del aprendiz,Story,"Como aprendiz, quiero ver mi avance consolidado, para saber dónde estoy parado.
+
+CRITERIOS DE ACEPTACIÓN
+1. Veo porcentaje de avance por curso, XP total, nivel y logros.
+2. Veo mis actividades pendientes ordenadas por fecha límite.
+
+Valor de negocio: 4/5  ·  Prioridad: Should
+
+Depende de: HU-040, HU-052",Medium,5,,Reportes y Analítica,Post-MVP,
+HU-077 · Reporte de avance por curso,Story,"Como instructor, quiero ver cómo va cada aprendiz en mis cursos, para detectar a tiempo a quien se está quedando.
+
+CRITERIOS DE ACEPTACIÓN
+1. Tabla con avance, XP, entregas pendientes y última conexión por aprendiz.
+2. Se resaltan quienes llevan más de N días sin actividad.
+3. Solo incluye cursos que tengo asignados.
+
+Valor de negocio: 4/5  ·  Prioridad: Should
+
+Depende de: HU-076",Medium,5,,Reportes y Analítica,Post-MVP,
+HU-078 · Reporte de uso de la organización,Story,"Como administrador, quiero ver métricas agregadas de mi organización, para justificar la inversión y detectar problemas.
+
+CRITERIOS DE ACEPTACIÓN
+1. Usuarios activos, cursos publicados, tasa de finalización y XP promedio.
+2. Comparación contra el periodo anterior.
+3. Los datos son solo de mi organización.
+
+Valor de negocio: 4/5  ·  Prioridad: Should
+
+Depende de: HU-076",Medium,5,,Reportes y Analítica,Post-MVP,
+HU-079 · Exportar reportes,Story,"Como administrador / instructor, quiero descargar los reportes en Excel o PDF, para compartirlos fuera de la plataforma.
+
+CRITERIOS DE ACEPTACIÓN
+1. La exportación respeta los filtros aplicados en pantalla.
+2. El archivo incluye fecha de generación y quién lo generó.
+
+Valor de negocio: 3/5  ·  Prioridad: Could
+
+Depende de: HU-077",Low,3,,Reportes y Analítica,Post-MVP,

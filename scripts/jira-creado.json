@@ -1,0 +1,474 @@
+{
+  "fecha": "2026-09-04T19:36:22.049Z",
+  "url": "https://onboard-pro.atlassian.net",
+  "proyecto": "OBP",
+  "epicas": [
+    {
+      "id": "E01",
+      "key": "OBP-83",
+      "nombre": "Plataforma y Multi-tenancy"
+    },
+    {
+      "id": "E02",
+      "key": "OBP-84",
+      "nombre": "Autenticación y Acceso"
+    },
+    {
+      "id": "E03",
+      "key": "OBP-85",
+      "nombre": "Usuarios y Roles"
+    },
+    {
+      "id": "E04",
+      "key": "OBP-86",
+      "nombre": "Grupos"
+    },
+    {
+      "id": "E05",
+      "key": "OBP-87",
+      "nombre": "Cursos y Estructura de Contenido"
+    },
+    {
+      "id": "E06",
+      "key": "OBP-88",
+      "nombre": "Actividades y Recursos Multimedia"
+    },
+    {
+      "id": "E07",
+      "key": "OBP-89",
+      "nombre": "Evaluaciones"
+    },
+    {
+      "id": "E08",
+      "key": "OBP-90",
+      "nombre": "Entregas y Calificación"
+    },
+    {
+      "id": "E09",
+      "key": "OBP-91",
+      "nombre": "Gamificación: XP y Niveles"
+    },
+    {
+      "id": "E10",
+      "key": "OBP-92",
+      "nombre": "Gamificación: Logros"
+    },
+    {
+      "id": "E11",
+      "key": "OBP-93",
+      "nombre": "Juegos Autogenerables"
+    },
+    {
+      "id": "E12",
+      "key": "OBP-94",
+      "nombre": "Perfil de Usuario"
+    },
+    {
+      "id": "E13",
+      "key": "OBP-95",
+      "nombre": "Notificaciones"
+    },
+    {
+      "id": "E14",
+      "key": "OBP-96",
+      "nombre": "Reportes y Analítica"
+    }
+  ],
+  "historias": [
+    {
+      "id": "HU-001",
+      "key": "OBP-97",
+      "nombre": "Crear organización"
+    },
+    {
+      "id": "HU-007",
+      "key": "OBP-98",
+      "nombre": "Iniciar sesión con correo y contraseña"
+    },
+    {
+      "id": "HU-008",
+      "key": "OBP-99",
+      "nombre": "Iniciar sesión con Google"
+    },
+    {
+      "id": "HU-009",
+      "key": "OBP-100",
+      "nombre": "Iniciar sesión con Microsoft"
+    },
+    {
+      "id": "HU-011",
+      "key": "OBP-101",
+      "nombre": "Cerrar sesión"
+    },
+    {
+      "id": "HU-069",
+      "key": "OBP-102",
+      "nombre": "Ver mi perfil"
+    },
+    {
+      "id": "HU-002",
+      "key": "OBP-103",
+      "nombre": "Consultar organizaciones"
+    },
+    {
+      "id": "HU-010",
+      "key": "OBP-104",
+      "nombre": "Recuperar contraseña olvidada"
+    },
+    {
+      "id": "HU-013",
+      "key": "OBP-105",
+      "nombre": "Limitar intentos fallidos de inicio de sesión"
+    },
+    {
+      "id": "HU-071",
+      "key": "OBP-106",
+      "nombre": "Cambiar mi contraseña"
+    },
+    {
+      "id": "HU-006",
+      "key": "OBP-107",
+      "nombre": "Aislamiento de datos entre organizaciones"
+    },
+    {
+      "id": "HU-014",
+      "key": "OBP-108",
+      "nombre": "Crear usuario"
+    },
+    {
+      "id": "HU-020",
+      "key": "OBP-109",
+      "nombre": "Crear grupo"
+    },
+    {
+      "id": "HU-026",
+      "key": "OBP-110",
+      "nombre": "Crear curso"
+    },
+    {
+      "id": "HU-015",
+      "key": "OBP-111",
+      "nombre": "Consultar usuarios con filtros"
+    },
+    {
+      "id": "HU-023",
+      "key": "OBP-112",
+      "nombre": "Gestionar integrantes de un grupo"
+    },
+    {
+      "id": "HU-027",
+      "key": "OBP-113",
+      "nombre": "Consultar cursos"
+    },
+    {
+      "id": "HU-032",
+      "key": "OBP-114",
+      "nombre": "Organizar el curso en secciones"
+    },
+    {
+      "id": "HU-016",
+      "key": "OBP-115",
+      "nombre": "Editar usuario"
+    },
+    {
+      "id": "HU-017",
+      "key": "OBP-116",
+      "nombre": "Eliminar usuario"
+    },
+    {
+      "id": "HU-018",
+      "key": "OBP-117",
+      "nombre": "Asignar y cambiar rol"
+    },
+    {
+      "id": "HU-021",
+      "key": "OBP-118",
+      "nombre": "Consultar grupos"
+    },
+    {
+      "id": "HU-024",
+      "key": "OBP-119",
+      "nombre": "Asignar cursos a un grupo"
+    },
+    {
+      "id": "HU-034",
+      "key": "OBP-120",
+      "nombre": "Crear actividad o recurso"
+    },
+    {
+      "id": "HU-025",
+      "key": "OBP-121",
+      "nombre": "Ver mis grupos"
+    },
+    {
+      "id": "HU-041",
+      "key": "OBP-122",
+      "nombre": "Crear un examen"
+    },
+    {
+      "id": "HU-046",
+      "key": "OBP-123",
+      "nombre": "Subir entrega"
+    },
+    {
+      "id": "HU-051",
+      "key": "OBP-124",
+      "nombre": "Definir el XP de una actividad"
+    },
+    {
+      "id": "HU-037",
+      "key": "OBP-125",
+      "nombre": "Subir material de apoyo"
+    },
+    {
+      "id": "HU-040",
+      "key": "OBP-126",
+      "nombre": "Marcar actividad como completada"
+    },
+    {
+      "id": "HU-048",
+      "key": "OBP-127",
+      "nombre": "Calificar y retroalimentar entrega"
+    },
+    {
+      "id": "HU-028",
+      "key": "OBP-128",
+      "nombre": "Editar curso"
+    },
+    {
+      "id": "HU-044",
+      "key": "OBP-129",
+      "nombre": "Presentar y responder una evaluación"
+    },
+    {
+      "id": "HU-052",
+      "key": "OBP-130",
+      "nombre": "Acreditar XP al completar"
+    },
+    {
+      "id": "HU-030",
+      "key": "OBP-131",
+      "nombre": "Asignar instructor a un curso"
+    },
+    {
+      "id": "HU-031",
+      "key": "OBP-132",
+      "nombre": "Ver mis cursos asignados"
+    },
+    {
+      "id": "HU-045",
+      "key": "OBP-133",
+      "nombre": "Calificar la evaluación y acreditar puntos"
+    },
+    {
+      "id": "HU-065",
+      "key": "OBP-134",
+      "nombre": "Crear actividad de concurso de preguntas"
+    },
+    {
+      "id": "HU-035",
+      "key": "OBP-135",
+      "nombre": "Consultar actividades de un curso"
+    },
+    {
+      "id": "HU-038",
+      "key": "OBP-136",
+      "nombre": "Ver y descargar material"
+    },
+    {
+      "id": "HU-047",
+      "key": "OBP-137",
+      "nombre": "Consultar entregas pendientes"
+    },
+    {
+      "id": "HU-054",
+      "key": "OBP-138",
+      "nombre": "Subir de nivel automáticamente"
+    },
+    {
+      "id": "HU-067",
+      "key": "OBP-139",
+      "nombre": "Jugar y ganar puntos"
+    },
+    {
+      "id": "HU-049",
+      "key": "OBP-140",
+      "nombre": "Ver mi calificación y retroalimentación"
+    },
+    {
+      "id": "HU-056",
+      "key": "OBP-141",
+      "nombre": "Ver mi XP y nivel"
+    },
+    {
+      "id": "HU-057",
+      "key": "OBP-142",
+      "nombre": "Ver tabla de posiciones"
+    },
+    {
+      "id": "HU-003",
+      "key": "OBP-143",
+      "nombre": "Editar organización"
+    },
+    {
+      "id": "HU-004",
+      "key": "OBP-144",
+      "nombre": "Activar o desactivar organización"
+    },
+    {
+      "id": "HU-005",
+      "key": "OBP-145",
+      "nombre": "Eliminar organización"
+    },
+    {
+      "id": "HU-012",
+      "key": "OBP-146",
+      "nombre": "Renovar sesión antes de que expire"
+    },
+    {
+      "id": "HU-019",
+      "key": "OBP-147",
+      "nombre": "Carga masiva de usuarios desde archivo"
+    },
+    {
+      "id": "HU-022",
+      "key": "OBP-148",
+      "nombre": "Editar y eliminar grupo"
+    },
+    {
+      "id": "HU-029",
+      "key": "OBP-149",
+      "nombre": "Eliminar o archivar curso"
+    },
+    {
+      "id": "HU-033",
+      "key": "OBP-150",
+      "nombre": "Publicar o despublicar un curso"
+    },
+    {
+      "id": "HU-036",
+      "key": "OBP-151",
+      "nombre": "Editar y eliminar actividad"
+    },
+    {
+      "id": "HU-039",
+      "key": "OBP-152",
+      "nombre": "Eliminar material de apoyo"
+    },
+    {
+      "id": "HU-042",
+      "key": "OBP-153",
+      "nombre": "Importar preguntas desde un archivo"
+    },
+    {
+      "id": "HU-043",
+      "key": "OBP-154",
+      "nombre": "Reutilizar preguntas ya cargadas"
+    },
+    {
+      "id": "HU-050",
+      "key": "OBP-155",
+      "nombre": "Permitir reenvío de una entrega"
+    },
+    {
+      "id": "HU-053",
+      "key": "OBP-156",
+      "nombre": "Configurar la tabla de niveles"
+    },
+    {
+      "id": "HU-055",
+      "key": "OBP-157",
+      "nombre": "Reglas de tope y antiabuso de XP"
+    },
+    {
+      "id": "HU-058",
+      "key": "OBP-158",
+      "nombre": "Racha de días activos"
+    },
+    {
+      "id": "HU-059",
+      "key": "OBP-159",
+      "nombre": "Crear logro"
+    },
+    {
+      "id": "HU-060",
+      "key": "OBP-160",
+      "nombre": "Definir la condición de una medalla"
+    },
+    {
+      "id": "HU-061",
+      "key": "OBP-161",
+      "nombre": "Desbloquear logro automáticamente"
+    },
+    {
+      "id": "HU-062",
+      "key": "OBP-162",
+      "nombre": "Ver mis logros"
+    },
+    {
+      "id": "HU-063",
+      "key": "OBP-163",
+      "nombre": "Crear actividad de sopa de letras"
+    },
+    {
+      "id": "HU-064",
+      "key": "OBP-164",
+      "nombre": "Crear actividad de crucigrama"
+    },
+    {
+      "id": "HU-066",
+      "key": "OBP-165",
+      "nombre": "Crear actividad de parejas o memoria"
+    },
+    {
+      "id": "HU-068",
+      "key": "OBP-166",
+      "nombre": "Configurar dificultad y recompensa del juego"
+    },
+    {
+      "id": "HU-070",
+      "key": "OBP-167",
+      "nombre": "Editar mi perfil"
+    },
+    {
+      "id": "HU-072",
+      "key": "OBP-168",
+      "nombre": "Cambiar mi foto de perfil"
+    },
+    {
+      "id": "HU-073",
+      "key": "OBP-169",
+      "nombre": "Centro de notificaciones"
+    },
+    {
+      "id": "HU-074",
+      "key": "OBP-170",
+      "nombre": "Notificar eventos relevantes"
+    },
+    {
+      "id": "HU-075",
+      "key": "OBP-171",
+      "nombre": "Configurar mis preferencias de notificación"
+    },
+    {
+      "id": "HU-076",
+      "key": "OBP-172",
+      "nombre": "Panel de progreso del aprendiz"
+    },
+    {
+      "id": "HU-077",
+      "key": "OBP-173",
+      "nombre": "Reporte de avance por curso"
+    },
+    {
+      "id": "HU-078",
+      "key": "OBP-174",
+      "nombre": "Reporte de uso de la organización"
+    },
+    {
+      "id": "HU-079",
+      "key": "OBP-175",
+      "nombre": "Exportar reportes"
+    }
+  ]
+}
