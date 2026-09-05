@@ -193,13 +193,12 @@
     .dato-vacio { color: var(--muted); font-style: italic; }
 
     .pendiente {
-      display: flex; gap: 12px; align-items: flex-start;
-      background: var(--primary-soft); border-radius: 10px;
-      padding: 13px 15px; margin-bottom: 18px;
+      display: inline-flex; gap: 8px; align-items: center;
+      background: var(--primary-soft); border-radius: 8px;
+      padding: 7px 13px; margin-bottom: 16px;
+      font-size: 13px; font-weight: 500; color: var(--primary-dark);
     }
-    .pendiente .ico { width: 18px; height: 18px; color: var(--primary); margin-top: 1px; flex: none; }
-    .pendiente strong { font-size: 13.5px; font-weight: 600; }
-    .pendiente p { font-size: 13px; color: var(--muted); line-height: 1.6; margin-top: 3px; max-width: 62ch; }
+    .pendiente .ico { width: 15px; height: 15px; color: var(--primary); flex: none; }
 
     .form-mock { border: none; opacity: .55; }
     .form-mock .btn { margin-top: 4px; }
@@ -1150,15 +1149,7 @@ async function renderPerfil() {
 
       <h3 class="sec-h">Editar mis datos</h3>
       <div class="card">
-        <div class="pendiente">
-          ${icon("warn")}
-          <div>
-            <strong>Todavía no disponible</strong>
-            <p>Editar el perfil propio llega con HU-070. Hoy el backend solo permite
-               que un administrador modifique usuarios, así que un aprendiz o un
-               instructor no puede cambiar sus propios datos.</p>
-          </div>
-        </div>
+        <div class="pendiente">${icon("warn")}<span>No disponible</span></div>
         <fieldset disabled class="form-mock">
           <div class="form-row">
             <div class="field"><label>Nombre</label><div class="wrap">
@@ -1174,14 +1165,7 @@ async function renderPerfil() {
 
       <h3 class="sec-h">Seguridad</h3>
       <div class="card">
-        <div class="pendiente">
-          ${icon("warn")}
-          <div>
-            <strong>Todavía no disponible</strong>
-            <p>Cambiar la contraseña llega con HU-071, en el sprint 2. Requiere
-               verificar la contraseña actual, que hoy el backend no comprueba.</p>
-          </div>
-        </div>
+        <div class="pendiente">${icon("warn")}<span>No disponible</span></div>
         <fieldset disabled class="form-mock">
           <div class="field"><label>Contraseña actual</label><div class="wrap">
             <input type="password" placeholder="••••••••"></div></div>
