@@ -6,37 +6,57 @@
   <title>OnBoardPro</title>
   <meta name="description" content="Plataforma de formación con gamificación para organizaciones.">
   <meta name="color-scheme" content="light">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%23155e52'/%3E%3Ctext x='16' y='22' font-family='Georgia,serif' font-size='18' font-weight='700' fill='%23fff' text-anchor='middle'%3EO%3C/text%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
+    /* Un solo acento (verde pino desaturado) sobre grises cálidos.
+       Nada de violeta: es la huella más reconocible del diseño generado. */
     :root {
-      --primary:       #4f46e5;
-      --primary-dark:  #3730a3;
-      --sidebar-bg:    #1e1b4b;
-      --sidebar-text:  #a5b4fc;
-      --sidebar-hover: rgba(255,255,255,0.07);
-      --sidebar-active:#312e81;
-      --bg:            #f1f5f9;
+      --primary:       #155e52;
+      --primary-dark:  #0f4740;
+      --primary-soft:  #e6f0ed;
+      --sidebar-bg:    #1c1b19;
+      --sidebar-text:  #a8a29e;
+      --sidebar-hover: rgba(255,255,255,0.06);
+      --sidebar-active:#2b2a27;
+      --bg:            #f6f5f3;
       --card:          #ffffff;
-      --text:          #0f172a;
-      --muted:         #64748b;
-      --border:        #e2e8f0;
-      --danger:        #ef4444;
-      --success:       #22c55e;
+      --text:          #1c1917;
+      --muted:         #78716c;
+      --border:        #e7e5e4;
+      --danger:        #b4372f;
+      --success:       #3f7d4e;
       --radius:        8px;
+      /* Sombras tintadas con el tono del fondo, no negro puro */
+      --shadow-sm:     0 1px 2px rgba(28,25,23,.07);
+      --shadow-md:     0 4px 14px rgba(28,25,23,.09);
     }
 
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      font-family: "Outfit", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       background: var(--bg);
       color: var(--text);
-      height: 100vh;
+      height: 100dvh;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* Cifras alineadas en las tablas de datos */
+    table, .stat-value { font-variant-numeric: tabular-nums; }
+
+    /* Foco visible en todo lo interactivo: requisito de accesibilidad */
+    :where(a, button, input, select, summary):focus-visible {
+      outline: 2px solid var(--primary);
+      outline-offset: 2px;
     }
 
     /* ── LOGIN ─────────────────────────────────────────── */
     #login-screen {
-      min-height: 100vh;
+      min-height: 100dvh;
       display: flex;
       overflow-y: auto;
     }
@@ -49,49 +69,58 @@
       flex-direction: column;
       justify-content: space-between;
       padding: 56px 64px;
-      color: #e0e7ff;
+      color: #d6d3d1;
+      /* Base neutra con un único halo del acento, no un degradado de dos tintes */
       background:
-        radial-gradient(900px 600px at 12% 8%, rgba(129,140,248,.30), transparent 60%),
-        radial-gradient(700px 500px at 88% 92%, rgba(56,189,248,.22), transparent 60%),
-        linear-gradient(150deg, #1e1b4b 0%, #312e81 55%, #3730a3 100%);
+        radial-gradient(760px 520px at 18% 12%, rgba(21,94,82,.34), transparent 64%),
+        #171614;
       overflow: hidden;
     }
-    /* Retícula sutil de fondo */
+    /* Grano sutil: rompe la planitud digital */
+    .login-brand::before {
+      content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .5;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.82' numOctaves='3'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E");
+    }
+    /* Retícula, desvanecida hacia los bordes */
     .login-brand::after {
       content: ""; position: absolute; inset: 0; pointer-events: none;
       background-image:
-        linear-gradient(rgba(255,255,255,.05) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255,255,255,.05) 1px, transparent 1px);
-      background-size: 46px 46px;
-      mask-image: radial-gradient(circle at 30% 40%, #000 0%, transparent 78%);
+        linear-gradient(rgba(255,255,255,.045) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.045) 1px, transparent 1px);
+      background-size: 52px 52px;
+      mask-image: radial-gradient(circle at 26% 32%, #000 0%, transparent 76%);
     }
     .brand-mark {
       display: inline-flex; align-items: center; gap: 11px;
-      font-size: 19px; font-weight: 700; color: #fff; letter-spacing: -.01em;
+      font-size: 18px; font-weight: 600; color: #fafaf9; letter-spacing: -.01em;
       position: relative; z-index: 1;
     }
     .brand-mark .glyph {
-      width: 34px; height: 34px; border-radius: 9px; flex: none;
+      width: 34px; height: 34px; border-radius: 10px; flex: none;
       display: grid; place-items: center;
-      background: linear-gradient(140deg, #818cf8, #38bdf8);
-      color: #fff; font-size: 17px; font-weight: 800;
-      box-shadow: 0 6px 18px rgba(56,189,248,.34);
+      background: var(--primary); color: #fff;
+      font-size: 16px; font-weight: 700;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.16), 0 6px 18px rgba(21,94,82,.38);
     }
-    .brand-body { position: relative; z-index: 1; max-width: 480px; }
+    .brand-body { position: relative; z-index: 1; max-width: 30ch; }
     .brand-body h2 {
-      font-size: 38px; line-height: 1.16; font-weight: 700;
-      color: #fff; letter-spacing: -.025em; margin-bottom: 16px;
+      font-size: clamp(30px, 3.4vw, 42px); line-height: 1.1; font-weight: 600;
+      color: #fafaf9; letter-spacing: -.03em; margin-bottom: 18px;
+      text-wrap: balance;
     }
-    .brand-body p { font-size: 16px; line-height: 1.65; color: #c7d2fe; }
-    .brand-list { list-style: none; margin-top: 30px; display: grid; gap: 13px; }
+    .brand-body p {
+      font-size: 16px; line-height: 1.7; color: #a8a29e;
+      max-width: 46ch; text-wrap: pretty;
+    }
+    .brand-list { list-style: none; margin-top: 34px; display: grid; gap: 14px; }
     .brand-list li {
-      display: flex; align-items: flex-start; gap: 11px;
-      font-size: 14.5px; color: #ddd6fe;
+      display: flex; align-items: flex-start; gap: 12px;
+      font-size: 14.5px; line-height: 1.55; color: #d6d3d1;
     }
-    .brand-list svg { flex: none; margin-top: 2px; color: #a5b4fc; }
+    .brand-list svg { flex: none; margin-top: 3px; color: #5f9e91; }
     .brand-foot {
       position: relative; z-index: 1;
-      font-size: 12.5px; color: #a5b4fc; opacity: .85;
+      font-size: 12.5px; color: #78716c;
     }
 
     /* Panel derecho: formulario */
@@ -128,7 +157,7 @@
     .field input:hover { border-color: #cbd5e1; }
     .field input:focus {
       border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(79,70,229,.14);
+      box-shadow: 0 0 0 3px rgba(21,94,82,.15);
     }
     .field input[type=password] { padding-right: 44px; }
     .peek {
@@ -146,6 +175,8 @@
     }
     #login-screen .btn-primary:hover { background: var(--primary-dark); opacity: 1; }
     #login-screen .btn-primary:disabled { opacity: .6; cursor: progress; }
+    #login-screen .btn-primary:active { transform: scale(.985) translateY(1px); }
+    #login-screen .btn-oauth:active { transform: scale(.99) translateY(1px); }
 
     .sep {
       display: flex; align-items: center; gap: 12px;
@@ -163,18 +194,6 @@
       background: var(--bg); border-color: #cbd5e1; opacity: 1;
     }
 
-    /* Ajustes de API: es una herramienta de desarrollo, va replegada */
-    .adv { margin-top: 24px; border-top: 1px solid var(--border); padding-top: 14px; }
-    .adv summary {
-      cursor: pointer; list-style: none; font-size: 12.5px; color: var(--muted);
-      display: inline-flex; align-items: center; gap: 6px; user-select: none;
-    }
-    .adv summary::-webkit-details-marker { display: none; }
-    .adv summary:hover { color: var(--text); }
-    .adv summary svg { transition: transform .18s; }
-    .adv[open] summary svg { transform: rotate(90deg); }
-    .adv .field { margin: 12px 0 0; }
-    .adv input { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; }
 
     #login-alert:not(:empty) { margin-bottom: 16px; }
 
@@ -188,7 +207,7 @@
     #app {
       display: grid;
       grid-template-columns: 224px 1fr;
-      height: 100vh;
+      height: 100dvh;
     }
 
     /* ── SIDEBAR ───────────────────────────────────────── */
@@ -290,7 +309,7 @@
       padding: 2px 10px; border-radius: 20px; font-size: 12px; font-weight: 600;
     }
     .b-superadmin { background: #fef3c7; color: #92400e; }
-    .b-admin      { background: #ede9fe; color: #5b21b6; }
+    .b-admin      { background: var(--primary-soft); color: var(--primary-dark); }
     .b-instructor { background: #dbeafe; color: #1e40af; }
     .b-student    { background: #dcfce7; color: #166534; }
     .b-Active     { background: #dcfce7; color: #166534; }
@@ -302,9 +321,11 @@
       display: inline-flex; align-items: center; gap: 6px;
       padding: 8px 16px; border: none; border-radius: 6px;
       font-size: 14px; font-weight: 500; cursor: pointer;
-      transition: opacity 0.15s, background 0.15s;
+      transition: opacity .15s, background .15s, transform .1s;
     }
     .btn:hover { opacity: 0.88; }
+    .btn:active { transform: translateY(1px); }
+    .btn:disabled { pointer-events: none; }
     .btn-primary{ background: var(--primary); color: white; }
     .btn-danger { background: var(--danger);  color: white; }
     .btn-ghost  { background: transparent; color: var(--muted); border: 1px solid var(--border); }
@@ -387,8 +408,8 @@
     }
     .profile-item p { font-size: 15px; font-weight: 500; margin-top: 2px; }
 
-    .xp-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 6px; }
-    .xp-fill { height: 100%; background: linear-gradient(90deg, var(--primary), #818cf8); border-radius: 4px; transition: width 0.5s; }
+    .xp-bar { height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; margin-top: 6px; }
+    .xp-fill { height: 100%; background: var(--primary); border-radius: 4px; transition: width 0.5s; }
   </style>
 </head>
 <body>
@@ -430,7 +451,7 @@
     <div class="login-card">
 
       <div class="login-mobile-mark">
-        <span class="glyph" style="width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:linear-gradient(140deg,#818cf8,#38bdf8);color:#fff;font-size:15px;font-weight:800">O</span>
+        <span class="glyph" style="width:30px;height:30px;border-radius:8px;display:grid;place-items:center;background:var(--primary);color:#fff;font-size:15px;font-weight:800">O</span>
         OnBoardPro
       </div>
 
@@ -487,18 +508,6 @@
       Microsoft
     </button>
 
-      <details class="adv">
-        <summary>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
-          Configuración avanzada
-        </summary>
-        <div class="field">
-          <label for="in-api-url">URL de la API</label>
-          <div class="wrap">
-            <input id="in-api-url" value="" placeholder="http://localhost:3000" spellcheck="false">
-          </div>
-        </div>
-      </details>
 
     </div>
   </main>
@@ -586,7 +595,7 @@
 // ═══════════════════════════════════════════════════════════════════════════
 // CONFIG
 // ═══════════════════════════════════════════════════════════════════════════
-let API = localStorage.getItem("onbp_api") || window.location.origin;
+const API = window.location.origin;
 const $ = id => document.getElementById(id);
 
 const state = { token: null, user: null, section: "dashboard" };
@@ -626,7 +635,6 @@ function togglePass(btn) {
 
 $("login-form").addEventListener("submit", async e => {
   e.preventDefault();
-  saveApiUrl();
   loginAlert("");
 
   const boton = e.target.querySelector('button[type=submit]');
@@ -650,13 +658,7 @@ $("login-form").addEventListener("submit", async e => {
 });
 
 function oauthLogin(provider) {
-  saveApiUrl();
   window.location.href = `${API}/api/auth/${provider}`;
-}
-
-function saveApiUrl() {
-  const val = $("in-api-url").value.replace(/\/$/, "");
-  if (val) { API = val; localStorage.setItem("onbp_api", API); }
 }
 
 function afterLogin(token, user) {
@@ -831,12 +833,6 @@ async function renderDashboard() {
           <div class="stat-value">📋 ${u.missions ?? "0/0"}</div>
           <div class="stat-label">Misiones</div>
         </div>
-      </div>
-
-      <div class="card" style="background:#f8fafc">
-        <div class="small" style="font-weight:700;color:var(--muted);margin-bottom:8px">🔑 TOKEN JWT ACTIVO</div>
-        <div style="font-family:monospace;font-size:11px;word-break:break-all;background:white;padding:10px;border-radius:6px;border:1px solid var(--border);color:#475569">${state.token}</div>
-        <button class="btn btn-ghost btn-sm" style="margin-top:8px" onclick="navigator.clipboard.writeText('${state.token}');this.textContent='¡Copiado!'">📋 Copiar token</button>
       </div>
     `);
   } catch (err) {
@@ -1130,8 +1126,6 @@ function escHtml(str) {
   const reason   = params.get("reason");
   window.history.replaceState({}, "", window.location.pathname);
 
-  // Restaurar URL de API guardada
-  $("in-api-url").value = API;
 
   if (urlToken && urlToken !== "Fail") {
     state.token = urlToken;
