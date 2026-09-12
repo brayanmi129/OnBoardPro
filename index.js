@@ -39,6 +39,7 @@ app.use(passport.initialize());
 // Solo se listan frontends: poner aquí la URL del propio backend no hace nada.
 const origenesPermitidos = [
   "https://on-board-pro-iqg3.vercel.app",
+  "https://onboard-pro-refactor.vercel.app",
   process.env.URL_FRONT,
 ].filter(Boolean);
 
