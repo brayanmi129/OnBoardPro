@@ -1,4 +1,5 @@
 const { supabase } = require("../helpers/supabaseHelper.js");
+const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacion.js");
 const GroupSchema = require("../schemas/groupSchema.js");
 const crypto = require("crypto");
 
@@ -23,20 +24,25 @@ function delTenant(query, tenantId) {
 
 class GroupService {
   static async create(groupData) {
+    // userIds no es una columna de groups: son las personas que se agregan a la
+    // tabla users_groups más abajo. Hay que sacarlo antes de validar porque el
+    // schema es .strict() y rechazaría el objeto entero por esa clave, que es
+    // justo lo que la documentación del endpoint pedía mandar.
+    const { userIds, ...datos } = groupData;
     const customId = crypto.randomBytes(3).toString("hex");
-    groupData.id = customId;
+    datos.id = customId;
 
-    const validation = GroupSchema.schema.safeParse(groupData);
+    const validation = GroupSchema.schema.safeParse(datos);
     if (!validation.success) {
-      throw new Error(validation.error.errors.map((err) => err.message).join(", "));
+      throw errorDeValidacion(validation.error);
     }
 
     const group = validation.data;
     const { error } = await supabase.from("groups").insert(aFila(group));
     if (error) throw new Error(error.message);
 
-    if (Array.isArray(groupData.userIds) && groupData.userIds.length > 0) {
-      const records = groupData.userIds.map((userId) => ({ id_user: userId, id_group: group.id }));
+    if (Array.isArray(userIds) && userIds.length > 0) {
+      const records = userIds.map((userId) => ({ id_user: userId, id_group: group.id }));
       await supabase.from("users_groups").insert(records);
     }
 
@@ -156,7 +162,7 @@ class GroupService {
 
     const validation = GroupSchema.schema.partial().safeParse(updateData);
     if (!validation.success) {
-      return { error: "Datos inválidos", details: validation.error.errors.map((e) => e.message) };
+      return detalleDeValidacion(validation.error);
     }
 
     const { error } = await supabase.from("groups").update(validation.data).eq("id", id);

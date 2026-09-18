@@ -66,6 +66,9 @@ router.get("/get/id/:id", verifyJWT, GroupController.getById);
  *                 type: string
  *                 example: Grupo de bienvenida
  *               userIds:
+ *                 description: >
+ *                   Ids de las personas que quedan en el equipo. No es una
+ *                   columna de la tabla: se guarda en la relación users_groups.
  *                 type: array
  *                 items:
  *                   type: string

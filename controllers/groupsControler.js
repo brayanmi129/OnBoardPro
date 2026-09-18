@@ -18,11 +18,11 @@ class GroupController {
       res.status(201).json(group);
     } catch (error) {
       console.error("Error al crear el grupo:", error.message);
-      if (error instanceof zod.ZodError) {
-        res.status(400).json({ error: "Datos inválidos", details: error.errors });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
+      // Un fallo de validación llega con status 400 y el nombre del campo;
+      // cualquier otra cosa es un problema del servidor.
+      return res
+        .status(error.status || 500)
+        .json({ error: error.message, ...(error.campos ? { campos: error.campos } : {}) });
     }
   }
 
@@ -90,11 +90,11 @@ class GroupController {
       res.status(200).json(response);
     } catch (error) {
       console.error("Error al actualizar el grupo:", error);
-      if (error instanceof zod.ZodError) {
-        res.status(400).json({ error: "Datos inválidos", details: error.errors });
-      } else {
-        res.status(500).json({ error: error.message });
-      }
+      // Un fallo de validación llega con status 400 y el nombre del campo;
+      // cualquier otra cosa es un problema del servidor.
+      return res
+        .status(error.status || 500)
+        .json({ error: error.message, ...(error.campos ? { campos: error.campos } : {}) });
     }
   }
 

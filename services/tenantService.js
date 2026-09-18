@@ -1,4 +1,5 @@
 const { supabase } = require("../helpers/supabaseHelper.js");
+const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacion.js");
 const TenantSchema = require("../schemas/tenantSchema.js");
 const crypto = require("crypto");
 
@@ -21,7 +22,7 @@ class TenantService {
 
     const validation = TenantSchema.schema.safeParse(tenantData);
     if (!validation.success) {
-      throw new Error(validation.error.errors.map((e) => e.message).join(", "));
+      throw errorDeValidacion(validation.error);
     }
 
     const { error } = await supabase.from("tenants").insert({

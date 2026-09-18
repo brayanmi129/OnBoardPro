@@ -73,6 +73,10 @@ router.get("/get/id/:id", verifyJWT, requireRole("superadmin"), TenantController
  *               domain:
  *                 type: string
  *                 example: ucentral.edu.co
+ *               active:
+ *                 type: boolean
+ *                 default: true
+ *                 description: Una empresa inactiva no deja entrar a su gente.
  *     responses:
  *       201:
  *         description: Tenant creado

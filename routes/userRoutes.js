@@ -135,8 +135,31 @@ router.get(
  *                 example: contraseña123
  *               role:
  *                 type: string
- *                 enum: [student, admin, instructor]
- *                 example: student
+ *                 enum: [student, instructor, admin, superadmin]
+ *                 default: student
+ *                 description: Solo un superadmin puede crear otro superadmin.
+ *               phonumber:
+ *                 type: string
+ *                 example: "+57 300 0000000"
+ *               status:
+ *                 type: string
+ *                 enum: [Active, Inactive]
+ *                 default: Active
+ *               level:
+ *                 type: integer
+ *                 default: 0
+ *               xp:
+ *                 type: integer
+ *                 default: 0
+ *               streak:
+ *                 type: integer
+ *               average:
+ *                 type: number
+ *                 minimum: 0
+ *                 maximum: 5
+ *               missions:
+ *                 type: string
+ *                 example: "0/0"
  *     responses:
  *       201:
  *         description: Usuario creado correctamente

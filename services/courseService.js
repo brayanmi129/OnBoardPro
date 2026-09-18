@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacion.js");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const CourseSchema = require("../schemas/courseSchemas.js");
 const { subirBanner, borrar, BANNERS } = require("../helpers/storage.js");
@@ -42,7 +43,7 @@ class CourseService {
 
     const validation = CourseSchema.schema.safeParse(courseData);
     if (!validation.success) {
-      throw new Error(validation.error.errors.map((err) => err.message).join(", "));
+      throw errorDeValidacion(validation.error);
     }
 
     const course = validation.data;

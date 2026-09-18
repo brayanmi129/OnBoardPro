@@ -1,4 +1,5 @@
 const crypto = require("crypto");
+const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacion.js");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { subirMaterial, urlFirmada, borrar, MATERIALES } = require("../helpers/storage.js");
 const activitieSchema = require("../schemas/activitieSchema.js");
@@ -48,7 +49,7 @@ class ActivitiesService {
     const validation = activitieSchema.schema.safeParse(actividad);
     if (!validation.success) {
       if (rutaSubida) await borrar(MATERIALES, rutaSubida);
-      throw new Error(validation.error.errors.map((err) => err.message).join(", "));
+      throw errorDeValidacion(validation.error);
     }
 
     const { error } = await supabase.from("activities").insert(aFila(validation.data));

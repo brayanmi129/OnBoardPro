@@ -1,4 +1,5 @@
 const { supabase } = require("../helpers/supabaseHelper.js");
+const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacion.js");
 const UserSchema = require("../schemas/userSchemas.js");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
@@ -56,7 +57,7 @@ class UserService {
 
     const validation = UserSchema.schema.safeParse(raw);
     if (!validation.success) {
-      throw new Error(validation.error.errors.map((e) => e.message).join(", "));
+      throw errorDeValidacion(validation.error);
     }
 
     const { error } = await supabase.from("users").insert(fromUser(validation.data));
@@ -74,7 +75,7 @@ class UserService {
 
     const validation = UserSchema.schema.safeParse(userData);
     if (!validation.success) {
-      throw new Error(validation.error.errors.map((err) => err.message).join(", "));
+      throw errorDeValidacion(validation.error);
     }
 
     const user = validation.data;
@@ -145,7 +146,7 @@ class UserService {
 
     const validation = UserSchema.schema.partial().safeParse(updateData);
     if (!validation.success) {
-      return { error: "Datos inválidos", details: validation.error.errors.map((e) => e.message) };
+      return detalleDeValidacion(validation.error);
     }
 
     const { error } = await supabase.from("users").update(fromUser(validation.data)).eq("id", id);

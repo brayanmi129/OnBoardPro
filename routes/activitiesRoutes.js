@@ -14,22 +14,38 @@ const subida = require("../middlewares/subida.js");
 
 /**
  * @swagger
- * /api/actividades/get/all:
+ * /api/activities/get/all:
  *   get:
- *     summary: Obtiene todas las actividades
+ *     summary: Lista las actividades de la empresa del usuario
  *     tags: [Actividades]
+ *     description: >
+ *       Devuelve solo las actividades de la empresa del token. El superadmin las
+ *       ve todas. El campo `adjunto` es una ruta interna, no una URL abrible:
+ *       para verlo hay que pedir GET /api/activities/{id}/adjunto.
+ *     security:
+ *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Lista de todas las actividades
+ *         description: Lista de actividades
+ *       401:
+ *         description: Token ausente o inválido
  */
 router.get("/get/all", verifyJWT, ActivitiesController.getAll);
 
 /**
  * @swagger
- * /api/actividades/create:
+ * /api/activities/create:
  *   post:
- *     summary: Crea una nueva actividad con archivo adjunto
+ *     summary: Crea una actividad, con archivo adjunto opcional
  *     tags: [Actividades]
+ *     description: >
+ *       Se envía como multipart/form-data. Cada dato va en su propio campo, no
+ *       dentro de un JSON. El archivo, si se manda, va en el campo `archivo` y
+ *       se guarda en el bucket privado de Supabase Storage. Máximo 50 MB;
+ *       se aceptan imágenes, PDF y video (mp4, webm, mov).
+ *       El `id` y la empresa los pone el servidor.
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -37,22 +53,45 @@ router.get("/get/all", verifyJWT, ActivitiesController.getAll);
  *           schema:
  *             type: object
  *             required:
- *               - data
- *               - file
+ *               - name
+ *               - title
+ *               - archivo
  *             properties:
- *               data:
+ *               name:
  *                 type: string
- *                 description: JSON con los datos de la actividad
- *                 example: '{"name":"Actividad 1","description":"Primera actividad","id_seccion":"abc123"}'
- *               file:
+ *                 maxLength: 50
+ *                 example: act-induccion-1
+ *               title:
+ *                 type: string
+ *                 maxLength: 100
+ *                 example: Bienvenida a la empresa
+ *               type:
+ *                 type: string
+ *                 enum: [Tarea, Recurso, Examen]
+ *                 default: Recurso
+ *               description:
+ *                 type: string
+ *                 maxLength: 400
+ *               deliverable:
+ *                 type: boolean
+ *                 default: false
+ *                 description: Si la actividad espera una entrega del aprendiz.
+ *               archivo:
  *                 type: string
  *                 format: binary
- *                 description: Archivo adjunto de la actividad
+ *                 description: >
+ *                   Material de apoyo. Hoy es obligatorio: la columna `adjunto`
+ *                   de la base es NOT NULL, así que una actividad sin archivo
+ *                   se rechaza con 400.
  *     responses:
  *       201:
- *         description: Actividad creada correctamente
+ *         description: Actividad creada
  *       400:
- *         description: Error en los datos o validación fallida
+ *         description: Datos inválidos, tipo de archivo no permitido o supera los 50 MB
+ *       401:
+ *         description: Token ausente o inválido
+ *       403:
+ *         description: Rol sin permiso para crear actividades
  */
 router.post(
   "/create",

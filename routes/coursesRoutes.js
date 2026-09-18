@@ -51,6 +51,12 @@ router.get("/get/id/:id", verifyToken, CourseController.getById);
  *   post:
  *     summary: Crea un nuevo curso
  *     tags: [Cursos]
+ *     description: >
+ *       El curso queda en la empresa del usuario autenticado; `tenantId` se toma
+ *       del token y se ignora si viene en el cuerpo. El `id` lo genera el
+ *       servidor. La portada se sube después con POST /api/courses/{id}/banner.
+ *     security:
+ *       - bearerAuth: []
  *     requestBody:
  *       required: true
  *       content:
@@ -59,14 +65,29 @@ router.get("/get/id/:id", verifyToken, CourseController.getById);
  *             type: object
  *             required:
  *               - name
- *               - description
+ *               - instructor
  *             properties:
  *               name:
  *                 type: string
- *                 example: Curso de Node.js
- *               description:
+ *                 maxLength: 50
+ *                 example: Inducción para nuevos ingresos
+ *               instructor:
  *                 type: string
- *                 example: Aprender a crear APIs con Node.js
+ *                 format: email
+ *                 description: Correo del instructor a cargo.
+ *                 example: instructor@empresa.com
+ *               grupo:
+ *                 type: string
+ *                 description: Id del equipo al que se asigna el curso.
+ *                 example: grp-uc-a
+ *               status:
+ *                 type: string
+ *                 enum: [Abierto, Cerrado]
+ *                 default: Abierto
+ *               actividades:
+ *                 type: array
+ *                 items: { type: string }
+ *                 description: Ids de actividades ya creadas.
  *     responses:
  *       201:
  *         description: Curso creado correctamente
