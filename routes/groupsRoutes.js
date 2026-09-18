@@ -1,6 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const GroupController = require("../controllers/groupsControler");
+const verifyJWT = require("../middlewares/jwt.js");
+const requireRole = require("../middlewares/requireRole.js");
 
 /**
  * @swagger
@@ -19,7 +21,7 @@ const GroupController = require("../controllers/groupsControler");
  *       200:
  *         description: Lista de grupos
  */
-router.get("/get/all", GroupController.getAll);
+router.get("/get/all", verifyJWT, GroupController.getAll);
 
 /**
  * @swagger
@@ -40,7 +42,7 @@ router.get("/get/all", GroupController.getAll);
  *       404:
  *         description: Grupo no encontrado
  */
-router.get("/get/id/:id", GroupController.getById);
+router.get("/get/id/:id", verifyJWT, GroupController.getById);
 
 /**
  * @swagger
@@ -74,7 +76,7 @@ router.get("/get/id/:id", GroupController.getById);
  *       400:
  *         description: Error en los datos
  */
-router.post("/create", GroupController.create);
+router.post("/create", verifyJWT, requireRole("admin", "superadmin"), GroupController.create);
 
 /**
  * @swagger
@@ -104,7 +106,7 @@ router.post("/create", GroupController.create);
  *       400:
  *         description: Error de validación
  */
-router.put("/update/:id", GroupController.update);
+router.put("/update/:id", verifyJWT, requireRole("admin", "superadmin"), GroupController.update);
 
 /**
  * @swagger
@@ -135,7 +137,7 @@ router.put("/update/:id", GroupController.update);
  *       200:
  *         description: Usuarios agregados correctamente
  */
-router.post("/:id/add-users", GroupController.addUsers);
+router.post("/:id/add-users", verifyJWT, requireRole("admin", "superadmin"), GroupController.addUsers);
 
 /**
  * @swagger
@@ -168,7 +170,7 @@ router.post("/:id/add-users", GroupController.addUsers);
  *       400:
  *         description: Error al eliminar usuarios
  */
-router.delete("/:id/remove-users", GroupController.removeUsers);
+router.delete("/:id/remove-users", verifyJWT, requireRole("admin", "superadmin"), GroupController.removeUsers);
 
 /**
  * @swagger
@@ -189,7 +191,7 @@ router.delete("/:id/remove-users", GroupController.removeUsers);
  *       404:
  *         description: Grupo no encontrado
  */
-router.delete("/delete/:id", GroupController.delete);
+router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), GroupController.delete);
 
 /**
  * @swagger
@@ -226,6 +228,6 @@ router.delete("/delete/:id", GroupController.delete);
  *       500:
  *         description: Error interno del servidor
  */
-router.get("/me", GroupController.getMyGroups);
+router.get("/me", verifyJWT, GroupController.getMyGroups);
 
 module.exports = router;

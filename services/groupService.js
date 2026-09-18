@@ -2,6 +2,25 @@ const { supabase } = require("../helpers/supabaseHelper.js");
 const GroupSchema = require("../schemas/groupSchema.js");
 const crypto = require("crypto");
 
+
+// La base guarda tenant_id; la API expone tenantId, igual que en usuarios.
+function aFila(d) {
+  const o = { ...d };
+  if ("tenantId" in o) { o.tenant_id = o.tenantId ?? null; delete o.tenantId; }
+  return o;
+}
+function aObjeto(r) {
+  if (!r) return null;
+  const { tenant_id, ...resto } = r;
+  return { ...resto, tenantId: tenant_id ?? null };
+}
+
+// Ninguna consulta pisa datos de otra empresa: el superadmin pasa tenantId null
+// y ve todo; cualquier otro rol llega siempre con el suyo desde el JWT.
+function delTenant(query, tenantId) {
+  return tenantId ? query.eq("tenant_id", tenantId) : query;
+}
+
 class GroupService {
   static async create(groupData) {
     const customId = crypto.randomBytes(3).toString("hex");
@@ -13,7 +32,7 @@ class GroupService {
     }
 
     const group = validation.data;
-    const { error } = await supabase.from("groups").insert(group);
+    const { error } = await supabase.from("groups").insert(aFila(group));
     if (error) throw new Error(error.message);
 
     if (Array.isArray(groupData.userIds) && groupData.userIds.length > 0) {
@@ -24,8 +43,11 @@ class GroupService {
     return group;
   }
 
-  static async getAll() {
-    const { data: groups, error } = await supabase.from("groups").select("*");
+  static async getAll(tenantId = null) {
+    const { data: groups, error } = await delTenant(
+      supabase.from("groups").select("*"),
+      tenantId
+    );
     if (error) throw new Error(error.message);
     if (!groups?.length) return [];
 
@@ -49,7 +71,7 @@ class GroupService {
     ]);
 
     return groups.map((group) => ({
-      ...group,
+      ...aObjeto(group),
       users: (userGroups || [])
         .filter((ug) => ug.id_group === group.id)
         .map((ug) => (users || []).find((u) => u.id === ug.id_user))
@@ -61,8 +83,11 @@ class GroupService {
     }));
   }
 
-  static async getById(id) {
-    const { data: group } = await supabase.from("groups").select("*").eq("id", id).maybeSingle();
+  static async getById(id, tenantId = null) {
+    const { data: group } = await delTenant(
+      supabase.from("groups").select("*").eq("id", id),
+      tenantId
+    ).maybeSingle();
     if (!group) return null;
 
     const [{ data: userGroups }, { data: groupCourses }] = await Promise.all([
@@ -82,15 +107,16 @@ class GroupService {
         : Promise.resolve({ data: [] }),
     ]);
 
-    return { ...group, users: users || [], courses: courses || [] };
+    return { ...aObjeto(group), users: users || [], courses: courses || [] };
   }
 
-  static async addUsersToGroup(groupId, userIds) {
-    const { data: groupCheck } = await supabase
-      .from("groups")
-      .select("id")
-      .eq("id", groupId)
-      .maybeSingle();
+  static async addUsersToGroup(groupId, userIds, tenantId = null) {
+    const { data: groupCheck } = await delTenant(
+      supabase.from("groups").select("id").eq("id", groupId),
+      tenantId
+    ).maybeSingle();
+    // Un grupo de otra empresa se responde igual que uno inexistente: decir
+    // "existe pero no es tuyo" ya revelaría que existe.
     if (!groupCheck) throw new Error("Grupo no encontrado");
 
     const records = userIds.map((userId) => ({ id_user: userId, id_group: groupId }));
@@ -102,7 +128,13 @@ class GroupService {
     return { message: "Usuarios agregados al grupo correctamente" };
   }
 
-  static async removeUsersFromGroup(groupId, userIds) {
+  static async removeUsersFromGroup(groupId, userIds, tenantId = null) {
+    const { data: existe } = await delTenant(
+      supabase.from("groups").select("id").eq("id", groupId),
+      tenantId
+    ).maybeSingle();
+    if (!existe) throw new Error("Grupo no encontrado");
+
     const { error } = await supabase
       .from("users_groups")
       .delete()
@@ -112,13 +144,15 @@ class GroupService {
     return { message: "Usuarios eliminados del grupo correctamente" };
   }
 
-  static async updateGroup(id, updateData) {
-    const { data: existing } = await supabase
-      .from("groups")
-      .select("id")
-      .eq("id", id)
-      .maybeSingle();
+  static async updateGroup(id, updateData, tenantId = null) {
+    const { data: existing } = await delTenant(
+      supabase.from("groups").select("id").eq("id", id),
+      tenantId
+    ).maybeSingle();
     if (!existing) return { error: "Grupo no encontrado" };
+
+    // El dueño no se cambia por la API: vendría del cliente.
+    delete updateData.tenantId;
 
     const validation = GroupSchema.schema.partial().safeParse(updateData);
     if (!validation.success) {
@@ -131,12 +165,11 @@ class GroupService {
     return { message: `Grupo ${id} actualizado correctamente`, updatedData: validation.data };
   }
 
-  static async deleteGroup(id) {
-    const { data: existing } = await supabase
-      .from("groups")
-      .select("id")
-      .eq("id", id)
-      .maybeSingle();
+  static async deleteGroup(id, tenantId = null) {
+    const { data: existing } = await delTenant(
+      supabase.from("groups").select("id").eq("id", id),
+      tenantId
+    ).maybeSingle();
     if (!existing) throw new Error("Grupo no encontrado");
 
     // ON DELETE CASCADE elimina users_groups y groups_courses automáticamente
@@ -157,7 +190,7 @@ class GroupService {
     const groupIds = userGroups.map((ug) => ug.id_group);
     const { data: groups } = await supabase.from("groups").select("*").in("id", groupIds);
 
-    return groups || [];
+    return (groups || []).map(aObjeto);
   }
 }
 

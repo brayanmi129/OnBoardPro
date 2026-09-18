@@ -1,5 +1,7 @@
 const express = require("express");
 const router = express.Router();
+const verifyJWT = require("../middlewares/jwt.js");
+const requireRole = require("../middlewares/requireRole.js");
 const ActivitiesController = require("../services/actividades.js");
 
 /**
@@ -19,7 +21,7 @@ const ActivitiesController = require("../services/actividades.js");
  *       200:
  *         description: Lista de todas las actividades
  */
-router.get("/get/all", ActivitiesController.getAll);
+router.get("/get/all", verifyJWT, ActivitiesController.getAll);
 
 /**
  * @swagger
@@ -51,6 +53,6 @@ router.get("/get/all", ActivitiesController.getAll);
  *       400:
  *         description: Error en los datos o validación fallida
  */
-router.post("/create", ActivitiesController.create);
+router.post("/create", verifyJWT, requireRole("admin", "superadmin", "instructor"), ActivitiesController.create);
 
 module.exports = router;

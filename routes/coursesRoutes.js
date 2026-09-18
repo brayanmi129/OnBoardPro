@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const CourseController = require("../controllers/courseController");
 const verifyToken = require("../middlewares/jwt.js");
+const requireRole = require("../middlewares/requireRole.js");
 
 /**
  * @swagger
@@ -20,7 +21,7 @@ const verifyToken = require("../middlewares/jwt.js");
  *       200:
  *         description: Lista de todos los cursos
  */
-router.get("/get/all", CourseController.getAll);
+router.get("/get/all", verifyToken, CourseController.getAll);
 
 /**
  * @swagger
@@ -41,7 +42,7 @@ router.get("/get/all", CourseController.getAll);
  *       404:
  *         description: Curso no encontrado
  */
-router.get("/get/id/:id", CourseController.getById);
+router.get("/get/id/:id", verifyToken, CourseController.getById);
 
 /**
  * @swagger
@@ -71,7 +72,7 @@ router.get("/get/id/:id", CourseController.getById);
  *       400:
  *         description: Error en los datos o validación fallida
  */
-router.post("/create", CourseController.create);
+router.post("/create", verifyToken, requireRole("admin", "superadmin", "instructor"), CourseController.create);
 
 /**
  * @swagger

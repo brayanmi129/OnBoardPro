@@ -3,6 +3,8 @@ const zod = require("zod");
 class courseSchema {
   static schema = zod.object({
     id: zod.string().min(1).max(50),
+    // La pone el controlador desde el JWT, nunca el cliente.
+    tenantId: zod.string().nullable().optional(),
     name: zod.string().min(1).max(50),
     instructor: zod.string().email(),
     grupo: zod.string().min(1).max(50).optional(),

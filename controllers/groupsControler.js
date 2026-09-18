@@ -1,11 +1,20 @@
 const GroupService = require("../services/groupService.js");
 const zod = require("zod");
 
+// El tenant sale SIEMPRE del JWT, nunca del body: si viniera del cliente,
+// cualquiera podría crear o leer en la empresa que quisiera. El superadmin es la
+// única excepción y usa null, que en los servicios significa "sin filtro".
+function tenantDe(req) {
+  return req.user.role === "superadmin" ? null : req.user.tenantId;
+}
+
 class GroupController {
   // 🟢 Crear grupo
   static async create(req, res) {
     try {
-      const group = await GroupService.create(req.body);
+      const tenantId =
+        req.user.role === "superadmin" ? req.body.tenantId || null : req.user.tenantId;
+      const group = await GroupService.create({ ...req.body, tenantId });
       res.status(201).json(group);
     } catch (error) {
       console.error("Error al crear el grupo:", error.message);
@@ -20,7 +29,7 @@ class GroupController {
   // 🟢 Obtener todos los grupos
   static async getAll(req, res) {
     try {
-      const groups = await GroupService.getAll();
+      const groups = await GroupService.getAll(tenantDe(req));
       res.status(200).json(groups);
     } catch (error) {
       console.error("Error al obtener los grupos:", error);
@@ -32,7 +41,7 @@ class GroupController {
   static async getById(req, res) {
     try {
       const { id } = req.params;
-      const group = await GroupService.getById(id);
+      const group = await GroupService.getById(id, tenantDe(req));
       if (!group) return res.status(404).send("Grupo no encontrado");
       res.status(200).json(group);
     } catch (error) {
@@ -46,7 +55,7 @@ class GroupController {
     try {
       const { id } = req.params;
       const { userIds } = req.body;
-      const result = await GroupService.addUsersToGroup(id, userIds);
+      const result = await GroupService.addUsersToGroup(id, userIds, tenantDe(req));
       res.status(200).json(result);
     } catch (error) {
       console.error("Error al agregar usuarios al grupo:", error);
@@ -62,7 +71,7 @@ class GroupController {
       if (!Array.isArray(userIds) || userIds.length === 0)
         return res.status(400).json({ error: "Debe enviar una lista de userIds" });
 
-      const result = await GroupService.removeUsersFromGroup(id, userIds);
+      const result = await GroupService.removeUsersFromGroup(id, userIds, tenantDe(req));
       res.status(200).json(result);
     } catch (error) {
       console.error("Error al eliminar usuarios del grupo:", error);
@@ -75,7 +84,7 @@ class GroupController {
     try {
       const { id } = req.params;
       const updateData = req.body;
-      const response = await GroupService.updateGroup(id, updateData);
+      const response = await GroupService.updateGroup(id, updateData, tenantDe(req));
 
       if (response.error) return res.status(400).json(response);
       res.status(200).json(response);
@@ -95,7 +104,7 @@ class GroupController {
       const { id } = req.params;
       if (!id) return res.status(400).send("ID del grupo es requerido");
 
-      await GroupService.deleteGroup(id);
+      await GroupService.deleteGroup(id, tenantDe(req));
       res.status(200).send(`Grupo eliminado ${id} correctamente`);
     } catch (error) {
       console.error("Error al eliminar el grupo:", error);

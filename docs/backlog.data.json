@@ -307,8 +307,8 @@
       "dependencias": [
         "HU-001"
       ],
-      "estado": "Parcial",
-      "endpoints": "Transversal. Hoy solo el módulo de usuarios lo cumple.",
+      "estado": "Implementado",
+      "endpoints": "Filtro por tenant en users, groups, courses y ranking. Pendiente: activities (la tabla no tiene tenant_id).",
       "sprint": 3,
       "notas": "Riesgo alto. El schema ya tiene tenant_id en groups y courses, pero ningún servicio lo escribe ni lo filtra. La tabla activities ni siquiera tiene la columna.",
       "mvp": true
@@ -635,7 +635,7 @@
       "dependencias": [
         "HU-001"
       ],
-      "estado": "Parcial",
+      "estado": "Implementado",
       "endpoints": "POST /api/groups/create",
       "sprint": 3,
       "notas": "Funciona, pero no guarda tenant_id: los grupos creados por la API quedan huérfanos de organización.",
@@ -779,7 +779,7 @@
       "dependencias": [
         "HU-001"
       ],
-      "estado": "Roto",
+      "estado": "Implementado",
       "endpoints": "POST /api/courses/create",
       "sprint": 3,
       "notas": "El controlador pasa el objeto request completo al servicio en lugar del cuerpo. Falla siempre.",

@@ -2,16 +2,37 @@ const crypto = require("crypto");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const CourseSchema = require("../schemas/courseSchemas.js");
 
+
+// La base guarda tenant_id; la API expone tenantId, igual que en usuarios.
+function aFila(d) {
+  const o = { ...d };
+  if ("tenantId" in o) { o.tenant_id = o.tenantId ?? null; delete o.tenantId; }
+  return o;
+}
+function aObjeto(r) {
+  if (!r) return null;
+  const { tenant_id, ...resto } = r;
+  return { ...resto, tenantId: tenant_id ?? null };
+}
+
+// El superadmin pasa null y ve todo; cualquier otro rol llega con el suyo.
+function delTenant(query, tenantId) {
+  return tenantId ? query.eq("tenant_id", tenantId) : query;
+}
+
 class CourseService {
-  static async getAll() {
-    const { data, error } = await supabase.from("courses").select("*");
+  static async getAll(tenantId = null) {
+    const { data, error } = await delTenant(supabase.from("courses").select("*"), tenantId);
     if (error) throw new Error(error.message);
-    return data || [];
+    return (data || []).map(aObjeto);
   }
 
-  static async getById(id) {
-    const { data } = await supabase.from("courses").select("*").eq("id", id).maybeSingle();
-    return data;
+  static async getById(id, tenantId = null) {
+    const { data } = await delTenant(
+      supabase.from("courses").select("*").eq("id", id),
+      tenantId
+    ).maybeSingle();
+    return aObjeto(data);
   }
 
   static async createCourse(courseData) {
@@ -24,7 +45,7 @@ class CourseService {
     }
 
     const course = validation.data;
-    const { error } = await supabase.from("courses").insert(course);
+    const { error } = await supabase.from("courses").insert(aFila(course));
     if (error) throw new Error(error.message);
     return course;
   }
@@ -50,7 +71,7 @@ class CourseService {
 
     const { data: courses } = await supabase.from("courses").select("*").in("id", courseIds);
 
-    return courses || [];
+    return (courses || []).map(aObjeto);
   }
 }
 

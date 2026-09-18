@@ -1,6 +1,7 @@
 // routes/userRoutes.js
 const express = require("express");
 const router = express.Router();
+const verifyJWT = require("../middlewares/jwt.js");
 const gamificationController = require("../controllers/gamificationController");
 
 /**
@@ -39,6 +40,6 @@ const gamificationController = require("../controllers/gamificationController");
  *       500:
  *         description: Error interno del servidor
  */
-router.get("/ranking", gamificationController.getRanking);
+router.get("/ranking", verifyJWT, gamificationController.getRanking);
 
 module.exports = router;

@@ -5,6 +5,9 @@ class GroupSchema {
   static schema = zod
     .object({
       id: zod.string().min(1).max(50), // ID obligatorio y con longitud limitada
+      // La empresa dueña del grupo. La pone el controlador desde el JWT, nunca
+      // el cliente. Nullable porque el superadmin trabaja fuera de una empresa.
+      tenantId: zod.string().nullable().optional(),
       name: zod.string().min(1).max(100), // Nombre obligatorio
       description: zod.string().optional(),
     })
