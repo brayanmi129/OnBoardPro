@@ -115,6 +115,9 @@ class AuthController {
       console.log(req.user);
       const id = req.user.id;
       console.log("ID del usuario autenticado:", id);
+      console.log("Rol del usuario autenticado:", req.user.role);
+      console.log("Tenant del usuario autenticado:", req.user.tenantId);
+      console.log("Correo del usuario autenticado:", req.user.email);
 
       const userData = await AuthService.me(id);
 

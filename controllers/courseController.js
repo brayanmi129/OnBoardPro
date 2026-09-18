@@ -48,6 +48,19 @@ class CourseController {
     }
   }
 
+  // Portada del curso
+  static async subirBanner(req, res) {
+    try {
+      if (!req.file) return res.status(400).json({ message: "No se recibió ninguna imagen." });
+      const r = await CourseService.guardarBanner(req.params.id, tenantDe(req), req.file);
+      if (r.error) return res.status(r.error === "Curso no encontrado" ? 404 : 400).json(r);
+      return res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al subir la portada:", error.message);
+      return res.status(500).json({ message: error.message });
+    }
+  }
+
   //mis cursos
   static async getMyCourses(req, res) {
     try {

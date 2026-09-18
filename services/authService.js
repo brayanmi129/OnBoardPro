@@ -8,8 +8,16 @@ const bcrypt = require("bcrypt");
 const MIN_PASSWORD = 8;
 
 function generateToken(user) {
+  // El payload de un JWT va en base64, no cifrado: cualquiera con el token lo
+  // lee. Por eso solo lleva lo que hace falta para autorizar, más el correo
+  // para identificar al usuario en los logs sin tener que ir a la base.
   return jwt.sign(
-    { id: user.id, tenantId: user.tenantId || null, role: user.role },
+    {
+      id: user.id,
+      email: user.email,
+      tenantId: user.tenantId || null,
+      role: user.role,
+    },
     process.env.JWT_SECRET,
     { expiresIn: "3h" }
   );

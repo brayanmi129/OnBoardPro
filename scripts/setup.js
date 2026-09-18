@@ -136,27 +136,38 @@ function buildCourses() {
 
 function buildActivities() {
   const A = IDS.activities;
-  const DRIVE = "https://drive.google.com/file/d/seed-placeholder/view";
+  // Marcador para el adjunto. Ya no apunta a Google Drive: los archivos
+  // viven en el bucket privado "materiales" de Supabase Storage y acá se
+  // guarda la ruta, no una URL. Estas rutas no existen todavía; se suben
+  // desde la app o con un script de migración. El botón "Abrir" del panel
+  // dirá que el archivo no está, que es la verdad, en vez de mandar a un
+  // enlace de Drive que nunca existió.
+  const adjuntoDe = (id) => `${id}.pdf`;
+  // La empresa se deduce del curso: poo, bd y red son de la Central; cal, fis
+  // y qui de la Nacional. Sin tenant_id la actividad no la ve nadie salvo el
+  // superadmin, porque el filtro de aislamiento la descarta.
+  const empresaDe = (nombre) =>
+    /^act-(poo|bd|red)/.test(nombre) ? IDS.tenants.uc : IDS.tenants.un;
   return [
-    { id: A.poo1, name: "act-poo1", type: "Recurso", title: "Introducción a la POO", description: "Material de lectura sobre clases y objetos.", adjunto: DRIVE, deliverable: false },
-    { id: A.poo2, name: "act-poo2", type: "Tarea", title: "Taller: Herencia y Polimorfismo", description: "Implementa una jerarquía de clases en Java.", adjunto: DRIVE, deliverable: true },
-    { id: A.poo3, name: "act-poo3", type: "Examen", title: "Parcial 1 - POO", description: "Evaluación de conceptos de POO.", adjunto: DRIVE, deliverable: true },
+    { id: A.poo1, name: "act-poo1", tenant_id: empresaDe("act-poo1"), type: "Recurso", title: "Introducción a la POO", description: "Material de lectura sobre clases y objetos.", adjunto: adjuntoDe("act-poo1"), deliverable: false },
+    { id: A.poo2, name: "act-poo2", tenant_id: empresaDe("act-poo2"), type: "Tarea", title: "Taller: Herencia y Polimorfismo", description: "Implementa una jerarquía de clases en Java.", adjunto: adjuntoDe("act-poo2"), deliverable: true },
+    { id: A.poo3, name: "act-poo3", tenant_id: empresaDe("act-poo3"), type: "Examen", title: "Parcial 1 - POO", description: "Evaluación de conceptos de POO.", adjunto: adjuntoDe("act-poo3"), deliverable: true },
 
-    { id: A.bd1, name: "act-bd1", type: "Recurso", title: "Modelo Entidad-Relación", description: "Guía para diseñar diagramas ER.", adjunto: DRIVE, deliverable: false },
-    { id: A.bd2, name: "act-bd2", type: "Tarea", title: "Taller: Consultas SQL", description: "Practica SELECT, JOIN y subconsultas.", adjunto: DRIVE, deliverable: true },
+    { id: A.bd1, name: "act-bd1", tenant_id: empresaDe("act-bd1"), type: "Recurso", title: "Modelo Entidad-Relación", description: "Guía para diseñar diagramas ER.", adjunto: adjuntoDe("act-bd1"), deliverable: false },
+    { id: A.bd2, name: "act-bd2", tenant_id: empresaDe("act-bd2"), type: "Tarea", title: "Taller: Consultas SQL", description: "Practica SELECT, JOIN y subconsultas.", adjunto: adjuntoDe("act-bd2"), deliverable: true },
 
-    { id: A.red1, name: "act-red1", type: "Recurso", title: "Modelo OSI", description: "Las 7 capas del modelo OSI explicadas.", adjunto: DRIVE, deliverable: false },
-    { id: A.red2, name: "act-red2", type: "Tarea", title: "Laboratorio: Configuración TCP/IP", description: "Configura una red básica en Packet Tracer.", adjunto: DRIVE, deliverable: true },
+    { id: A.red1, name: "act-red1", tenant_id: empresaDe("act-red1"), type: "Recurso", title: "Modelo OSI", description: "Las 7 capas del modelo OSI explicadas.", adjunto: adjuntoDe("act-red1"), deliverable: false },
+    { id: A.red2, name: "act-red2", tenant_id: empresaDe("act-red2"), type: "Tarea", title: "Laboratorio: Configuración TCP/IP", description: "Configura una red básica en Packet Tracer.", adjunto: adjuntoDe("act-red2"), deliverable: true },
 
-    { id: A.cal1, name: "act-cal1", type: "Recurso", title: "Límites y Continuidad", description: "Teoría y ejemplos resueltos.", adjunto: DRIVE, deliverable: false },
-    { id: A.cal2, name: "act-cal2", type: "Tarea", title: "Taller: Derivadas", description: "Ejercicios de derivación usando regla de la cadena.", adjunto: DRIVE, deliverable: true },
-    { id: A.cal3, name: "act-cal3", type: "Examen", title: "Parcial 1 - Cálculo", description: "Evaluación de límites y derivadas.", adjunto: DRIVE, deliverable: true },
+    { id: A.cal1, name: "act-cal1", tenant_id: empresaDe("act-cal1"), type: "Recurso", title: "Límites y Continuidad", description: "Teoría y ejemplos resueltos.", adjunto: adjuntoDe("act-cal1"), deliverable: false },
+    { id: A.cal2, name: "act-cal2", tenant_id: empresaDe("act-cal2"), type: "Tarea", title: "Taller: Derivadas", description: "Ejercicios de derivación usando regla de la cadena.", adjunto: adjuntoDe("act-cal2"), deliverable: true },
+    { id: A.cal3, name: "act-cal3", tenant_id: empresaDe("act-cal3"), type: "Examen", title: "Parcial 1 - Cálculo", description: "Evaluación de límites y derivadas.", adjunto: adjuntoDe("act-cal3"), deliverable: true },
 
-    { id: A.fis1, name: "act-fis1", type: "Recurso", title: "Cinemática", description: "Movimiento rectilíneo y parabólico.", adjunto: DRIVE, deliverable: false },
-    { id: A.fis2, name: "act-fis2", type: "Tarea", title: "Taller: Dinámica", description: "Problemas de fuerza, masa y aceleración.", adjunto: DRIVE, deliverable: true },
+    { id: A.fis1, name: "act-fis1", tenant_id: empresaDe("act-fis1"), type: "Recurso", title: "Cinemática", description: "Movimiento rectilíneo y parabólico.", adjunto: adjuntoDe("act-fis1"), deliverable: false },
+    { id: A.fis2, name: "act-fis2", tenant_id: empresaDe("act-fis2"), type: "Tarea", title: "Taller: Dinámica", description: "Problemas de fuerza, masa y aceleración.", adjunto: adjuntoDe("act-fis2"), deliverable: true },
 
-    { id: A.qui1, name: "act-qui1", type: "Recurso", title: "Tabla Periódica", description: "Introducción a los elementos y sus propiedades.", adjunto: DRIVE, deliverable: false },
-    { id: A.qui2, name: "act-qui2", type: "Tarea", title: "Taller: Estequiometría", description: "Balanceo de ecuaciones químicas.", adjunto: DRIVE, deliverable: true },
+    { id: A.qui1, name: "act-qui1", tenant_id: empresaDe("act-qui1"), type: "Recurso", title: "Tabla Periódica", description: "Introducción a los elementos y sus propiedades.", adjunto: adjuntoDe("act-qui1"), deliverable: false },
+    { id: A.qui2, name: "act-qui2", tenant_id: empresaDe("act-qui2"), type: "Tarea", title: "Taller: Estequiometría", description: "Balanceo de ecuaciones químicas.", adjunto: adjuntoDe("act-qui2"), deliverable: true },
   ];
 }
 

@@ -99,3 +99,13 @@ CREATE TABLE IF NOT EXISTS password_resets (
 );
 
 CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);
+
+-- Portada del curso y empresa dueña de la actividad.
+-- banner_url guarda la URL pública de Supabase Storage (bucket "banners").
+-- activities.tenant_id faltaba: sin él las actividades no se pueden aislar
+-- por empresa como el resto (HU-006).
+ALTER TABLE courses    ADD COLUMN IF NOT EXISTS banner_url TEXT;
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS tenant_id  VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE;
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS mime       VARCHAR(100);
+
+CREATE INDEX IF NOT EXISTS idx_activities_tenant ON activities(tenant_id);

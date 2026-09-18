@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const CourseSchema = require("../schemas/courseSchemas.js");
+const { subirBanner, borrar, BANNERS } = require("../helpers/storage.js");
 
 
 // La base guarda tenant_id; la API expone tenantId, igual que en usuarios.
@@ -11,8 +12,8 @@ function aFila(d) {
 }
 function aObjeto(r) {
   if (!r) return null;
-  const { tenant_id, ...resto } = r;
-  return { ...resto, tenantId: tenant_id ?? null };
+  const { tenant_id, banner_url, ...resto } = r;
+  return { ...resto, tenantId: tenant_id ?? null, bannerUrl: banner_url ?? null };
 }
 
 // El superadmin pasa null y ve todo; cualquier otro rol llega con el suyo.
@@ -48,6 +49,40 @@ class CourseService {
     const { error } = await supabase.from("courses").insert(aFila(course));
     if (error) throw new Error(error.message);
     return course;
+  }
+
+  /**
+   * Cambia la portada del curso. Solo se toca la base después de que Storage
+   * confirmó la subida: al revés quedaría una URL apuntando a la nada.
+   */
+  static async guardarBanner(id, tenantId, archivo) {
+    const { data: curso } = await delTenant(
+      supabase.from("courses").select("id, banner_url").eq("id", id),
+      tenantId
+    ).maybeSingle();
+    if (!curso) return { error: "Curso no encontrado" };
+
+    const { ruta, url } = await subirBanner({
+      tenantId,
+      buffer: archivo.buffer,
+      nombreOriginal: archivo.originalname,
+      mime: archivo.mimetype,
+    });
+
+    const { error } = await supabase.from("courses").update({ banner_url: url }).eq("id", id);
+    if (error) {
+      // No dejamos huérfano el archivo si la base falla.
+      await borrar(BANNERS, ruta);
+      return { error: error.message };
+    }
+
+    // La portada anterior ya no la referencia nadie.
+    if (curso.banner_url) {
+      const vieja = curso.banner_url.split("/banners/")[1];
+      if (vieja) await borrar(BANNERS, vieja);
+    }
+
+    return { bannerUrl: url };
   }
 
   static async getByUser(userId) {

@@ -3,6 +3,7 @@ const router = express.Router();
 const CourseController = require("../controllers/courseController");
 const verifyToken = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
+const subida = require("../middlewares/subida.js");
 
 /**
  * @swagger
@@ -110,5 +111,48 @@ router.post("/create", verifyToken, requireRole("admin", "superadmin", "instruct
  *         description: Error interno del servidor
  */
 router.get("/me", verifyToken, CourseController.getMyCourses);
+
+/**
+ * @swagger
+ * /api/courses/{id}/banner:
+ *   post:
+ *     summary: Sube o reemplaza la portada de un curso
+ *     tags: [Cursos]
+ *     description: >
+ *       Recibe una imagen en multipart/form-data bajo el campo `banner`.
+ *       Máximo 5 MB, solo JPEG, PNG, WebP o GIF. Queda en el bucket público
+ *       "banners" de Supabase Storage y la portada anterior se borra.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               banner:
+ *                 type: string
+ *                 format: binary
+ *     responses:
+ *       200:
+ *         description: Portada actualizada, devuelve bannerUrl
+ *       400:
+ *         description: Sin archivo, tipo no permitido o supera los 5 MB
+ *       404:
+ *         description: El curso no existe o es de otra empresa
+ */
+router.post(
+  "/:id/banner",
+  verifyToken,
+  requireRole("admin", "superadmin", "instructor"),
+  subida.banner,
+  CourseController.subirBanner
+);
 
 module.exports = router;

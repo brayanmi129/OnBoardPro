@@ -93,6 +93,10 @@
       animation: toastIn .2s cubic-bezier(.2,.9,.3,1.1);
     }
     .toast-error { background: var(--danger); }
+    .toast-ok    { background: #047857; }
+    /* info: avisos en curso, como una subida. Se distingue del éxito para
+       que "Subiendo…" no se lea como "Listo". */
+    .toast-info  { background: var(--primary); }
     .toast.out { opacity: 0; transform: translate(-50%, 8px); transition: opacity .3s, transform .3s; }
     @keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px) } }
 
@@ -163,6 +167,111 @@
       font: inherit; cursor: pointer;
     }
 
+
+    /* ── CURSOS ────────────────────────────────────────── */
+    .cursos-grid {
+      display: grid; gap: 18px;
+      grid-template-columns: repeat(auto-fill, minmax(268px, 1fr));
+    }
+    .curso {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 14px; overflow: hidden;
+      display: flex; flex-direction: column;
+      transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease;
+    }
+    .curso:hover {
+      transform: translateY(-2px);
+      border-color: var(--primary);
+      box-shadow: 0 10px 26px rgba(15, 23, 42, .10);
+    }
+
+    .curso-portada { position: relative; aspect-ratio: 16 / 9; background: var(--bg); }
+    .curso-img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .curso-img-vacia { display: grid; place-items: center; }
+    .curso-img-vacia span {
+      font-size: 40px; font-weight: 700; color: #fff;
+      text-shadow: 0 2px 10px rgba(0, 0, 0, .22);
+    }
+
+    .curso-estado { position: absolute; top: 10px; left: 10px; }
+
+    /* Solo aparece al pasar el mouse por la ficha, para no competir con la
+       imagen; en pantallas táctiles no hay hover, así que ahí queda fijo. */
+    .curso-cambiar {
+      position: absolute; top: 8px; right: 8px;
+      width: 32px; height: 32px; border-radius: 9px;
+      border: none; cursor: pointer;
+      display: grid; place-items: center;
+      background: rgba(17, 24, 39, .62); color: #fff;
+      opacity: 0; transition: opacity .16s ease, background .16s ease;
+    }
+    .curso:hover .curso-cambiar { opacity: 1; }
+    .curso-cambiar:hover { background: rgba(17, 24, 39, .85); }
+    .curso-cambiar .ico { width: 15px; height: 15px; }
+    @media (hover: none) { .curso-cambiar { opacity: 1; } }
+
+    .curso-cuerpo { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 3px; flex: 1; }
+    .curso-cuerpo h4 { font-size: 15.5px; font-weight: 600; letter-spacing: -.01em; }
+    .curso-pie {
+      margin-top: auto; padding-top: 12px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+    }
+    .curso-pie .ico { width: 14px; height: 14px; vertical-align: -2px; }
+
+    /* ── DETALLE DE CURSO ──────────────────────────────── */
+    .volver {
+      display: inline-flex; align-items: center; gap: 8px;
+      margin-bottom: 16px; padding: 7px 14px 7px 11px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 999px; cursor: pointer;
+      font: inherit; font-size: 13.5px; font-weight: 500; color: var(--muted);
+      transition: color .16s ease, border-color .16s ease, box-shadow .16s ease;
+    }
+    .volver:hover {
+      color: var(--primary); border-color: var(--primary);
+      box-shadow: 0 2px 10px rgba(79, 70, 229, .12);
+    }
+    .volver .ico { width: 15px; height: 15px; transition: transform .16s ease; }
+    /* La flecha se corre a la izquierda: el gesto dice "volver" mejor que
+       cualquier adorno extra. */
+    .volver:hover .ico { transform: translateX(-3px); }
+    .volver:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+    .curso-hero {
+      position: relative; border-radius: 14px; overflow: hidden;
+      border: 1px solid var(--border); aspect-ratio: 16 / 5; background: var(--bg);
+    }
+    .curso-hero .curso-img { width: 100%; height: 100%; object-fit: cover; }
+    .curso-hero .curso-img-vacia span { font-size: 54px; }
+    .curso-hero .curso-cambiar { opacity: 1; }
+
+    .curso-titulo {
+      display: flex; align-items: flex-start; justify-content: space-between;
+      gap: 16px; flex-wrap: wrap; margin-top: 16px;
+    }
+    .curso-titulo h2 { font-size: 22px; font-weight: 600; letter-spacing: -.02em; }
+    .curso-titulo p { font-size: 14.5px; margin-top: 2px; }
+
+    .lista-act { display: flex; flex-direction: column; gap: 9px; }
+    .act {
+      display: flex; align-items: center; gap: 13px;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 11px; padding: 13px 15px;
+    }
+    .act-ico {
+      width: 34px; height: 34px; border-radius: 9px; flex: none;
+      display: grid; place-items: center;
+      background: var(--primary-soft); color: var(--primary);
+    }
+    .act-ico .ico { width: 16px; height: 16px; }
+    .act-txt { flex: 1; min-width: 0; }
+    .act-txt h4 { font-size: 14.5px; font-weight: 600; }
+    /* La descripción puede ser larga: una línea y elipsis, el detalle completo
+       va en la vista de la actividad cuando exista. */
+    .act-txt p { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    .curso { cursor: pointer; }
+    .curso:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
     /* ── MI PERFIL ─────────────────────────────────────── */
     .perfil-hero {
@@ -798,6 +907,8 @@ const ICO = {
   cross:      '<path d="M18 6 6 18M6 6l12 12"/>',
   attach:     '<path d="M21.4 11.05 12.25 20.2a5.5 5.5 0 0 1-7.78-7.78l9.19-9.19a3.67 3.67 0 0 1 5.18 5.18l-9.2 9.19a1.83 1.83 0 0 1-2.59-2.59l8.49-8.48"/>',
   warn:       '<path d="M10.3 3.6 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.6a2 2 0 0 0-3.4 0Z"/><path d="M12 9v4M12 17h.01"/>',
+  atras:      '<path d="M19 12H5"/><path d="m12 19-7-7 7-7"/>',
+  editar:     '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>',
   perfil:     '<circle cx="12" cy="8" r="4"/><path d="M5.5 21a7 7 0 0 1 13 0"/>',
   logo:       '<path d="M12 2 3 7l9 5 9-5-9-5Z"/><path d="m3 12 9 5 9-5"/><path d="m3 17 9 5 9-5"/>',
 };
@@ -1583,41 +1694,240 @@ async function deleteUser(id, email) {
 // ═══════════════════════════════════════════════════════════════════════════
 // COURSES
 // ═══════════════════════════════════════════════════════════════════════════
+// Subida de archivos: no puede usar api(), que fuerza Content-Type JSON.
+// Con FormData el navegador pone el multipart/form-data y su boundary solo;
+// si lo fijáramos a mano, el servidor no sabría dónde empieza cada parte.
+async function apiArchivo(path, campo, archivo, ms = 60000) {
+  const fd = new FormData();
+  fd.append(campo, archivo);
+  let res;
+  try {
+    res = await fetch(`${API}${path}`, {
+      method: "POST",
+      signal: AbortSignal.timeout ? AbortSignal.timeout(ms) : undefined,
+      headers: state.token ? { Authorization: `Bearer ${state.token}` } : {},
+      body: fd,
+    });
+  } catch (e) {
+    throw { message: e.name === "TimeoutError"
+      ? "La subida tardó demasiado. Probá con un archivo más liviano."
+      : "No se pudo conectar con el servidor." };
+  }
+  const data = await res.json().catch(() => ({ message: res.statusText }));
+  if (!res.ok) throw data;
+  return data;
+}
+
+// Las portadas son opcionales y la mayoría de los cursos no va a tener una.
+// En vez de un hueco gris, se deriva un color estable del nombre: dos cursos
+// distintos se distinguen de un vistazo aunque ninguno tenga imagen.
+function tonoDe(texto = "") {
+  let h = 0;
+  for (const c of texto) h = (h * 31 + c.charCodeAt(0)) % 360;
+  return h;
+}
+
+function portada(c) {
+  if (c.bannerUrl) {
+    return `<img class="curso-img" src="${escHtml(c.bannerUrl)}" alt=""
+                 loading="lazy" onerror="this.replaceWith(sinPortada('${escHtml(c.name || "")}'))">`;
+  }
+  const h = tonoDe(c.name || c.id);
+  const inicial = (c.name || "?").trim().charAt(0).toUpperCase();
+  return `<div class="curso-img curso-img-vacia"
+               style="background:linear-gradient(135deg,hsl(${h} 62% 58%),hsl(${(h + 42) % 360} 64% 46%))">
+            <span>${escHtml(inicial)}</span>
+          </div>`;
+}
+
+function sinPortada(nombre) {
+  const d = document.createElement("div");
+  const h = tonoDe(nombre);
+  d.className = "curso-img curso-img-vacia";
+  d.style.background = `linear-gradient(135deg,hsl(${h} 62% 58%),hsl(${(h + 42) % 360} 64% 46%))`;
+  d.innerHTML = `<span>${(nombre || "?").trim().charAt(0).toUpperCase()}</span>`;
+  return d;
+}
+
 async function renderCourses() {
   try {
     const courses = await api("GET", "/api/courses/get/all");
-    const rows = courses.map(c => tr(
-      `<code class="small">${c.id}</code>`,
-      `<strong>${c.name || "—"}</strong>`,
-      c.instructor_id ? `<code class="small">${c.instructor_id}</code>` : "—",
-      statusBadge(c.status || "Active"),
-    )).join("");
+    const puedeEditar = ["admin", "superadmin", "instructor"].includes(state.user?.role);
+
+    const fichas = courses.map(c => `
+      <article class="curso" onclick="verCurso('${c.id}')" role="button" tabindex="0"
+               onkeydown="if(event.key==='Enter'){verCurso('${c.id}')}">
+        <div class="curso-portada">
+          ${portada(c)}
+          <span class="badge ${c.status === "Abierto" ? "b-student" : "b-default"} curso-estado">
+            ${escHtml(c.status || "—")}
+          </span>
+          ${puedeEditar ? `
+            <button class="curso-cambiar" onclick="event.stopPropagation();pedirPortada('${c.id}')"
+                    title="Cambiar portada">${icon("editar")}</button>` : ""}
+        </div>
+        <div class="curso-cuerpo">
+          <h4>${escHtml(c.name || "Sin nombre")}</h4>
+          <p class="muted small">${escHtml(c.instructor || "Sin instructor asignado")}</p>
+          <div class="curso-pie">
+            <span class="small muted">${icon("activities")} ${(c.actividades?.length ?? 0)} actividades</span>
+            <code class="small">${c.id}</code>
+          </div>
+        </div>
+      </article>`).join("");
 
     setContent(
-      sectionHeader(`${courses.length} curso(s)`, "Nuevo curso", "openCreateCourse") +
-      tableWrap(["ID","Nombre","Instructor ID","Estado"], rows)
+      sectionHeader(`${courses.length} curso(s)`,
+                    puedeEditar ? "Nuevo curso" : null,
+                    puedeEditar ? "openCreateCourse" : null) +
+      (courses.length
+        ? `<div class="cursos-grid">${fichas}</div>`
+        : vacio("Todavía no hay cursos",
+                "Creá el primero con el botón de arriba y ponele una portada."))
     );
   } catch (err) {
-    setContent(`<div class="alert alert-error">${err.message}</div>`);
+    setContent(errorBox(err));
   }
+}
+
+// Un <input type=file> oculto que se crea al vuelo: no hace falta tenerlo en el
+// marcado de cada ficha.
+function pedirPortada(id) {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "image/jpeg,image/png,image/webp,image/gif";
+  input.onchange = async () => {
+    const archivo = input.files?.[0];
+    if (!archivo) return;
+    if (archivo.size > 5 * 1024 * 1024) return avisar("La imagen supera los 5 MB.");
+    avisar("Subiendo la portada…", "info");
+    try {
+      await apiArchivo(`/api/courses/${id}/banner`, "banner", archivo);
+      avisar("Portada actualizada.", "ok");
+      renderCourses();
+    } catch (err) {
+      avisar(err?.message || "No se pudo subir la portada.");
+    }
+  };
+  input.click();
 }
 
 function openCreateCourse() {
   openModal("Nuevo curso", `
-    <div class="form-group"><label>Nombre del curso</label><input id="f-c-name" placeholder="Inducción para nuevos ingresos"></div>
-    <div class="form-group"><label>Instructor ID <span class="hint">(opcional)</span></label><input id="f-c-inst" placeholder="a1b2c3"></div>
+    <div class="form-group"><label>Nombre del curso</label>
+      <input id="f-c-name" placeholder="Inducción para nuevos ingresos"></div>
+    <div class="form-group"><label>Correo del instructor</label>
+      <input id="f-c-inst" type="email" placeholder="instructor@empresa.com"></div>
     <div class="form-group"><label>Estado</label>
-      <select id="f-c-status"><option value="Active">Active</option><option value="Inactive">Inactive</option></select>
+      <select id="f-c-status">
+        <option value="Abierto">Abierto</option>
+        <option value="Cerrado">Cerrado</option>
+      </select>
     </div>
+    <p class="small muted">La portada se agrega después, desde la ficha del curso.</p>
   `, async () => {
-    const inst = $("f-c-inst").value;
     await api("POST", "/api/courses/create", {
-      name:          $("f-c-name").value,
-      status:        $("f-c-status").value,
-      instructor_id: inst || undefined,
+      name:       $("f-c-name").value,
+      instructor: $("f-c-inst").value,
+      status:     $("f-c-status").value,
     });
     closeModal(); renderCourses();
   });
+}
+
+// ── Detalle de un curso ─────────────────────────────────────────────────────
+// No es una sección del menú: se entra desde una ficha y se vuelve con el botón.
+// Por eso state.section sigue siendo "courses" y el menú no pierde el resaltado.
+async function verCurso(id) {
+  $("page-title").textContent = "Curso";
+  setContent(`<div class="sk-cards"><div class="sk"></div><div class="sk"></div></div>`);
+  try {
+    const c = await api("GET", `/api/courses/get/id/${id}`);
+    const puedeEditar = ["admin", "superadmin", "instructor"].includes(state.user?.role);
+
+    // El curso guarda los ids de sus actividades; el listado viene aparte.
+    let actividades = [];
+    const ids = c.actividades || [];
+    if (ids.length) {
+      try {
+        const todas = await api("GET", "/api/activities/get/all");
+        actividades = todas.filter(a => ids.includes(a.id));
+      } catch { /* sin permiso o sin actividades: se muestra el aviso de abajo */ }
+    }
+
+    setContent(`
+      <button class="volver" onclick="navigate('courses')">
+        ${icon("atras")}<span>Volver a cursos</span>
+      </button>
+
+      <div class="curso-hero">
+        ${portada(c)}
+        ${puedeEditar ? `
+          <button class="curso-cambiar" onclick="pedirPortada('${c.id}')"
+                  title="Cambiar portada">${icon("editar")}</button>` : ""}
+      </div>
+
+      <div class="curso-titulo">
+        <div>
+          <h2>${escHtml(c.name || "Sin nombre")}</h2>
+          <p class="muted">${escHtml(c.instructor || "Sin instructor asignado")}</p>
+        </div>
+        <span class="badge ${c.status === "Abierto" ? "b-student" : "b-default"}">
+          ${escHtml(c.status || "—")}
+        </span>
+      </div>
+
+      <div class="stats-grid" style="margin-top:16px">
+        ${tarjetaCifra(`${icon("activities")} ${ids.length}`, "Actividades")}
+        ${tarjetaCifra(`${icon("groups")} ${escHtml(c.grupo || "—")}`, "Equipo asignado")}
+        ${tarjetaCifra(`${icon("check")} ${escHtml(c.status || "—")}`, "Estado")}
+      </div>
+
+      <h3 class="sec-h">Contenido del curso</h3>
+      ${actividades.length
+        ? `<div class="lista-act">${actividades.map(fichaActividad).join("")}</div>`
+        : ids.length
+          ? vacio("No se pudieron cargar las actividades",
+                  "El curso tiene actividades asociadas pero no llegaron desde el servidor.")
+          : vacio("Este curso todavía no tiene contenido",
+                  "Las actividades se crean desde la API; la pantalla para hacerlo aún no existe.")}
+    `);
+  } catch (err) {
+    setContent(errorBox(err) +
+      `<button class="btn btn-ghost btn-sm" style="margin-top:12px"
+               onclick="navigate('courses')">Volver a cursos</button>`);
+  }
+}
+
+const ICONO_TIPO = { Examen: "check", Tarea: "missions", Recurso: "attach" };
+
+function fichaActividad(a) {
+  return `<article class="act">
+    <span class="act-ico">${icon(ICONO_TIPO[a.type] || "attach")}</span>
+    <div class="act-txt">
+      <h4>${escHtml(a.title || a.name || "Sin título")}</h4>
+      <p class="muted small">${escHtml(a.type || "Recurso")}${
+        a.description ? " · " + escHtml(a.description) : ""}</p>
+    </div>
+    ${a.adjunto
+      ? `<button class="btn btn-ghost btn-sm" onclick="abrirAdjunto('${a.id}', this)">Abrir</button>`
+      : `<span class="small muted">Sin adjunto</span>`}
+  </article>`;
+}
+
+// El material vive en un bucket privado: no hay URL fija, hay que pedir una
+// firmada en el momento. Por eso no se puede poner un <a href> directo.
+async function abrirAdjunto(id, btn) {
+  const texto = btn.textContent;
+  btn.disabled = true; btn.textContent = "Abriendo…";
+  try {
+    const { url } = await api("GET", `/api/activities/${id}/adjunto`);
+    window.open(url, "_blank", "noopener");
+  } catch (err) {
+    avisar(err?.message || "No se pudo abrir el adjunto.");
+  } finally {
+    btn.disabled = false; btn.textContent = texto;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

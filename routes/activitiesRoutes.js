@@ -2,7 +2,8 @@ const express = require("express");
 const router = express.Router();
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
-const ActivitiesController = require("../services/actividades.js");
+const ActivitiesController = require("../controllers/activitiesController.js");
+const subida = require("../middlewares/subida.js");
 
 /**
  * @swagger
@@ -53,6 +54,37 @@ router.get("/get/all", verifyJWT, ActivitiesController.getAll);
  *       400:
  *         description: Error en los datos o validación fallida
  */
-router.post("/create", verifyJWT, requireRole("admin", "superadmin", "instructor"), ActivitiesController.create);
+router.post(
+  "/create",
+  verifyJWT,
+  requireRole("admin", "superadmin", "instructor"),
+  subida.material,
+  ActivitiesController.create
+);
+
+/**
+ * @swagger
+ * /api/activities/{id}/adjunto:
+ *   get:
+ *     summary: Devuelve una URL temporal para ver o descargar el adjunto
+ *     tags: [Actividades]
+ *     description: >
+ *       El material vive en un bucket privado, así que no tiene URL permanente.
+ *       Este endpoint firma una que vence en una hora, y solo para actividades
+ *       de la empresa del usuario autenticado.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Devuelve { url }
+ *       404:
+ *         description: La actividad no existe, no tiene adjunto o es de otra empresa
+ */
+router.get("/:id/adjunto", verifyJWT, ActivitiesController.adjunto);
 
 module.exports = router;
