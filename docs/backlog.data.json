@@ -1852,8 +1852,8 @@
       "dependencias": [
         "HU-069"
       ],
-      "estado": "Parcial",
-      "endpoints": "El cambio existe dentro de la actualización general, sin verificar la contraseña actual.",
+      "estado": "Implementado",
+      "endpoints": "POST /api/auth/change-password",
       "sprint": 2,
       "mvp": true
     },

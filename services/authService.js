@@ -3,6 +3,10 @@ const TenantService = require("./tenantService.js");
 const jwt = require("jsonwebtoken");
 const bcrypt = require("bcrypt");
 
+// Mínimo razonable para una contraseña nueva. El schema de usuario no impone
+// longitud porque tambien acepta null (cuentas creadas por Google o Microsoft).
+const MIN_PASSWORD = 8;
+
 function generateToken(user) {
   return jwt.sign(
     { id: user.id, tenantId: user.tenantId || null, role: user.role },
@@ -112,10 +116,54 @@ class AuthService {
     }
   }
 
+  // HU-071. Tener el JWT prueba que la sesión es de esta persona, pero no que
+  // quien la usa sea su dueño: un equipo desatendido, o un token filtrado por el
+  // ?token= del OAuth, alcanzarían. Por eso se exige además la contraseña actual.
+  async cambiarPassword(id, actual, nueva) {
+    if (!actual || !nueva) {
+      return { estado: 400, message: "Debe enviar la contraseña actual y la nueva." };
+    }
+    if (typeof nueva !== "string" || nueva.length < MIN_PASSWORD) {
+      return {
+        estado: 400,
+        message: `La nueva contraseña debe tener al menos ${MIN_PASSWORD} caracteres.`,
+      };
+    }
+    if (actual === nueva) {
+      return { estado: 400, message: "La nueva contraseña debe ser distinta de la actual." };
+    }
+
+    const user = await UserService._getForAuthById(id);
+    if (!user) return { estado: 404, message: "Usuario no encontrado." };
+
+    // Cuenta creada por un proveedor externo: nunca tuvo contraseña, así que no
+    // hay una "actual" contra la cual comparar.
+    if (!user.password) {
+      return {
+        estado: 409,
+        message: "Esta cuenta inicia sesión con Google o Microsoft y no tiene contraseña.",
+      };
+    }
+
+    const coincide = await bcrypt.compare(actual, user.password);
+    if (!coincide) return { estado: 401, message: "La contraseña actual es incorrecta." };
+
+    // updateUser ya hashea y valida contra el schema.
+    const resultado = await UserService.updateUser(id, { password: nueva });
+    if (resultado?.error) return { estado: 500, message: resultado.error };
+
+    return { estado: 200, message: "Contraseña actualizada correctamente." };
+  }
+
   async me(id) {
     try {
-      const userinfo = await UserService.getById(id);
-      if (!userinfo) return null;
+      // Se lee con el hash para poder informar oauthOnly, y se descarta enseguida.
+      // Sin ese dato el front tendría que provocar un 409 para saber si la
+      // cuenta puede cambiar su contraseña.
+      const user = await UserService._getForAuthById(id);
+      if (!user) return null;
+      const { password, ...userinfo } = user;
+      userinfo.oauthOnly = !password;
       return userinfo;
     } catch (error) {
       throw new Error("Error al consultar el usuario en la base de datos.");

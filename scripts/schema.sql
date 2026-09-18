@@ -83,3 +83,19 @@ CREATE INDEX IF NOT EXISTS idx_ug_user         ON users_groups(id_user);
 CREATE INDEX IF NOT EXISTS idx_ug_group        ON users_groups(id_group);
 CREATE INDEX IF NOT EXISTS idx_gc_group        ON groups_courses(id_group);
 CREATE INDEX IF NOT EXISTS idx_gc_course       ON groups_courses(id_course);
+
+-- Enlaces de recuperación de contraseña (HU-010).
+-- Tabla aparte y no columnas en users: así se puede expirar, auditar quién
+-- pidió cuántos y limpiar los vencidos sin tocar al usuario.
+-- token_hash guarda el SHA-256 del token, nunca el token: si alguien lee la
+-- base no puede restablecer contraseñas ajenas.
+CREATE TABLE IF NOT EXISTS password_resets (
+  id          VARCHAR(50) PRIMARY KEY,
+  user_id     VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  token_hash  VARCHAR(64) NOT NULL UNIQUE,
+  expires_at  TIMESTAMPTZ NOT NULL,
+  used_at     TIMESTAMPTZ,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_password_resets_user ON password_resets(user_id);

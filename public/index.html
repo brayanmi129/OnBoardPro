@@ -204,6 +204,13 @@
     .form-mock .btn { margin-top: 4px; }
     .form-row { display: grid; gap: 0 14px; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
 
+
+    .link-olvide {
+      display: block; margin: 14px auto 0; background: none; border: none;
+      font: inherit; font-size: 13.5px; color: var(--primary);
+      cursor: pointer; padding: 4px;
+    }
+    .link-olvide:hover { text-decoration: underline; }
     /* ── LOGIN ─────────────────────────────────────────── */
     #login-screen {
       min-height: 100dvh;
@@ -529,6 +536,7 @@
     .alert-error   { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
     .alert-warning { background: #fff7ed; color: #92400e; border: 1px solid #fed7aa; }
     .alert-info    { background: #eff6ff; color: #1e40af; border: 1px solid #bfdbfe; }
+    .alert-ok      { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
 
     /* ── MISC ──────────────────────────────────────────── */
     .section-header {
@@ -598,6 +606,8 @@
         OnBoardPro
       </div>
 
+      <div id="vista-login">
+
       <header>
         <h1>Iniciar sesión</h1>
         <p>Entrá con la cuenta de tu empresa o tus credenciales.</p>
@@ -627,6 +637,10 @@
         </div>
 
         <button class="btn btn-primary btn-full" type="submit">Iniciar sesión</button>
+
+        <button type="button" class="link-olvide" onclick="verOlvide()">
+          ¿Olvidaste tu contraseña?
+        </button>
       </form>
 
       <div class="sep">o continuá con</div>
@@ -651,6 +665,60 @@
       Microsoft
     </button>
 
+      </div><!-- /vista-login -->
+
+      <!-- Recuperación: pantalla aparte, con su propio campo de correo.
+           Reusar el del login confunde, porque no es la misma acción. -->
+      <div id="vista-olvide" hidden>
+        <header>
+          <h1>Recuperar contraseña</h1>
+          <p>Escribí tu correo y te enviamos un enlace para elegir una nueva.</p>
+        </header>
+
+        <form id="olvide-form" novalidate>
+          <div class="field">
+            <label for="ol-email">Correo electrónico</label>
+            <div class="wrap">
+              <input id="ol-email" type="email" inputmode="email" autocomplete="username"
+                     placeholder="nombre@empresa.com" required>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" type="submit" id="ol-btn">
+            Enviarme el enlace
+          </button>
+        </form>
+
+        <button type="button" class="link-olvide" onclick="verLogin()">
+          Volver a iniciar sesión
+        </button>
+      </div>
+
+      <!-- Se llega desde el enlace del correo, sin sesión -->
+      <div id="vista-restablecer" hidden>
+        <header>
+          <h1>Elegí una contraseña nueva</h1>
+          <p>El enlace sirve una sola vez.</p>
+        </header>
+
+        <form id="restablecer-form" novalidate>
+          <div class="field">
+            <label for="rp-nueva">Nueva contraseña</label>
+            <div class="wrap">
+              <input id="rp-nueva" type="password" autocomplete="new-password"
+                     minlength="8" placeholder="Mínimo 8 caracteres" required>
+            </div>
+          </div>
+          <div class="field">
+            <label for="rp-repetir">Repetir contraseña</label>
+            <div class="wrap">
+              <input id="rp-repetir" type="password" autocomplete="new-password" required>
+            </div>
+          </div>
+          <button class="btn btn-primary btn-full" type="submit" id="rp-btn">
+            Restablecer contraseña
+          </button>
+        </form>
+      </div>
 
     </div>
   </main>
@@ -882,6 +950,72 @@ async function loadMe() {
   state.user = data.userData;
 }
 
+// El login tiene tres vistas en la misma tarjeta: entrar, pedir el enlace y
+// elegir contraseña nueva. Son acciones distintas, así que cada una tiene su
+// propio formulario en vez de reaprovechar los campos de la anterior.
+function mostrarVista(cual) {
+  for (const v of ["vista-login", "vista-olvide", "vista-restablecer"]) {
+    $(v).hidden = v !== cual;
+  }
+  loginAlert("");
+}
+
+function verLogin()  { mostrarVista("vista-login"); $("in-email").focus(); }
+function verOlvide() {
+  mostrarVista("vista-olvide");
+  // Si ya escribió el correo para entrar, se lo copiamos: es el mismo dato.
+  $("ol-email").value = ($("in-email").value || "").trim();
+  $("ol-email").focus();
+}
+
+function loginOk(msg) {
+  $("login-alert").innerHTML = `<div class="alert alert-ok">${escHtml(msg)}</div>`;
+}
+
+// HU-010, paso 1. El backend responde lo mismo exista o no el correo, así que
+// el panel tampoco puede decir más: se muestra su mensaje tal cual.
+$("olvide-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const email = ($("ol-email").value || "").trim();
+  if (!email) return loginAlert("Escribí tu correo.");
+
+  const btn = $("ol-btn"), texto = btn.textContent;
+  btn.disabled = true; btn.textContent = "Enviando…";
+  loginAlert("");
+  try {
+    const r = await api("POST", "/api/auth/forgot-password", { email });
+    loginOk(r.message);
+  } catch (err) {
+    loginAlert(err?.message || "No se pudo pedir el enlace.");
+  } finally {
+    btn.disabled = false; btn.textContent = texto;
+  }
+});
+
+// HU-010, paso 2. Se llega desde el enlace del correo, sin sesión. El token no
+// es un JWT: es un comprobante de un solo uso que solo sirve para esto.
+let tokenRestablecer = null;
+
+$("restablecer-form").addEventListener("submit", async e => {
+  e.preventDefault();
+  const nueva = $("rp-nueva").value;
+  if (nueva !== $("rp-repetir").value) return loginAlert("Las dos contraseñas no coinciden.");
+
+  const btn = $("rp-btn"), texto = btn.textContent;
+  btn.disabled = true; btn.textContent = "Restableciendo…";
+  loginAlert("");
+  try {
+    const r = await api("POST", "/api/auth/reset-password", { token: tokenRestablecer, nueva });
+    $("restablecer-form").hidden = true;
+    loginOk(r.message);
+    setTimeout(() => { window.location.href = "/"; }, 2200);
+  } catch (err) {
+    loginAlert(err?.message || "No se pudo restablecer la contraseña.");
+  } finally {
+    btn.disabled = false; btn.textContent = texto;
+  }
+});
+
 function loginAlert(msg) {
   $("login-alert").innerHTML = msg
     ? `<div class="alert alert-error">${msg}</div>`
@@ -1106,6 +1240,8 @@ async function renderPerfil() {
     const sig = (u.level + 1) * 100;
     const pct = Math.min(100, Math.round((u.xp / sig) * 100));
     const esAprendiz = u.role === "student";
+    // El backend responde 409 a estas cuentas: no tienen contraseña que cambiar.
+    const sinClave = !!u.oauthOnly;
 
     const dato = (etiqueta, valor, vacio = "Sin definir") => `
       <div class="dato">
@@ -1165,21 +1301,56 @@ async function renderPerfil() {
 
       <h3 class="sec-h">Seguridad</h3>
       <div class="card">
-        <div class="pendiente">${icon("warn")}<span>No disponible</span></div>
-        <fieldset disabled class="form-mock">
-          <div class="field"><label>Contraseña actual</label><div class="wrap">
-            <input type="password" placeholder="••••••••"></div></div>
-          <div class="form-row">
-            <div class="field"><label>Nueva contraseña</label><div class="wrap">
-              <input type="password" placeholder="Mínimo 8 caracteres"></div></div>
-            <div class="field"><label>Repetir contraseña</label><div class="wrap">
-              <input type="password" placeholder="Repetila"></div></div>
-          </div>
-          <button class="btn btn-primary">Actualizar contraseña</button>
-        </fieldset>
+        ${sinClave
+          ? `<div class="pendiente">${icon("warn")}<span>Tu cuenta entra con Google o Microsoft, no tiene contraseña</span></div>`
+          : `<form id="form-clave" autocomplete="off">
+              <div class="field"><label>Contraseña actual</label><div class="wrap">
+                <input type="password" id="cl-actual" autocomplete="current-password" required></div></div>
+              <div class="form-row">
+                <div class="field"><label>Nueva contraseña</label><div class="wrap">
+                  <input type="password" id="cl-nueva" autocomplete="new-password"
+                         minlength="8" placeholder="Mínimo 8 caracteres" required></div></div>
+                <div class="field"><label>Repetir contraseña</label><div class="wrap">
+                  <input type="password" id="cl-repetir" autocomplete="new-password" required></div></div>
+              </div>
+              <button class="btn btn-primary" id="cl-btn">Actualizar contraseña</button>
+            </form>`}
       </div>
     `);
+
+    if (!sinClave) engancharCambioClave();
   } catch (err) { setContent(errorBox(err)); }
+}
+
+// El formulario compara las dos nuevas acá para no gastar un viaje al servidor;
+// todo lo demás (longitud, contraseña actual) lo valida el backend, que es quien
+// manda.
+function engancharCambioClave() {
+  const form = $("form-clave");
+  if (!form) return;
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const actual  = $("cl-actual").value;
+    const nueva   = $("cl-nueva").value;
+    const repetir = $("cl-repetir").value;
+
+    if (nueva !== repetir) return avisar("Las dos contraseñas nuevas no coinciden.");
+
+    const btn = $("cl-btn");
+    btn.disabled = true;
+    const texto = btn.textContent;
+    btn.textContent = "Actualizando…";
+    try {
+      const r = await api("POST", "/api/auth/change-password", { actual, nueva });
+      form.reset();
+      avisar(r?.message || "Contraseña actualizada correctamente.", "ok");
+    } catch (err) {
+      avisar(err?.message || "No se pudo cambiar la contraseña.");
+    } finally {
+      btn.disabled = false;
+      btn.textContent = texto;
+    }
+  });
 }
 
 // ── Aprendiz: su avance ──────────────────────────────────────────────────
@@ -1587,6 +1758,19 @@ function escHtml(str) {
   const params   = new URLSearchParams(window.location.search);
   const urlToken = params.get("token");
   const reason   = params.get("reason");
+
+  // El enlace del correo llega como /reset-password?token=... Se atiende antes
+  // que nada: acá el token NO es un JWT, es un comprobante de un solo uso.
+  if (window.location.pathname === "/reset-password") {
+    window.history.replaceState({}, "", window.location.pathname);
+    if (urlToken) {
+      tokenRestablecer = urlToken;
+      return mostrarVista("vista-restablecer");
+    }
+    loginAlert("El enlace está incompleto. Pedí uno nuevo desde el inicio de sesión.");
+    return;
+  }
+
   window.history.replaceState({}, "", window.location.pathname);
 
 

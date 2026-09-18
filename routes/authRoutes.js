@@ -202,4 +202,108 @@ router.get(
  */
 router.get("/me", verifyJWT, AuthController.me);
 
+/**
+ * @swagger
+ * /api/auth/change-password:
+ *   post:
+ *     summary: Cambia la contraseña del usuario autenticado
+ *     tags: [Autenticación]
+ *     description: >
+ *       Exige el JWT y la contraseña actual. El usuario que se modifica es
+ *       siempre el del token: no se puede cambiar la contraseña de otra persona.
+ *       Las cuentas creadas con Google o Microsoft no tienen contraseña y
+ *       reciben 409.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [actual, nueva]
+ *             properties:
+ *               actual:
+ *                 type: string
+ *                 example: "MiClaveVieja123"
+ *               nueva:
+ *                 type: string
+ *                 minLength: 8
+ *                 example: "MiClaveNueva456"
+ *     responses:
+ *       200:
+ *         description: Contraseña actualizada correctamente
+ *       400:
+ *         description: Faltan datos, la nueva es muy corta o es igual a la actual
+ *       401:
+ *         description: Token inválido, o la contraseña actual no coincide
+ *       409:
+ *         description: La cuenta no tiene contraseña (inicia sesión con un proveedor externo)
+ */
+router.post("/change-password", verifyJWT, (req, res) =>
+  AuthController.cambiarPassword(req, res)
+);
+
+/**
+ * @swagger
+ * /api/auth/forgot-password:
+ *   post:
+ *     summary: Pide un enlace para restablecer la contraseña
+ *     tags: [Autenticación]
+ *     description: >
+ *       No requiere autenticación. Responde **siempre 200** con el mismo mensaje,
+ *       exista o no el correo: distinguirlos permitiría averiguar quién tiene
+ *       cuenta en la plataforma. Las cuentas de Google o Microsoft no reciben
+ *       enlace porque no tienen contraseña, pero la respuesta es idéntica.
+ *       El enlace apunta al frontend y vence en 60 minutos.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [email]
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 example: "a.garcia@ucentral.edu.co"
+ *     responses:
+ *       200:
+ *         description: Respuesta genérica, se haya enviado o no el correo
+ */
+router.post("/forgot-password", (req, res) => AuthController.olvidePassword(req, res));
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Restablece la contraseña con el token del correo
+ *     tags: [Autenticación]
+ *     description: >
+ *       No requiere autenticación: el token del correo es la prueba de identidad.
+ *       Sirve una sola vez y vence a los 60 minutos. Al usarlo se invalidan los
+ *       demás enlaces pendientes de esa persona.
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [token, nueva]
+ *             properties:
+ *               token:
+ *                 type: string
+ *                 example: "a3f9c1..."
+ *               nueva:
+ *                 type: string
+ *                 minLength: 8
+ *                 example: "MiClaveNueva456"
+ *     responses:
+ *       200:
+ *         description: Contraseña restablecida
+ *       400:
+ *         description: Token inválido, ya usado, vencido, o contraseña muy corta
+ */
+router.post("/reset-password", (req, res) => AuthController.restablecerPassword(req, res));
+
 module.exports = router;

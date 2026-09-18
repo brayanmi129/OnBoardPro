@@ -3,6 +3,7 @@ const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const cors = require("cors");
+const path = require("path");
 const { swaggerUi, swaggerSpec } = require("./config/swagger");
 
 const app = express();
@@ -90,6 +91,12 @@ app.use("/api/gamification", gamificationRoutes);
 app.use("/api/tenants", tenantRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
+// El enlace del correo apunta a /reset-password. Cuando URL_FRONT es este mismo
+// backend (desarrollo y demo), hay que devolver el panel y no el texto de abajo.
+app.get("/reset-password", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
 
 app.get("/*", (req, res) => {
   res.send("Welcome to OnBoardPro API");

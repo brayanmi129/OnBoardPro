@@ -29,6 +29,13 @@ class UserService {
     return toUser(data);
   }
 
+  // Igual que _getForAuth pero por id, porque el JWT lleva el id y no el email.
+  // getById no sirve acá: borra el hash antes de devolver el usuario.
+  static async _getForAuthById(id) {
+    const { data } = await supabase.from("users").select("*").eq("id", id).maybeSingle();
+    return toUser(data);
+  }
+
   static async _createOAuthUser({ email, firstname, lastname, tenantId }) {
     const id = crypto.randomBytes(3).toString("hex");
     const raw = {

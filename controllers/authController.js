@@ -1,4 +1,5 @@
 const AuthService = require("../services/authService.js");
+const PasswordResetService = require("../services/passwordResetService.js");
 
 class AuthController {
   /**
@@ -48,6 +49,51 @@ class AuthController {
     } catch (err) {
       console.error(err);
       return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
+    }
+  }
+
+  /**
+   * Paso 1 de la recuperación (HU-010): pedir el enlace.
+   * Responde siempre 200 para no revelar qué correos existen.
+   */
+  async olvidePassword(req, res) {
+    try {
+      const { email } = req.body || {};
+      const r = await PasswordResetService.solicitar(email);
+      return res.status(r.estado).json({ message: r.message });
+    } catch (error) {
+      console.error("Error en AuthController.olvidePassword:", error);
+      return res.status(500).json({ message: "Error interno del servidor." });
+    }
+  }
+
+  /**
+   * Paso 2 de la recuperación (HU-010): canjear el token por una contraseña nueva.
+   */
+  async restablecerPassword(req, res) {
+    try {
+      const { token, nueva } = req.body || {};
+      const r = await PasswordResetService.restablecer(token, nueva);
+      return res.status(r.estado).json({ message: r.message });
+    } catch (error) {
+      console.error("Error en AuthController.restablecerPassword:", error);
+      return res.status(500).json({ message: "Error interno del servidor." });
+    }
+  }
+
+  /**
+   * Cambio de contraseña del propio usuario autenticado (HU-071).
+   * El id sale del JWT, nunca del body: si viniera del body cualquiera podría
+   * cambiarle la contraseña a otro.
+   */
+  async cambiarPassword(req, res) {
+    try {
+      const { actual, nueva } = req.body || {};
+      const r = await AuthService.cambiarPassword(req.user.id, actual, nueva);
+      return res.status(r.estado).json({ message: r.message });
+    } catch (error) {
+      console.error("Error en AuthController.cambiarPassword:", error);
+      return res.status(500).json({ message: "Error interno del servidor." });
     }
   }
 
