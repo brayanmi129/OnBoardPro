@@ -1,6 +1,11 @@
 const AuthService = require("../services/authService.js");
 const PasswordResetService = require("../services/passwordResetService.js");
 
+// Mismo fallback que authRoutes.js. Sin esto, si falta URL_FRONT los redirects
+// de OAuth quedan en "undefined/?token=...", que el navegador resuelve contra
+// el propio backend: el usuario se autentica bien y aterriza en el catch-all.
+const FRONT = process.env.URL_FRONT || "http://localhost:5173";
+
 class AuthController {
   /**
    * Controlador para autenticación local (email y contraseña)
@@ -25,13 +30,13 @@ class AuthController {
 
       if (!result || result.error || !result.token) {
         const reason = result?.error ? encodeURIComponent(result.error) : "Fail";
-        return res.redirect(`${process.env.URL_FRONT}/?token=Fail&reason=${reason}`);
+        return res.redirect(`${FRONT}/?token=Fail&reason=${reason}`);
       }
 
-      return res.redirect(`${process.env.URL_FRONT}/?token=${result.token}`);
+      return res.redirect(`${FRONT}/?token=${result.token}`);
     } catch (err) {
       console.error(err);
-      return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
+      return res.redirect(`${FRONT}/?token=Fail`);
     }
   }
 
@@ -42,13 +47,13 @@ class AuthController {
 
       if (!result || result.error || !result.token) {
         const reason = result?.error ? encodeURIComponent(result.error) : "Fail";
-        return res.redirect(`${process.env.URL_FRONT}/?token=Fail&reason=${reason}`);
+        return res.redirect(`${FRONT}/?token=Fail&reason=${reason}`);
       }
 
-      return res.redirect(`${process.env.URL_FRONT}/?token=${result.token}`);
+      return res.redirect(`${FRONT}/?token=${result.token}`);
     } catch (err) {
       console.error(err);
-      return res.redirect(`${process.env.URL_FRONT}/?token=Fail`);
+      return res.redirect(`${FRONT}/?token=Fail`);
     }
   }
 

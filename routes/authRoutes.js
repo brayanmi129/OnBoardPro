@@ -3,6 +3,7 @@ const passport = require("passport");
 const router = express.Router();
 const AuthController = require("../controllers/authController.js");
 const verifyJWT = require("../middlewares/jwt.js");
+const { frenarFallos } = require("../middlewares/intentos.js");
 
 // A dónde se devuelve al usuario si el proveedor rechaza la autenticación.
 // El token viaja en la query (?token=) porque es lo que espera el frontend
@@ -11,6 +12,26 @@ const verifyJWT = require("../middlewares/jwt.js");
 const FRONT = process.env.URL_FRONT || "http://localhost:5173";
 const FALLO_GOOGLE = `${FRONT}/?token=Fail&reason=${encodeURIComponent("No se pudo autenticar con Google.")}`;
 const FALLO_MICROSOFT = `${FRONT}/?token=Fail&reason=${encodeURIComponent("No se pudo autenticar con Microsoft.")}`;
+
+// HU-013: 5 intentos fallidos y después hay que esperar, cada vez más.
+const frenoLogin = frenarFallos({
+  nombre: "login",
+  claves: (req) => [
+    { k: (req.body?.email || "").trim().toLowerCase(), gratis: 5 },
+    { k: req.ip, gratis: 20 }, // margen ancho: una empresa entera comparte IP
+  ],
+  codigosFallo: [401, 404], // contraseña incorrecta y usuario inexistente
+});
+
+// El mismo freno donde también se adivina una contraseña.
+const frenoCambio = frenarFallos({
+  nombre: "cambio",
+  claves: (req) => [
+    { k: req.user?.id, gratis: 5 },
+    { k: req.ip, gratis: 20 },
+  ],
+  codigosFallo: [401],
+});
 
 /**
  * @swagger
@@ -67,7 +88,7 @@ const FALLO_MICROSOFT = `${FRONT}/?token=Fail&reason=${encodeURIComponent("No se
  *       401:
  *         description: Credenciales inválidas o usuario no encontrado
  */
-router.post("/localuser", (req, res) => AuthController.login(req, res));
+router.post("/localuser", frenoLogin, (req, res) => AuthController.login(req, res));
 
 /**
  * @swagger
@@ -240,7 +261,7 @@ router.get("/me", verifyJWT, AuthController.me);
  *       409:
  *         description: La cuenta no tiene contraseña (inicia sesión con un proveedor externo)
  */
-router.post("/change-password", verifyJWT, (req, res) =>
+router.post("/change-password", verifyJWT, frenoCambio, (req, res) =>
   AuthController.cambiarPassword(req, res)
 );
 

@@ -398,8 +398,8 @@
       "dependencias": [
         "HU-007"
       ],
-      "estado": "No iniciado",
-      "endpoints": "Ninguno. Requiere además integrar un servicio de correo.",
+      "estado": "Implementado",
+      "endpoints": "POST /api/auth/forgot-password · POST /api/auth/reset-password",
       "sprint": 2,
       "mvp": true
     },
@@ -420,8 +420,8 @@
       "dependencias": [
         "HU-007"
       ],
-      "estado": "No iniciado",
-      "endpoints": "Ninguno.",
+      "estado": "Implementado",
+      "endpoints": "Cliente: logout() descarta el token. Sin endpoint: el JWT no tiene estado en el servidor.",
       "sprint": 1,
       "mvp": true
     },
@@ -465,8 +465,8 @@
       "dependencias": [
         "HU-007"
       ],
-      "estado": "No iniciado",
-      "endpoints": "Ninguno. Hoy el login admite intentos ilimitados.",
+      "estado": "Implementado",
+      "endpoints": "middlewares/intentos.js · POST /api/auth/localuser y /change-password",
       "sprint": 2,
       "mvp": true
     },
