@@ -34,7 +34,8 @@ class AuthService {
 
       const userData = await UserService._getForAuth(email);
       if (!userData) {
-        return res.status(404).json({ message: "No existe usuario con ese email." });
+        console.log("Usuario no encontrado:", email);
+        return res.status(404).json({ message: "Usuario o contraseña incorrectos." });
       }
 
       if (!userData.password) {
@@ -45,7 +46,8 @@ class AuthService {
 
       const isValid = await bcrypt.compare(password, userData.password);
       if (!isValid) {
-        return res.status(401).json({ message: "Contraseña incorrecta." });
+        console.log("Contraseña incorrecta para usuario:", email);
+        return res.status(401).json({ message: "Usuario o contraseña incorrectos." });
       }
 
       const token = generateToken(userData);
