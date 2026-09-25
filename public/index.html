@@ -304,6 +304,39 @@
 
     .act .btn-danger .ico { width: 13px; height: 13px; }
 
+    /* ── FILTROS Y PAGINADOR ──────────────────── */
+    .filtros {
+      display: flex; gap: 9px; flex-wrap: wrap; align-items: center;
+      margin-bottom: 14px;
+    }
+    .filtros select, .filtros input {
+      padding: 8px 11px; border: 1px solid var(--border); border-radius: 9px;
+      font: inherit; font-size: 13.5px; background: var(--card); color: var(--text);
+    }
+    /* La búsqueda se lleva el espacio sobrante; los selectores quedan al ancho
+       de su contenido. */
+    .filtros input { flex: 1; min-width: 190px; }
+    .filtros select:focus, .filtros input:focus {
+      outline: none; border-color: var(--primary);
+      box-shadow: 0 0 0 3px var(--primary-soft);
+    }
+
+    .paginador {
+      display: flex; gap: 5px; align-items: center; flex-wrap: wrap;
+      margin-top: 16px;
+    }
+    .pag-btn {
+      min-width: 32px; padding: 6px 9px;
+      border: 1px solid var(--border); border-radius: 8px;
+      background: var(--card); color: var(--text);
+      font: inherit; font-size: 13px; cursor: pointer;
+    }
+    .pag-btn:hover { border-color: var(--primary); color: var(--primary); }
+    .pag-btn.activo {
+      background: var(--primary); border-color: var(--primary); color: #fff; font-weight: 600;
+    }
+    .paginador span { margin-left: 8px; }
+
     /* ── MI PERFIL ─────────────────────────────────────── */
     .perfil-hero {
       display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
@@ -1662,25 +1695,120 @@ async function deleteTenant(id, name) {
 // ═══════════════════════════════════════════════════════════════════════════
 // USERS
 // ═══════════════════════════════════════════════════════════════════════════
+// Los filtros viven fuera de la función porque sobreviven al redibujado: al
+// cambiar de página no se pierde lo que se había filtrado.
+const filtrosUsuarios = { rol: "", estado: "", buscar: "", pagina: 1, porPagina: 10 };
+
 async function renderUsers() {
   try {
-    const users = await api("GET", "/api/users/get/all");
+    const f = filtrosUsuarios;
+    const qs = new URLSearchParams({ pagina: f.pagina, porPagina: f.porPagina });
+    if (f.rol) qs.set("rol", f.rol);
+    if (f.estado) qs.set("estado", f.estado);
+    if (f.buscar) qs.set("buscar", f.buscar);
+
+    // El cuerpo es el array; la paginación viene en cabeceras X-*, así que hay
+    // que usar fetch directo en vez de api(), que solo devuelve el JSON.
+    const res = await fetch(`${API}/api/users/get/all?${qs}`, {
+      headers: state.token ? { Authorization: `Bearer ${state.token}` } : {},
+    });
+    const users = await res.json();
+    if (!res.ok) throw users;
+
+    const total = Number(res.headers.get("X-Total-Count") ?? users.length);
+    const paginas = Number(res.headers.get("X-Total-Pages") ?? 1);
+
     const rows = users.map(u => tr(
       `<code class="small">${u.id}</code>`,
-      `<strong>${[u.firstname,u.lastname].filter(Boolean).join(" ") || "—"}</strong><br><span class="small muted">${u.email}</span>`,
+      `<strong>${escHtml([u.firstname, u.lastname].filter(Boolean).join(" ") || "—")}</strong>
+       <br><span class="small muted">${escHtml(u.email)}</span>`,
       roleBadge(u.role),
       statusBadge(u.status),
       `${icon("level")} ${u.level} · ${icon("xp")} ${u.xp} xp`,
-      `<button class="btn btn-danger btn-sm" onclick="deleteUser('${u.id}','${escHtml(u.email)}')">Eliminar</button>`,
+      `<button class="btn btn-danger btn-sm"
+               onclick="deleteUser('${u.id}','${escHtml(u.email)}')">Eliminar</button>`,
     )).join("");
 
     setContent(
-      sectionHeader(`${users.length} usuario(s)`, "Nuevo usuario", "openCreateUser") +
-      tableWrap(["ID","Nombre / Email","Rol","Estado","Nivel",""], rows)
+      sectionHeader(`${total} usuario(s)`, "Nuevo usuario", "openCreateUser") +
+      filtrosUI() +
+      (users.length
+        ? tableWrap(["ID", "Nombre / Email", "Rol", "Estado", "Nivel", ""], rows)
+        : vacio("Ningún usuario coincide", "Probá quitando algún filtro.")) +
+      paginador(f.pagina, paginas, "irPaginaUsuarios")
     );
+
+    // Se reponen los valores después de pintar: setContent reemplaza el HTML y
+    // los inputs nacen vacíos aunque el filtro siga activo.
+    $("f-rol").value = f.rol;
+    $("f-estado").value = f.estado;
+    $("f-buscar").value = f.buscar;
   } catch (err) {
-    setContent(`<div class="alert alert-error">${err.message}</div>`);
+    setContent(errorBox(err));
   }
+}
+
+function filtrosUI() {
+  return `
+    <div class="filtros">
+      <select id="f-rol" onchange="aplicarFiltros()">
+        <option value="">Todos los roles</option>
+        <option value="student">Aprendiz</option>
+        <option value="instructor">Instructor</option>
+        <option value="admin">Administrador</option>
+        <option value="superadmin">Superadmin</option>
+      </select>
+      <select id="f-estado" onchange="aplicarFiltros()">
+        <option value="">Cualquier estado</option>
+        <option value="Active">Activo</option>
+        <option value="Inactive">Inactivo</option>
+      </select>
+      <input id="f-buscar" type="search" placeholder="Buscar por nombre o correo…"
+             oninput="buscarConEspera(this.value)">
+      <button class="btn btn-ghost btn-sm" onclick="limpiarFiltros()">Limpiar</button>
+    </div>`;
+}
+
+// Sin esta espera se dispararía una consulta por cada tecla.
+let temporizadorBusqueda = null;
+function buscarConEspera(valor) {
+  clearTimeout(temporizadorBusqueda);
+  temporizadorBusqueda = setTimeout(() => {
+    filtrosUsuarios.buscar = valor.trim();
+    filtrosUsuarios.pagina = 1;
+    renderUsers().then(() => $("f-buscar")?.focus());
+  }, 350);
+}
+
+function aplicarFiltros() {
+  filtrosUsuarios.rol = $("f-rol").value;
+  filtrosUsuarios.estado = $("f-estado").value;
+  filtrosUsuarios.pagina = 1; // cambiar de filtro invalida la página actual
+  renderUsers();
+}
+
+function limpiarFiltros() {
+  Object.assign(filtrosUsuarios, { rol: "", estado: "", buscar: "", pagina: 1 });
+  renderUsers();
+}
+
+function irPaginaUsuarios(n) {
+  filtrosUsuarios.pagina = n;
+  renderUsers();
+}
+
+function paginador(actual, total, fn) {
+  if (total <= 1) return "";
+  const btn = (n, txt, activo) =>
+    `<button class="pag-btn ${activo ? "activo" : ""}" onclick="${fn}(${n})">${txt}</button>`;
+  return `
+    <div class="paginador">
+      ${btn(Math.max(actual - 1, 1), "‹", false)}
+      ${Array.from({ length: total }, (_, i) =>
+        btn(i + 1, i + 1, i + 1 === actual)).join("")}
+      ${btn(Math.min(actual + 1, total), "›", false)}
+      <span class="small muted">Página ${actual} de ${total}</span>
+    </div>`;
 }
 
 function openCreateUser() {
