@@ -117,15 +117,48 @@ class GroupService {
   }
 
   static async addUsersToGroup(groupId, userIds, tenantId = null) {
-    const { data: groupCheck } = await delTenant(
-      supabase.from("groups").select("id").eq("id", groupId),
+    if (!Array.isArray(userIds) || userIds.length === 0) {
+      const err = new Error("Debe enviar al menos un usuario.");
+      err.status = 400;
+      throw err;
+    }
+
+    const { data: grupo } = await delTenant(
+      supabase.from("groups").select("id, tenant_id").eq("id", groupId),
       tenantId
     ).maybeSingle();
     // Un grupo de otra empresa se responde igual que uno inexistente: decir
     // "existe pero no es tuyo" ya revelaría que existe.
-    if (!groupCheck) throw new Error("Grupo no encontrado");
+    if (!grupo) {
+      const err = new Error("Grupo no encontrado");
+      err.status = 404;
+      throw err;
+    }
 
-    const records = userIds.map((userId) => ({ id_user: userId, id_group: groupId }));
+    // Un grupo es de una sola empresa: sus integrantes también. La empresa se
+    // toma del GRUPO y no de quien llama, para que la regla siga valiendo
+    // cuando opera un superadmin, que no tiene empresa propia.
+    const { data: validos } = await supabase
+      .from("users")
+      .select("id")
+      .in("id", userIds)
+      .eq("tenant_id", grupo.tenant_id);
+
+    const permitidos = new Set((validos || []).map((u) => u.id));
+    const rechazados = [...new Set(userIds)].filter((id) => !permitidos.has(id));
+    if (rechazados.length) {
+      // No distingue "no existe" de "es de otra empresa": ambas respuestas son
+      // la misma para quien pregunta, y sumadas delatarían quién hay en las
+      // otras organizaciones.
+      const err = new Error(
+        `Estos usuarios no pertenecen a la organización del grupo: ${rechazados.join(", ")}`
+      );
+      err.status = 400;
+      throw err;
+    }
+
+    // upsert con onConflict: agregar a alguien que ya está no duplica ni falla.
+    const records = [...permitidos].map((userId) => ({ id_user: userId, id_group: groupId }));
     const { error } = await supabase
       .from("users_groups")
       .upsert(records, { onConflict: "id_user,id_group" });
@@ -139,7 +172,11 @@ class GroupService {
       supabase.from("groups").select("id").eq("id", groupId),
       tenantId
     ).maybeSingle();
-    if (!existe) throw new Error("Grupo no encontrado");
+    if (!existe) {
+      const err = new Error("Grupo no encontrado");
+      err.status = 404;
+      throw err;
+    }
 
     const { error } = await supabase
       .from("users_groups")

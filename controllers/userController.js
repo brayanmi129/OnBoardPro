@@ -25,9 +25,21 @@ class UserController {
   static async getAll(req, res) {
     try {
       const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
-      const users = await UserService.getAll(tenantId);
-      return res.status(200).json(users);
+      const { rol, estado, buscar, pagina, porPagina } = req.query;
+      const r = await UserService.getAll(tenantId, { rol, estado, buscar, pagina, porPagina });
+
+      // El cuerpo sigue siendo el array de siempre: cambiarlo por un objeto
+      // rompería a cualquier cliente que ya consuma este endpoint. Los datos de
+      // paginación van en cabeceras, que es lo habitual en REST.
+      res.set({
+        "X-Total-Count": String(r.total),
+        "X-Page": String(r.pagina),
+        "X-Per-Page": String(r.porPagina),
+        "X-Total-Pages": String(r.paginas),
+      });
+      return res.status(200).json(r.usuarios);
     } catch (error) {
+      console.error("Error al obtener los usuarios:", error.message);
       return res.status(500).json({ message: "Error al obtener los usuarios" });
     }
   }

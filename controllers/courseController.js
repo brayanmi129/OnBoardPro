@@ -27,8 +27,22 @@ class CourseController {
   // Obtener todos los cursos
   static async getAll(req, res) {
     try {
-      const courses = await CourseService.getAll(tenantDe(req));
-      res.status(200).json(courses);
+      const { buscar, estado, pagina, porPagina } = req.query;
+      // Un instructor ve únicamente lo que tiene asignado. No es un filtro que
+      // pueda pedir o quitar: se le impone acá según su rol.
+      const instructor = req.user.role === "instructor" ? req.user.email : undefined;
+
+      const r = await CourseService.getAll(tenantDe(req), {
+        buscar, estado, pagina, porPagina, instructor,
+      });
+
+      res.set({
+        "X-Total-Count": String(r.total),
+        "X-Page": String(r.pagina),
+        "X-Per-Page": String(r.porPagina),
+        "X-Total-Pages": String(r.paginas),
+      });
+      res.status(200).json(r.cursos);
     } catch (error) {
       console.error("Error al obtener los cursos:", error);
       res.status(500).send("Error al obtener los cursos");

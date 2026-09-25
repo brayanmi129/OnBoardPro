@@ -109,3 +109,28 @@ ALTER TABLE activities ADD COLUMN IF NOT EXISTS tenant_id  VARCHAR(50) REFERENCE
 ALTER TABLE activities ADD COLUMN IF NOT EXISTS mime       VARCHAR(100);
 
 CREATE INDEX IF NOT EXISTS idx_activities_tenant ON activities(tenant_id);
+
+-- ── Secciones del curso (HU-032) ────────────────────────────────────────────
+-- Un curso se divide en secciones ordenadas, y cada sección agrupa actividades
+-- (recursos, tareas, exámenes y juegos). Reemplaza a courses.actividades, que
+-- era un array de ids sin orden ni agrupación posible.
+--
+-- tenant_id se repite acá aunque se pueda deducir del curso: así el filtro de
+-- aislamiento es una sola condición y no un join en cada consulta.
+CREATE TABLE IF NOT EXISTS sections (
+  id          VARCHAR(50) PRIMARY KEY,
+  course_id   VARCHAR(50) NOT NULL REFERENCES courses(id) ON DELETE CASCADE,
+  tenant_id   VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE,
+  name        VARCHAR(120) NOT NULL,
+  orden       INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_sections_course ON sections(course_id, orden);
+
+-- ON DELETE SET NULL y no CASCADE: borrar una sección no debe borrar el
+-- material que hay dentro. La actividad queda sin sección y se puede reubicar.
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS section_id VARCHAR(50) REFERENCES sections(id) ON DELETE SET NULL;
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS orden      INTEGER NOT NULL DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_activities_section ON activities(section_id, orden);

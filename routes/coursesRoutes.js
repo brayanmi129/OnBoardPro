@@ -18,6 +18,27 @@ const subida = require("../middlewares/subida.js");
  *   get:
  *     summary: Obtiene todos los cursos
  *     tags: [Cursos]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: buscar
+ *         description: Coincidencia parcial en el nombre del curso.
+ *         schema: { type: string }
+ *       - in: query
+ *         name: estado
+ *         schema: { type: string, enum: [Abierto, Cerrado] }
+ *       - in: query
+ *         name: pagina
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: porPagina
+ *         schema: { type: integer, default: 50, maximum: 200 }
+ *     description: >
+ *       El cuerpo es el array de siempre. La paginación viaja en cabeceras:
+ *       `X-Total-Count`, `X-Page`, `X-Per-Page` y `X-Total-Pages`.
+ *       Un instructor recibe únicamente los cursos que tiene asignados;
+ *       el filtro es automático y no se puede desactivar.
  *     responses:
  *       200:
  *         description: Lista de todos los cursos

@@ -86,17 +86,50 @@ class UserService {
     return safeUser;
   }
 
-  static async getAll(tenantId = null) {
-    let query = supabase.from("users").select("*");
+  // A partir de este tamaño el listado se pagina. Una empresa con cientos de
+  // personas no debería mandar todo junto en cada carga de pantalla.
+  static PAGINA = 50;
+
+  /**
+   * Listado con filtros y paginación (HU-015).
+   * Los filtros se aplican en la base y no en memoria: traer todo para
+   * descartarlo después anularía el sentido de paginar.
+   */
+  static async getAll(tenantId = null, opciones = {}) {
+    const { rol, estado, buscar } = opciones;
+    const porPagina = Math.min(Number(opciones.porPagina) || UserService.PAGINA, 200);
+    const pagina = Math.max(Number(opciones.pagina) || 1, 1);
+    const desde = (pagina - 1) * porPagina;
+
+    // count: "exact" devuelve el total sin traer las filas, para saber
+    // cuántas páginas hay.
+    let query = supabase.from("users").select("*", { count: "exact" });
     if (tenantId) query = query.eq("tenant_id", tenantId);
-    const { data, error } = await query;
+    if (rol) query = query.eq("role", rol);
+    if (estado) query = query.eq("status", estado);
+    if (buscar) {
+      const t = `%${String(buscar).trim()}%`;
+      query = query.or(`firstname.ilike.${t},lastname.ilike.${t},email.ilike.${t}`);
+    }
+
+    const { data, error, count } = await query
+      .order("firstname", { ascending: true })
+      .range(desde, desde + porPagina - 1);
     if (error) throw new Error(error.message);
 
-    return (data || []).map((row) => {
+    const usuarios = (data || []).map((row) => {
       const user = toUser(row);
       delete user.password;
       return user;
     });
+
+    return {
+      usuarios,
+      total: count ?? usuarios.length,
+      pagina,
+      porPagina,
+      paginas: Math.max(Math.ceil((count ?? usuarios.length) / porPagina), 1),
+    };
   }
 
   static async getById(id) {

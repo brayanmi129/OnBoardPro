@@ -513,8 +513,8 @@
       "dependencias": [
         "HU-014"
       ],
-      "estado": "Parcial",
-      "endpoints": "GET /api/users/get/all, /get/role/{role}, /get/email/{email}",
+      "estado": "Implementado",
+      "endpoints": "GET /api/users/get/all?rol&estado&buscar&pagina&porPagina (paginación en cabeceras X-*)",
       "sprint": 4,
       "notas": "Falta paginación y búsqueda por texto; el filtrado por rol y tenant ya funciona.",
       "mvp": true
@@ -707,8 +707,8 @@
         "HU-020",
         "HU-014"
       ],
-      "estado": "Parcial",
-      "endpoints": "POST /api/groups/{id}/add-users, DELETE /api/groups/{id}/remove-users",
+      "estado": "Implementado",
+      "endpoints": "POST /api/groups/{id}/add-users · DELETE /api/groups/{id}/remove-users (valida empresa de los usuarios)",
       "sprint": 4,
       "notas": "La lógica de upsert está bien resuelta. Falta autenticación y validación de organización.",
       "mvp": true
@@ -804,8 +804,8 @@
       "dependencias": [
         "HU-026"
       ],
-      "estado": "Parcial",
-      "endpoints": "GET /api/courses/get/all, GET /api/courses/get/id/{id}",
+      "estado": "Implementado",
+      "endpoints": "GET /api/courses/get/all?buscar&estado&pagina&porPagina (el instructor solo ve los suyos)",
       "sprint": 4,
       "notas": "El listado responde sin token y sin filtrar. La consulta por id está rota: pasa el request como identificador.",
       "mvp": true
@@ -922,8 +922,8 @@
       "dependencias": [
         "HU-026"
       ],
-      "estado": "No iniciado",
-      "endpoints": "Ninguno. Requiere tabla nueva y migrar courses.actividades.",
+      "estado": "Implementado",
+      "endpoints": "GET/POST /api/courses/{id}/sections · PUT /api/courses/{id}/sections/orden · PUT|DELETE /api/sections/{id} · PUT /api/sections/{id}/orden · PUT /api/activities/{id}/seccion",
       "sprint": 4,
       "notas": "Cambio estructural. Hoy el curso guarda las actividades en un arreglo plano de texto, sin orden ni agrupación.",
       "mvp": true

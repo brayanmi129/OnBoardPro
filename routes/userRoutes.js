@@ -15,10 +15,30 @@ const requireRole = require("../middlewares/requireRole.js");
  * @swagger
  * /api/users/get/all:
  *   get:
- *     summary: Obtiene todos los usuarios del tenant
+ *     summary: Lista los usuarios de la organización, con filtros
  *     tags: [Usuarios]
  *     security:
  *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: rol
+ *         schema: { type: string, enum: [student, instructor, admin, superadmin] }
+ *       - in: query
+ *         name: estado
+ *         schema: { type: string, enum: [Active, Inactive] }
+ *       - in: query
+ *         name: buscar
+ *         description: Coincidencia parcial en nombre, apellido o correo.
+ *         schema: { type: string }
+ *       - in: query
+ *         name: pagina
+ *         schema: { type: integer, default: 1 }
+ *       - in: query
+ *         name: porPagina
+ *         schema: { type: integer, default: 50, maximum: 200 }
+ *     description: >
+ *       El cuerpo es el array de siempre. La paginación viaja en cabeceras:
+ *       `X-Total-Count`, `X-Page`, `X-Per-Page` y `X-Total-Pages`.
  *     responses:
  *       200:
  *         description: Lista de usuarios sin contraseñas

@@ -63,6 +63,9 @@ const opcionesCors = {
   credentials: true,
   methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
   allowedHeaders: ["Content-Type", "Authorization"],
+  // Sin esto el navegador recibe las cabeceras pero no deja leerlas desde otro
+  // origen: el front vería la lista paginada sin saber cuántas páginas hay.
+  exposedHeaders: ["X-Total-Count", "X-Page", "X-Per-Page", "X-Total-Pages"],
 };
 
 // El preflight usa la MISMA configuración a propósito. Antes era cors() a secas,
@@ -82,6 +85,7 @@ const activitiesRoutes = require("./routes/activitiesRoutes.js");
 const groupRoutes = require("./routes/groupsRoutes.js");
 const gamificationRoutes = require("./routes/gamificationRoutes.js");
 const tenantRoutes = require("./routes/tenantRoutes.js");
+const sectionRoutes = require("./routes/sectionsRoutes.js");
 
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
@@ -90,6 +94,11 @@ app.use("/api/activities", activitiesRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/gamification", gamificationRoutes);
 app.use("/api/tenants", tenantRoutes);
+
+// Va al final y montado en /api porque sus rutas cruzan varios recursos
+// (/courses/:id/sections, /sections/:id, /activities/:id/seccion). Si se
+// montara antes, taparía rutas de los routers de arriba.
+app.use("/api", sectionRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

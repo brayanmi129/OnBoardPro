@@ -499,6 +499,50 @@
         "tags": [
           "Cursos"
         ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "buscar",
+            "description": "Coincidencia parcial en el nombre del curso.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "estado",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Abierto",
+                "Cerrado"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "pagina",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "porPagina",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "maximum": 200
+            }
+          }
+        ],
+        "description": "El cuerpo es el array de siempre. La paginación viaja en cabeceras: `X-Total-Count`, `X-Page`, `X-Per-Page` y `X-Total-Pages`. Un instructor recibe únicamente los cursos que tiene asignados; el filtro es automático y no se puede desactivar.\n",
         "responses": {
           "200": {
             "description": "Lista de todos los cursos"
@@ -1055,6 +1099,337 @@
         }
       }
     },
+    "/api/courses/{id}/sections": {
+      "get": {
+        "summary": "Lista las secciones de un curso con sus actividades",
+        "tags": [
+          "Secciones"
+        ],
+        "description": "Devuelve las secciones ordenadas, cada una con sus actividades ya ordenadas dentro. A un aprendiz no se le devuelven las secciones vacías. El campo `adjunto` de cada actividad es una ruta interna: para abrirlo hay que pedir GET /api/activities/{id}/adjunto.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Id del curso.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de secciones"
+          },
+          "404": {
+            "description": "El curso no existe o es de otra organización"
+          }
+        }
+      },
+      "post": {
+        "summary": "Crea una sección dentro de un curso",
+        "tags": [
+          "Secciones"
+        ],
+        "description": "La sección queda al final del curso salvo que se indique `orden`. La organización se toma del curso, no del cuerpo.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 120,
+                    "example": "Módulo 1 - Bienvenida"
+                  },
+                  "orden": {
+                    "type": "integer",
+                    "description": "Posición. Si se omite, va al final."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Sección creada"
+          },
+          "400": {
+            "description": "Datos inválidos"
+          },
+          "404": {
+            "description": "El curso no existe o es de otra organización"
+          }
+        }
+      }
+    },
+    "/api/courses/{id}/sections/orden": {
+      "put": {
+        "summary": "Reordena las secciones de un curso",
+        "tags": [
+          "Secciones"
+        ],
+        "description": "Recibe **todos** los ids de las secciones del curso en el orden deseado. Una lista incompleta o con secciones ajenas se rechaza entera: aplicarla a medias dejaría un orden incoherente.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "orden"
+                ],
+                "properties": {
+                  "orden": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "a1b2c3",
+                      "d4e5f6"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Orden actualizado"
+          },
+          "400": {
+            "description": "La lista está incompleta o incluye secciones de otro curso"
+          }
+        }
+      }
+    },
+    "/api/sections/{id}": {
+      "put": {
+        "summary": "Renombra una sección",
+        "tags": [
+          "Secciones"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "name"
+                ],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 120
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Sección actualizada"
+          },
+          "404": {
+            "description": "No existe o es de otra organización"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Elimina una sección vacía",
+        "tags": [
+          "Secciones"
+        ],
+        "description": "Una sección con actividades no se borra: primero hay que moverlas o eliminarlas. Borrarla de arrastre perdería material que no se puede recuperar desde la interfaz.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sección eliminada"
+          },
+          "404": {
+            "description": "No existe o es de otra organización"
+          },
+          "409": {
+            "description": "La sección todavía tiene actividades"
+          }
+        }
+      }
+    },
+    "/api/sections/{id}/orden": {
+      "put": {
+        "summary": "Reordena las actividades dentro de una sección",
+        "tags": [
+          "Secciones"
+        ],
+        "description": "Mismas reglas que el reordenamiento de secciones.",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "orden"
+                ],
+                "properties": {
+                  "orden": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Orden actualizado"
+          },
+          "400": {
+            "description": "Lista incompleta o con actividades de otra sección"
+          }
+        }
+      }
+    },
+    "/api/activities/{actividadId}/seccion": {
+      "put": {
+        "summary": "Mueve una actividad a una sección",
+        "tags": [
+          "Secciones"
+        ],
+        "description": "Con `sectionId` en null la actividad queda fuera de toda sección, que es lo que hay que hacer antes de borrar la sección que la contiene.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "actividadId",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "sectionId": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Actividad movida"
+          },
+          "404": {
+            "description": "La actividad o la sección no existen, o son de otra organización"
+          }
+        }
+      }
+    },
     "/api/tenants/get/all": {
       "get": {
         "summary": "Lista todos los tenants",
@@ -1215,7 +1590,7 @@
     },
     "/api/users/get/all": {
       "get": {
-        "summary": "Obtiene todos los usuarios del tenant",
+        "summary": "Lista los usuarios de la organización, con filtros",
         "tags": [
           "Usuarios"
         ],
@@ -1224,6 +1599,58 @@
             "bearerAuth": []
           }
         ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "rol",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "student",
+                "instructor",
+                "admin",
+                "superadmin"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "estado",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "Active",
+                "Inactive"
+              ]
+            }
+          },
+          {
+            "in": "query",
+            "name": "buscar",
+            "description": "Coincidencia parcial en nombre, apellido o correo.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "pagina",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "in": "query",
+            "name": "porPagina",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "maximum": 200
+            }
+          }
+        ],
+        "description": "El cuerpo es el array de siempre. La paginación viaja en cabeceras: `X-Total-Count`, `X-Page`, `X-Per-Page` y `X-Total-Pages`.\n",
         "responses": {
           "200": {
             "description": "Lista de usuarios sin contraseñas"
@@ -1543,6 +1970,10 @@
     {
       "name": "Grupos",
       "description": "Endpoints relacionados con la gestión de grupos"
+    },
+    {
+      "name": "Secciones",
+      "description": "Estructura del curso. Un curso se divide en secciones ordenadas y cada una agrupa actividades."
     },
     {
       "name": "Tenants",

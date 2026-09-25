@@ -58,8 +58,8 @@ class GroupController {
       const result = await GroupService.addUsersToGroup(id, userIds, tenantDe(req));
       res.status(200).json(result);
     } catch (error) {
-      console.error("Error al agregar usuarios al grupo:", error);
-      res.status(400).json({ error: error.message });
+      console.error("Error al agregar usuarios al grupo:", error.message);
+      res.status(error.status || 400).json({ error: error.message });
     }
   }
 
@@ -74,8 +74,8 @@ class GroupController {
       const result = await GroupService.removeUsersFromGroup(id, userIds, tenantDe(req));
       res.status(200).json(result);
     } catch (error) {
-      console.error("Error al eliminar usuarios del grupo:", error);
-      res.status(400).json({ error: error.message });
+      console.error("Error al eliminar usuarios del grupo:", error.message);
+      res.status(error.status || 400).json({ error: error.message });
     }
   }
 
