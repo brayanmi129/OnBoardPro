@@ -76,6 +76,12 @@ router.get("/get/all", verifyJWT, ActivitiesController.getAll);
  *                 type: boolean
  *                 default: false
  *                 description: Si la actividad espera una entrega del aprendiz.
+ *               sectionId:
+ *                 type: string
+ *                 description: >
+ *                   Sección del curso donde queda la actividad. Sin esto nace
+ *                   suelta y no aparece en ningún curso, porque el contenido se
+ *                   lee por sección. Se la ubica al final de esa sección.
  *               archivo:
  *                 type: string
  *                 format: binary
@@ -125,5 +131,34 @@ router.post(
  *         description: La actividad no existe, no tiene adjunto o es de otra empresa
  */
 router.get("/:id/adjunto", verifyJWT, ActivitiesController.adjunto);
+
+/**
+ * @swagger
+ * /api/activities/{id}:
+ *   delete:
+ *     summary: Elimina una actividad y su archivo
+ *     tags: [Actividades]
+ *     description: >
+ *       Borra la actividad de la sección en la que esté y elimina su adjunto del
+ *       bucket. No se puede deshacer. Solo actividades de la propia empresa.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Actividad eliminada
+ *       404:
+ *         description: No existe o es de otra organización
+ */
+router.delete(
+  "/:id",
+  verifyJWT,
+  requireRole("admin", "superadmin", "instructor"),
+  ActivitiesController.eliminar
+);
 
 module.exports = router;

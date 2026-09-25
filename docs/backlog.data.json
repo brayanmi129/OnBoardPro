@@ -922,8 +922,8 @@
       "dependencias": [
         "HU-026"
       ],
-      "estado": "Implementado",
-      "endpoints": "GET/POST /api/courses/{id}/sections · PUT /api/courses/{id}/sections/orden · PUT|DELETE /api/sections/{id} · PUT /api/sections/{id}/orden · PUT /api/activities/{id}/seccion",
+      "estado": "Parcial",
+      "endpoints": "GET/POST /api/courses/{id}/sections · PUT|DELETE /api/sections/{id} · DELETE /api/activities/{id}. El reordenamiento por arrastre (criterio 3) queda fuera por decisión de alcance.",
       "sprint": 4,
       "notas": "Cambio estructural. Hoy el curso guarda las actividades en un arreglo plano de texto, sin orden ni agrupación.",
       "mvp": true

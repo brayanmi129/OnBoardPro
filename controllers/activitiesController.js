@@ -31,7 +31,17 @@ class ActivitiesController {
       return res.status(201).json(actividad);
     } catch (error) {
       console.error("Error al crear la actividad:", error.message);
-      return res.status(400).json({ message: error.message });
+      return res.status(error.status || 400).json({ message: error.message });
+    }
+  }
+
+  static async eliminar(req, res) {
+    try {
+      const r = await ActivitiesService.eliminar(req.params.id, tenantDe(req));
+      return res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al eliminar la actividad:", error.message);
+      return res.status(error.status || 500).json({ message: error.message });
     }
   }
 

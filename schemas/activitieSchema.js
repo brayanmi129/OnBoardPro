@@ -12,6 +12,10 @@ class activitieSchema {
     // viejas tienen acá un enlace de Drive, que también entra como texto.
     adjunto: zod.string().min(1),
     mime: zod.string().max(100).optional(),
+    // En qué sección del curso queda. Sin esto la actividad nace suelta y
+    // no aparece en ningún curso, porque el contenido se lee por sección.
+    sectionId: zod.string().max(50).nullable().optional(),
+    orden: zod.number().int().min(0).optional(),
     tenantId: zod.string().nullable().optional(),
     deliverable: zod.boolean().default(false),
   });

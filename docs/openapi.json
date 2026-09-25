@@ -94,6 +94,10 @@
                     "default": false,
                     "description": "Si la actividad espera una entrega del aprendiz."
                   },
+                  "sectionId": {
+                    "type": "string",
+                    "description": "Sección del curso donde queda la actividad. Sin esto nace suelta y no aparece en ningún curso, porque el contenido se lee por sección. Se la ubica al final de esa sección.\n"
+                  },
                   "archivo": {
                     "type": "string",
                     "format": "binary",
@@ -148,6 +152,38 @@
           },
           "404": {
             "description": "La actividad no existe, no tiene adjunto o es de otra empresa"
+          }
+        }
+      }
+    },
+    "/api/activities/{id}": {
+      "delete": {
+        "summary": "Elimina una actividad y su archivo",
+        "tags": [
+          "Actividades"
+        ],
+        "description": "Borra la actividad de la sección en la que esté y elimina su adjunto del bucket. No se puede deshacer. Solo actividades de la propia empresa.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Actividad eliminada"
+          },
+          "404": {
+            "description": "No existe o es de otra organización"
           }
         }
       }
@@ -1189,63 +1225,6 @@
         }
       }
     },
-    "/api/courses/{id}/sections/orden": {
-      "put": {
-        "summary": "Reordena las secciones de un curso",
-        "tags": [
-          "Secciones"
-        ],
-        "description": "Recibe **todos** los ids de las secciones del curso en el orden deseado. Una lista incompleta o con secciones ajenas se rechaza entera: aplicarla a medias dejaría un orden incoherente.\n",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "orden"
-                ],
-                "properties": {
-                  "orden": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    },
-                    "example": [
-                      "a1b2c3",
-                      "d4e5f6"
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Orden actualizado"
-          },
-          "400": {
-            "description": "La lista está incompleta o incluye secciones de otro curso"
-          }
-        }
-      }
-    },
     "/api/sections/{id}": {
       "put": {
         "summary": "Renombra una sección",
@@ -1300,7 +1279,7 @@
         "tags": [
           "Secciones"
         ],
-        "description": "Una sección con actividades no se borra: primero hay que moverlas o eliminarlas. Borrarla de arrastre perdería material que no se puede recuperar desde la interfaz.\n",
+        "description": "Una sección con actividades no se borra: primero hay que eliminarlas con DELETE /api/activities/{id}. Borrarla de arrastre perdería material que no se puede recuperar desde la interfaz.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1325,107 +1304,6 @@
           },
           "409": {
             "description": "La sección todavía tiene actividades"
-          }
-        }
-      }
-    },
-    "/api/sections/{id}/orden": {
-      "put": {
-        "summary": "Reordena las actividades dentro de una sección",
-        "tags": [
-          "Secciones"
-        ],
-        "description": "Mismas reglas que el reordenamiento de secciones.",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "id",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "orden"
-                ],
-                "properties": {
-                  "orden": {
-                    "type": "array",
-                    "items": {
-                      "type": "string"
-                    }
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Orden actualizado"
-          },
-          "400": {
-            "description": "Lista incompleta o con actividades de otra sección"
-          }
-        }
-      }
-    },
-    "/api/activities/{actividadId}/seccion": {
-      "put": {
-        "summary": "Mueve una actividad a una sección",
-        "tags": [
-          "Secciones"
-        ],
-        "description": "Con `sectionId` en null la actividad queda fuera de toda sección, que es lo que hay que hacer antes de borrar la sección que la contiene.\n",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "path",
-            "name": "actividadId",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "sectionId": {
-                    "type": "string",
-                    "nullable": true
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Actividad movida"
-          },
-          "404": {
-            "description": "La actividad o la sección no existen, o son de otra organización"
           }
         }
       }

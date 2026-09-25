@@ -55,36 +55,6 @@ class SectionController {
     }
   }
 
-  static async ordenarSecciones(req, res) {
-    try {
-      const r = await SectionService.ordenarSecciones(req.params.id, tenantDe(req), req.body?.orden);
-      return res.status(200).json(r);
-    } catch (error) {
-      return responder(res, error, "Error al reordenar las secciones");
-    }
-  }
-
-  static async ordenarActividades(req, res) {
-    try {
-      const r = await SectionService.ordenarActividades(req.params.id, tenantDe(req), req.body?.orden);
-      return res.status(200).json(r);
-    } catch (error) {
-      return responder(res, error, "Error al reordenar las actividades");
-    }
-  }
-
-  static async moverActividad(req, res) {
-    try {
-      const r = await SectionService.moverActividad(
-        req.params.actividadId,
-        req.body?.sectionId ?? null,
-        tenantDe(req)
-      );
-      return res.status(200).json(r);
-    } catch (error) {
-      return responder(res, error, "Error al mover la actividad");
-    }
-  }
 }
 
 module.exports = SectionController;

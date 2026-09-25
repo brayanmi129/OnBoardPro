@@ -273,6 +273,37 @@
     .curso { cursor: pointer; }
     .curso:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
 
+    /* ── SECCIONES DEL CURSO ───────────────────────────── */
+    .sec-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px; flex-wrap: wrap; margin: 26px 0 12px;
+    }
+
+    .seccion {
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: 13px; overflow: hidden; margin-bottom: 14px;
+    }
+    .seccion-head {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 14px; flex-wrap: wrap;
+      padding: 13px 16px;
+      background: var(--primary-soft);
+      border-bottom: 1px solid var(--border);
+    }
+    .seccion-head h4 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+    .seccion-btns { display: flex; gap: 6px; align-items: center; }
+    /* Los botones de icono quedan cuadrados; sin esto el ancho lo fija el texto
+       que no tienen y se ven aplastados. */
+    .seccion-btns .btn-sm:has(> svg:only-child) { padding: 6px; width: 30px; }
+    .seccion-btns .ico { width: 14px; height: 14px; }
+
+    .seccion .lista-act { padding: 11px; gap: 8px; }
+    .seccion-vacia {
+      padding: 18px 16px; font-size: 13.5px; color: var(--muted); font-style: italic;
+    }
+
+    .act .btn-danger .ico { width: 13px; height: 13px; }
+
     /* ── MI PERFIL ─────────────────────────────────────── */
     .perfil-hero {
       display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
@@ -1838,22 +1869,20 @@ function openCreateCourse() {
 // ── Detalle de un curso ─────────────────────────────────────────────────────
 // No es una sección del menú: se entra desde una ficha y se vuelve con el botón.
 // Por eso state.section sigue siendo "courses" y el menú no pierde el resaltado.
+let cursoActual = null;
+
 async function verCurso(id) {
+  cursoActual = id;
   $("page-title").textContent = "Curso";
   setContent(`<div class="sk-cards"><div class="sk"></div><div class="sk"></div></div>`);
   try {
-    const c = await api("GET", `/api/courses/get/id/${id}`);
+    // El contenido se lee por sección: el curso ya no tiene una lista plana.
+    const [c, secciones] = await Promise.all([
+      api("GET", `/api/courses/get/id/${id}`),
+      api("GET", `/api/courses/${id}/sections`).catch(() => []),
+    ]);
     const puedeEditar = ["admin", "superadmin", "instructor"].includes(state.user?.role);
-
-    // El curso guarda los ids de sus actividades; el listado viene aparte.
-    let actividades = [];
-    const ids = c.actividades || [];
-    if (ids.length) {
-      try {
-        const todas = await api("GET", "/api/activities/get/all");
-        actividades = todas.filter(a => ids.includes(a.id));
-      } catch { /* sin permiso o sin actividades: se muestra el aviso de abajo */ }
-    }
+    const total = secciones.reduce((a, s) => a + s.actividades.length, 0);
 
     setContent(`
       <button class="volver" onclick="navigate('courses')">
@@ -1878,30 +1907,59 @@ async function verCurso(id) {
       </div>
 
       <div class="stats-grid" style="margin-top:16px">
-        ${tarjetaCifra(`${icon("activities")} ${ids.length}`, "Actividades")}
+        ${tarjetaCifra(`${icon("courses")} ${secciones.length}`, "Secciones")}
+        ${tarjetaCifra(`${icon("activities")} ${total}`, "Actividades")}
         ${tarjetaCifra(`${icon("groups")} ${escHtml(c.grupo || "—")}`, "Equipo asignado")}
-        ${tarjetaCifra(`${icon("check")} ${escHtml(c.status || "—")}`, "Estado")}
       </div>
 
-      <h3 class="sec-h">Contenido del curso</h3>
-      ${actividades.length
-        ? `<div class="lista-act">${actividades.map(fichaActividad).join("")}</div>`
-        : ids.length
-          ? vacio("No se pudieron cargar las actividades",
-                  "El curso tiene actividades asociadas pero no llegaron desde el servidor.")
-          : vacio("Este curso todavía no tiene contenido",
-                  "Las actividades se crean desde la API; la pantalla para hacerlo aún no existe.")}
+      <div class="sec-head">
+        <h3 class="sec-h" style="margin:0">Contenido</h3>
+        ${puedeEditar ? `
+          <button class="btn btn-primary btn-sm" onclick="crearSeccion()">＋ Nueva sección</button>` : ""}
+      </div>
+
+      ${secciones.length
+        ? secciones.map(s => fichaSeccion(s, puedeEditar)).join("")
+        : vacio("Este curso todavía no tiene secciones",
+                puedeEditar
+                  ? "Creá la primera con el botón de arriba y después agregale actividades."
+                  : "Cuando el instructor publique contenido, aparecerá acá.")}
     `);
   } catch (err) {
     setContent(errorBox(err) +
-      `<button class="btn btn-ghost btn-sm" style="margin-top:12px"
-               onclick="navigate('courses')">Volver a cursos</button>`);
+      `<button class="volver" style="margin-top:12px"
+               onclick="navigate('courses')">${icon("atras")}<span>Volver a cursos</span></button>`);
   }
 }
 
 const ICONO_TIPO = { Examen: "check", Tarea: "missions", Recurso: "attach" };
 
-function fichaActividad(a) {
+function fichaSeccion(s, puedeEditar) {
+  return `<section class="seccion">
+    <header class="seccion-head">
+      <div>
+        <h4>${escHtml(s.name)}</h4>
+        <span class="small muted">${s.actividades.length} actividad(es)</span>
+      </div>
+      ${puedeEditar ? `
+        <div class="seccion-btns">
+          <button class="btn btn-ghost btn-sm" onclick="agregarActividad('${s.id}','${escHtml(s.name)}')">
+            ＋ Actividad
+          </button>
+          <button class="btn btn-ghost btn-sm" title="Renombrar"
+                  onclick="renombrarSeccion('${s.id}','${escHtml(s.name)}')">${icon("editar")}</button>
+          <button class="btn btn-danger btn-sm" title="Eliminar"
+                  onclick="borrarSeccion('${s.id}','${escHtml(s.name)}',${s.actividades.length})">${icon("cross")}</button>
+        </div>` : ""}
+    </header>
+
+    ${s.actividades.length
+      ? `<div class="lista-act">${s.actividades.map(a => fichaActividad(a, puedeEditar)).join("")}</div>`
+      : `<p class="seccion-vacia">Sin contenido todavía.</p>`}
+  </section>`;
+}
+
+function fichaActividad(a, puedeEditar) {
   return `<article class="act">
     <span class="act-ico">${icon(ICONO_TIPO[a.type] || "attach")}</span>
     <div class="act-txt">
@@ -1912,6 +1970,10 @@ function fichaActividad(a) {
     ${a.adjunto
       ? `<button class="btn btn-ghost btn-sm" onclick="abrirAdjunto('${a.id}', this)">Abrir</button>`
       : `<span class="small muted">Sin adjunto</span>`}
+    ${puedeEditar
+      ? `<button class="btn btn-danger btn-sm" title="Eliminar"
+                 onclick="borrarActividad('${a.id}','${escHtml(a.title || a.name)}')">${icon("cross")}</button>`
+      : ""}
   </article>`;
 }
 
@@ -1928,6 +1990,104 @@ async function abrirAdjunto(id, btn) {
   } finally {
     btn.disabled = false; btn.textContent = texto;
   }
+}
+
+// ── Secciones ───────────────────────────────────────────────────────────────
+function crearSeccion() {
+  openModal("Nueva sección", `
+    <div class="form-group"><label>Nombre</label>
+      <input id="f-s-name" placeholder="Módulo 1 - Bienvenida" maxlength="120"></div>
+    <p class="small muted">Se agrega al final del curso.</p>
+  `, async () => {
+    await api("POST", `/api/courses/${cursoActual}/sections`, { name: $("f-s-name").value });
+    closeModal(); verCurso(cursoActual);
+  });
+}
+
+function renombrarSeccion(id, nombre) {
+  openModal("Renombrar sección", `
+    <div class="form-group"><label>Nombre</label>
+      <input id="f-s-rename" value="${escHtml(nombre)}" maxlength="120"></div>
+  `, async () => {
+    await api("PUT", `/api/sections/${id}`, { name: $("f-s-rename").value });
+    closeModal(); verCurso(cursoActual);
+  });
+}
+
+// El backend rechaza borrar una sección con contenido (409). Se avisa antes de
+// llamar, para no gastar un viaje en un error previsible.
+async function borrarSeccion(id, nombre, cuantas) {
+  if (cuantas > 0) {
+    return avisar(`"${nombre}" tiene ${cuantas} actividad(es). Eliminalas primero.`);
+  }
+  const ok = await confirmar({
+    titulo: `¿Eliminar la sección "${nombre}"?`,
+    detalle: "Está vacía, así que no se pierde contenido.",
+  });
+  if (!ok) return;
+  try {
+    await api("DELETE", `/api/sections/${id}`);
+    avisar("Sección eliminada.", "ok");
+    verCurso(cursoActual);
+  } catch (err) { avisar(err?.error || err?.message || "No se pudo eliminar."); }
+}
+
+// ── Actividades ─────────────────────────────────────────────────────────────
+// La creación va por multipart porque lleva archivo, así que no puede usar
+// api(), que serializa el cuerpo a JSON.
+function agregarActividad(sectionId, nombreSeccion) {
+  openModal(`Nueva actividad en "${nombreSeccion}"`, `
+    <div class="form-group"><label>Título</label>
+      <input id="f-a-title" placeholder="Bienvenida a la empresa" maxlength="100"></div>
+    <div class="form-group"><label>Nombre interno</label>
+      <input id="f-a-name" placeholder="act-bienvenida" maxlength="50"></div>
+    <div class="form-group"><label>Tipo</label>
+      <select id="f-a-type">
+        <option value="Recurso">Recurso</option>
+        <option value="Tarea">Tarea</option>
+        <option value="Examen">Examen</option>
+      </select></div>
+    <div class="form-group"><label>Descripción <span class="hint">(opcional)</span></label>
+      <input id="f-a-desc" maxlength="400"></div>
+    <div class="form-group"><label>Archivo</label>
+      <input id="f-a-file" type="file"
+             accept="image/*,application/pdf,video/mp4,video/webm,video/quicktime">
+      <span class="hint">Obligatorio. Máximo 50 MB: imagen, PDF o video.</span></div>
+  `, async () => {
+    const archivo = $("f-a-file").files?.[0];
+    if (!archivo) throw { message: "Elegí un archivo." };
+
+    const fd = new FormData();
+    fd.append("title", $("f-a-title").value);
+    fd.append("name", $("f-a-name").value);
+    fd.append("type", $("f-a-type").value);
+    fd.append("sectionId", sectionId);
+    if ($("f-a-desc").value) fd.append("description", $("f-a-desc").value);
+    fd.append("archivo", archivo);
+
+    const res = await fetch(`${API}/api/activities/create`, {
+      method: "POST",
+      headers: state.token ? { Authorization: `Bearer ${state.token}` } : {},
+      body: fd,
+    });
+    const data = await res.json().catch(() => ({ message: res.statusText }));
+    if (!res.ok) throw data;
+
+    closeModal(); verCurso(cursoActual);
+  });
+}
+
+async function borrarActividad(id, titulo) {
+  const ok = await confirmar({
+    titulo: `¿Eliminar "${titulo}"?`,
+    detalle: "También se borra su archivo del almacenamiento. No se puede deshacer.",
+  });
+  if (!ok) return;
+  try {
+    await api("DELETE", `/api/activities/${id}`);
+    avisar("Actividad eliminada.", "ok");
+    verCurso(cursoActual);
+  } catch (err) { avisar(err?.message || "No se pudo eliminar."); }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════

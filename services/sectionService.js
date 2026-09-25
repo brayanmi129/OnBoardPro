@@ -124,7 +124,7 @@ class SectionService {
   /**
    * Borrar una sección con contenido se rechaza a propósito. El material no es
    * recuperable desde la interfaz y borrarlo de arrastre sería una pérdida
-   * silenciosa: primero hay que mover o eliminar las actividades.
+   * silenciosa: primero hay que eliminar sus actividades una por una.
    */
   static async eliminar(sectionId, tenantId) {
     await SectionService._seccion(sectionId, tenantId);
@@ -136,7 +136,7 @@ class SectionService {
 
     if (count) {
       throw fallo(
-        `La sección tiene ${count} actividad(es). Movelas o eliminalas antes de borrarla.`,
+        `La sección tiene ${count} actividad(es). Eliminalas antes de borrar la sección.`,
         409
       );
     }
@@ -147,76 +147,6 @@ class SectionService {
     return { message: "Sección eliminada" };
   }
 
-  /** Reordena las secciones de un curso. Recibe los ids en el orden deseado. */
-  static async ordenarSecciones(courseId, tenantId, ids) {
-    await SectionService._curso(courseId, tenantId);
-    if (!Array.isArray(ids) || !ids.length) throw fallo("Debe enviar el orden de las secciones.", 400);
-
-    const { data: actuales } = await supabase
-      .from("sections").select("id").eq("course_id", courseId);
-    const propias = new Set((actuales || []).map((s) => s.id));
-
-    // Si la lista no es exactamente la del curso, se rechaza entera: aplicarla
-    // a medias dejaría un orden incoherente y difícil de deshacer.
-    const ajenas = ids.filter((id) => !propias.has(id));
-    if (ajenas.length) throw fallo(`Estas secciones no son de este curso: ${ajenas.join(", ")}`, 400);
-    if (ids.length !== propias.size) {
-      throw fallo(`Faltan secciones: el curso tiene ${propias.size} y se enviaron ${ids.length}.`, 400);
-    }
-
-    for (const [posicion, id] of ids.entries()) {
-      await supabase.from("sections").update({ orden: posicion }).eq("id", id);
-    }
-    return { message: "Orden actualizado" };
-  }
-
-  /** Reordena las actividades dentro de una sección, con las mismas reglas. */
-  static async ordenarActividades(sectionId, tenantId, ids) {
-    await SectionService._seccion(sectionId, tenantId);
-    if (!Array.isArray(ids) || !ids.length) throw fallo("Debe enviar el orden de las actividades.", 400);
-
-    const { data: actuales } = await supabase
-      .from("activities").select("id").eq("section_id", sectionId);
-    const propias = new Set((actuales || []).map((a) => a.id));
-
-    const ajenas = ids.filter((id) => !propias.has(id));
-    if (ajenas.length) throw fallo(`Estas actividades no están en la sección: ${ajenas.join(", ")}`, 400);
-    if (ids.length !== propias.size) {
-      throw fallo(`Faltan actividades: la sección tiene ${propias.size} y se enviaron ${ids.length}.`, 400);
-    }
-
-    for (const [posicion, id] of ids.entries()) {
-      await supabase.from("activities").update({ orden: posicion }).eq("id", id);
-    }
-    return { message: "Orden actualizado" };
-  }
-
-  /** Mueve una actividad a una sección (o la saca, con sectionId null). */
-  static async moverActividad(actividadId, sectionId, tenantId) {
-    const { data: actividad } = await delTenant(
-      supabase.from("activities").select("id").eq("id", actividadId),
-      tenantId
-    ).maybeSingle();
-    if (!actividad) throw fallo("Actividad no encontrada", 404);
-
-    let orden = 0;
-    if (sectionId) {
-      await SectionService._seccion(sectionId, tenantId);
-      const { count } = await supabase
-        .from("activities")
-        .select("id", { count: "exact", head: true })
-        .eq("section_id", sectionId);
-      orden = count ?? 0;
-    }
-
-    const { error } = await supabase
-      .from("activities")
-      .update({ section_id: sectionId || null, orden })
-      .eq("id", actividadId);
-    if (error) throw new Error(error.message);
-
-    return { message: sectionId ? "Actividad movida" : "Actividad quitada de su sección" };
-  }
 }
 
 module.exports = SectionService;
