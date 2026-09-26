@@ -16,6 +16,9 @@ class activitieSchema {
     // no aparece en ningún curso, porque el contenido se lee por sección.
     sectionId: zod.string().max(50).nullable().optional(),
     orden: zod.number().int().min(0).optional(),
+    // XP que otorga al completarla. Se puede cambiar después: el XP ya
+    // acreditado no se toca, porque vive en el libro de movimientos.
+    xp: zod.coerce.number().int().min(0).max(1000).optional(),
     tenantId: zod.string().nullable().optional(),
     deliverable: zod.boolean().default(false),
   });

@@ -134,3 +134,31 @@ ALTER TABLE activities ADD COLUMN IF NOT EXISTS section_id VARCHAR(50) REFERENCE
 ALTER TABLE activities ADD COLUMN IF NOT EXISTS orden      INTEGER NOT NULL DEFAULT 0;
 
 CREATE INDEX IF NOT EXISTS idx_activities_section ON activities(section_id, orden);
+
+-- ── XP y niveles (HU-051, HU-052, HU-054) ───────────────────────────────────
+-- Cuánto XP otorga cada actividad. 0 = no otorga nada.
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS xp INTEGER NOT NULL DEFAULT 0;
+
+-- Libro de movimientos de XP. Dos funciones en una sola tabla:
+--   1. registra qué completó cada persona (no hay otra tabla de "completado")
+--   2. deja auditable de dónde salió cada punto
+--
+-- users.xp es la suma de estas filas. Guardarlo además en users es
+-- desnormalizar a propósito: el ranking y el perfil lo leen en cada carga y
+-- sumar el historial cada vez sería caro. La fuente de verdad es esta tabla.
+CREATE TABLE IF NOT EXISTS xp_movimientos (
+  id          VARCHAR(50) PRIMARY KEY,
+  user_id     VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tenant_id   VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE,
+  activity_id VARCHAR(50) REFERENCES activities(id) ON DELETE SET NULL,
+  xp          INTEGER NOT NULL,
+  motivo      VARCHAR(40) NOT NULL DEFAULT 'actividad_completada',
+  created_at  TIMESTAMPTZ DEFAULT NOW(),
+
+  -- La misma persona no puede cobrar dos veces la misma actividad. Es la base
+  -- la que lo impide, no el código: si dos peticiones llegan a la vez, una
+  -- falla por la restricción en vez de acreditar doble.
+  CONSTRAINT xp_una_vez_por_actividad UNIQUE (user_id, activity_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_xp_user ON xp_movimientos(user_id);

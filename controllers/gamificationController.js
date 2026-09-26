@@ -12,6 +12,28 @@ class GamificationController {
       res.status(500).send("Error al obtener los grupos");
     }
   }
+
+  static async completar(req, res) {
+    try {
+      const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
+      const r = await gamificationService.completarActividad(
+        req.user.id, req.params.id, tenantId
+      );
+      return res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al completar la actividad:", error.message);
+      return res.status(error.status || 500).json({ message: error.message });
+    }
+  }
+
+  static async miProgreso(req, res) {
+    try {
+      return res.status(200).json(await gamificationService.miProgreso(req.user.id));
+    } catch (error) {
+      console.error("Error al obtener el progreso:", error.message);
+      return res.status(error.status || 500).json({ message: error.message });
+    }
+  }
 }
 
 module.exports = GamificationController;

@@ -66,7 +66,10 @@ class SectionService {
 
     const { data: actividades } = await supabase
       .from("activities")
-      .select("id, name, title, type, description, deliverable, mime, orden, section_id")
+      // adjunto va incluido: sin él el cliente no puede saber si hay material
+      // que abrir. Es la ruta interna del bucket privado, no una URL: no
+      // sirve para descargar nada sin pedir antes una firma.
+      .select("id, name, title, type, description, deliverable, adjunto, mime, orden, section_id")
       .in("section_id", secciones.map((s) => s.id))
       .order("orden", { ascending: true });
 
