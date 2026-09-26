@@ -1468,7 +1468,7 @@ async function renderPerfil() {
           ${dato("Teléfono", u.phonumber, "Sin registrar")}
           ${dato("Rol", ROL_ES[u.role] ?? u.role)}
           ${dato("Estado", u.status === "Active" ? "Activa" : "Inactiva")}
-          ${dato("Empresa", u.tenantId, "— (acceso de plataforma)")}
+          ${dato("Empresa", u.tenantName ?? u.tenantId, "— (acceso de plataforma)")}
           ${dato("Identificador", u.id)}
         </dl>
       </div>
@@ -1733,10 +1733,19 @@ async function renderUsers() {
     const total = Number(res.headers.get("X-Total-Count") ?? users.length);
     const paginas = Number(res.headers.get("X-Total-Pages") ?? 1);
 
+    // La empresa solo se muestra al superadmin: para un admin todas las filas
+    // dirían lo mismo y sería una columna de ruido.
+    const verEmpresa = state.user?.role === "superadmin";
+
     const rows = users.map(u => tr(
       `<code class="small">${u.id}</code>`,
       `<strong>${escHtml([u.firstname, u.lastname].filter(Boolean).join(" ") || "—")}</strong>
        <br><span class="small muted">${escHtml(u.email)}</span>`,
+      ...(verEmpresa
+        ? [u.tenantName
+            ? escHtml(u.tenantName)
+            : `<span class="muted small">— plataforma</span>`]
+        : []),
       roleBadge(u.role),
       statusBadge(u.status),
       `${icon("level")} ${u.level} · ${icon("xp")} ${u.xp} xp`,
@@ -1748,7 +1757,9 @@ async function renderUsers() {
       sectionHeader(`${total} usuario(s)`, "Nuevo usuario", "openCreateUser") +
       filtrosUI() +
       (users.length
-        ? tableWrap(["ID", "Nombre / Email", "Rol", "Estado", "Nivel", ""], rows)
+        ? tableWrap(
+            ["ID", "Nombre / Email", ...(verEmpresa ? ["Empresa"] : []), "Rol", "Estado", "Nivel", ""],
+            rows)
         : vacio("Ningún usuario coincide", "Probá quitando algún filtro.")) +
       paginador(f.pagina, paginas, "irPaginaUsuarios")
     );

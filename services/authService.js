@@ -174,6 +174,16 @@ class AuthService {
       if (!user) return null;
       const { password, ...userinfo } = user;
       userinfo.oauthOnly = !password;
+
+      // El perfil mostraba el id crudo ("tenant-uc") donde debería decir el
+      // nombre de la empresa.
+      if (userinfo.tenantId) {
+        const empresa = await TenantService.getById(userinfo.tenantId).catch(() => null);
+        userinfo.tenantName = empresa?.name ?? null;
+      } else {
+        userinfo.tenantName = null;
+      }
+
       return userinfo;
     } catch (error) {
       throw new Error("Error al consultar el usuario en la base de datos.");

@@ -24,6 +24,27 @@ function fromUser(data) {
   return out;
 }
 
+
+/**
+ * Agrega el nombre de la empresa a una lista de usuarios.
+ *
+ * La API ya devolvía tenantId, pero un id como "tenant-uc" no le dice nada a
+ * quien mira la pantalla. Para un admin da igual —todos son de su empresa—,
+ * pero un superadmin ve la lista mezclada y necesita distinguirlas.
+ *
+ * Se resuelve con una sola consulta para todos los ids presentes, no una por
+ * usuario.
+ */
+async function conNombreDeEmpresa(usuarios) {
+  const ids = [...new Set(usuarios.map((u) => u.tenantId).filter(Boolean))];
+  if (!ids.length) return usuarios.map((u) => ({ ...u, tenantName: null }));
+
+  const { data: empresas } = await supabase.from("tenants").select("id, name").in("id", ids);
+  const nombres = new Map((empresas || []).map((t) => [t.id, t.name]));
+
+  return usuarios.map((u) => ({ ...u, tenantName: u.tenantId ? nombres.get(u.tenantId) ?? null : null }));
+}
+
 class UserService {
   static async _getForAuth(email) {
     const { data } = await supabase.from("users").select("*").eq("email", email).maybeSingle();
@@ -124,7 +145,7 @@ class UserService {
     });
 
     return {
-      usuarios,
+      usuarios: await conNombreDeEmpresa(usuarios),
       total: count ?? usuarios.length,
       pagina,
       porPagina,
