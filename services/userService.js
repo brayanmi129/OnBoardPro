@@ -196,14 +196,25 @@ class UserService {
     return id;
   }
 
-  static async updateUser(id, updateData, tenantId = null) {
+  /**
+   * @param actor Quién hace el cambio: { id, email, role }. Hace falta para
+   *   decidir si puede tocar a este usuario y para firmar la auditoría.
+   */
+  static async updateUser(id, updateData, tenantId = null, actor = null) {
     // Sin este filtro un admin podía editar usuarios de otra empresa: lo
     // comprobamos y funcionaba. El tenant llega del JWT, nunca del cuerpo.
-    let consulta = supabase.from("users").select("id").eq("id", id);
+    let consulta = supabase.from("users").select("id, role, tenant_id").eq("id", id);
     if (tenantId) consulta = consulta.eq("tenant_id", tenantId);
     const { data: existing } = await consulta.maybeSingle();
     // Un usuario de otra empresa se responde igual que uno inexistente.
     if (!existing) return { error: "Usuario no encontrado", status: 404 };
+
+    // Un superadmin solo lo toca otro superadmin. Hoy quedan protegidos de
+    // rebote porque no tienen empresa y el filtro de arriba los descarta, pero
+    // eso se caería el día que alguno tenga tenant_id. Acá es explícito.
+    if (existing.role === "superadmin" && actor && actor.role !== "superadmin") {
+      return { error: "Solo un superadmin puede modificar a otro superadmin.", status: 403 };
+    }
 
     // La empresa no se cambia por esta vía: permitirlo dejaría mover a una
     // persona de un cliente a otro con solo mandar un campo más.
@@ -220,6 +231,25 @@ class UserService {
 
     const { error } = await supabase.from("users").update(fromUser(validation.data)).eq("id", id);
     if (error) return { error: error.message };
+
+    // Criterio 3 de HU-018: el cambio de rol queda auditado con autor y fecha.
+    // Se registra después de que la escritura tuvo éxito, para no dejar
+    // constancia de algo que no ocurrió.
+    const rolNuevo = validation.data.role;
+    if (rolNuevo && rolNuevo !== existing.role) {
+      const { error: errAudit } = await supabase.from("role_changes").insert({
+        id: crypto.randomBytes(8).toString("hex"),
+        user_id: id,
+        tenant_id: existing.tenant_id ?? null,
+        rol_anterior: existing.role,
+        rol_nuevo: rolNuevo,
+        autor_id: actor?.id ?? null,
+        autor_email: actor?.email ?? null,
+      });
+      // Un fallo al auditar no deshace el cambio, pero no puede pasar callado.
+      if (errAudit) console.error("[auditoria] no se registró el cambio de rol:", errAudit.message);
+      else console.log(`[auditoria] ${actor?.email ?? "?"} cambió el rol de ${id}: ${existing.role} → ${rolNuevo}`);
+    }
 
     return { message: `Usuario ${id} actualizado correctamente`, updatedData: validation.data };
   }

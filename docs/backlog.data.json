@@ -1820,7 +1820,7 @@
       "criterios": [
         "Puedo cambiar nombre, apellido y teléfono.",
         "No puedo cambiar mi rol, mi organización ni mi XP.",
-        "El correo solo se cambia con verificación del nuevo."
+        "El correo no se puede cambiar: identifica la cuenta y determina la organización al entrar con Google o Microsoft."
       ],
       "sp": 3,
       "valor": 3,
@@ -1828,8 +1828,8 @@
       "dependencias": [
         "HU-069"
       ],
-      "estado": "Parcial",
-      "endpoints": "PUT /api/users/update/{id} exige rol administrador, así que un aprendiz no puede editarse a sí mismo.",
+      "estado": "Implementado",
+      "endpoints": "PUT /api/auth/me (lista blanca: firstname, lastname, phonumber)",
       "sprint": null,
       "notas": "Hace falta un endpoint propio de autoservicio con una lista blanca de campos editables.",
       "mvp": false

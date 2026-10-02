@@ -1492,18 +1492,20 @@ async function renderPerfil() {
 
       <h3 class="sec-h">Editar mis datos</h3>
       <div class="card">
-        <div class="pendiente">${icon("warn")}<span>No disponible</span></div>
-        <fieldset disabled class="form-mock">
+        <form id="form-perfil">
           <div class="form-row">
-            <div class="field"><label>Nombre</label><div class="wrap">
-              <input value="${escHtml(u.firstname ?? "")}"></div></div>
-            <div class="field"><label>Apellido</label><div class="wrap">
-              <input value="${escHtml(u.lastname ?? "")}"></div></div>
+            <div class="field"><label for="pf-nombre">Nombre</label><div class="wrap">
+              <input id="pf-nombre" maxlength="50" value="${escHtml(u.firstname ?? "")}"></div></div>
+            <div class="field"><label for="pf-apellido">Apellido</label><div class="wrap">
+              <input id="pf-apellido" value="${escHtml(u.lastname ?? "")}"></div></div>
           </div>
-          <div class="field"><label>Teléfono</label><div class="wrap">
-            <input value="${escHtml(u.phonumber ?? "")}" placeholder="+57 300 0000000"></div></div>
-          <button class="btn btn-primary">Guardar cambios</button>
-        </fieldset>
+          <div class="field"><label for="pf-tel">Teléfono</label><div class="wrap">
+            <input id="pf-tel" value="${escHtml(u.phonumber ?? "")}" placeholder="+57 300 0000000"></div></div>
+          <button class="btn btn-primary" id="pf-btn">Guardar cambios</button>
+        </form>
+        <p class="small muted" style="margin-top:10px">
+          El correo, el rol y la empresa no se editan desde acá: los define tu organización.
+        </p>
       </div>
 
       <h3 class="sec-h">Seguridad</h3>
@@ -1525,6 +1527,7 @@ async function renderPerfil() {
       </div>
     `);
 
+    engancharPerfil();
     if (!sinClave) engancharCambioClave();
   } catch (err) { setContent(errorBox(err)); }
 }
@@ -1532,6 +1535,39 @@ async function renderPerfil() {
 // El formulario compara las dos nuevas acá para no gastar un viaje al servidor;
 // todo lo demás (longitud, contraseña actual) lo valida el backend, que es quien
 // manda.
+// Solo se mandan los campos que cambiaron: el backend rechaza el cuerpo vacío,
+// así que enviar todo igual provocaría una escritura inútil en cada guardado.
+function engancharPerfil() {
+  const form = $("form-perfil");
+  if (!form) return;
+  const u = state.user;
+
+  form.addEventListener("submit", async e => {
+    e.preventDefault();
+    const cambios = {};
+    const campos = [["firstname", "pf-nombre"], ["lastname", "pf-apellido"], ["phonumber", "pf-tel"]];
+    for (const [campo, id] of campos) {
+      const valor = $(id).value.trim();
+      if (valor !== (u[campo] ?? "")) cambios[campo] = valor;
+    }
+    if (!Object.keys(cambios).length) return avisar("No cambiaste nada.", "info");
+
+    const btn = $("pf-btn"), texto = btn.textContent;
+    btn.disabled = true; btn.textContent = "Guardando…";
+    try {
+      const r = await api("PUT", "/api/auth/me", cambios);
+      state.user = r.userData ?? state.user;
+      avisar(r.message || "Perfil actualizado.", "ok");
+      updateSidebar();
+      renderPerfil();
+    } catch (err) {
+      avisar(err?.message || "No se pudo guardar.");
+    } finally {
+      btn.disabled = false; btn.textContent = texto;
+    }
+  });
+}
+
 function engancharCambioClave() {
   const form = $("form-clave");
   if (!form) return;

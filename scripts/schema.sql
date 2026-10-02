@@ -162,3 +162,24 @@ CREATE TABLE IF NOT EXISTS xp_movimientos (
 );
 
 CREATE INDEX IF NOT EXISTS idx_xp_user ON xp_movimientos(user_id);
+
+
+-- ── Auditoría de cambios de rol (HU-018) ────────────────────────────────────
+-- Quién cambió el rol de quién, cuándo y desde qué valor. Un cambio de rol
+-- reparte permisos, así que tiene que quedar rastro.
+--
+-- autor_email se guarda copiado y no solo por referencia: si esa persona se
+-- elimina de la plataforma, el registro debe seguir diciendo quién lo hizo.
+-- Por eso autor_id es SET NULL y el correo queda escrito.
+CREATE TABLE IF NOT EXISTS role_changes (
+  id           VARCHAR(50) PRIMARY KEY,
+  user_id      VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tenant_id    VARCHAR(50) REFERENCES tenants(id) ON DELETE SET NULL,
+  rol_anterior VARCHAR(20),
+  rol_nuevo    VARCHAR(20) NOT NULL,
+  autor_id     VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+  autor_email  VARCHAR(255),
+  created_at   TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_role_changes_user ON role_changes(user_id, created_at DESC);

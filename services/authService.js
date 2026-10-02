@@ -165,6 +165,59 @@ class AuthService {
     return { estado: 200, message: "Contraseña actualizada correctamente." };
   }
 
+  // Lo único que una persona puede cambiarse a sí misma (HU-070).
+  //
+  // Es una lista blanca y no una negra a propósito: con una lista negra, cada
+  // campo nuevo del usuario queda editable por descuido hasta que alguien se
+  // acuerde de prohibirlo. Así, lo que no esté acá no entra.
+  static CAMPOS_PROPIOS = ["firstname", "lastname", "phonumber"];
+
+  /**
+   * Edición del perfil propio. El rol, la empresa, el XP y el nivel quedan
+   * fuera: son cosas que otorga la organización o gana el sistema, no algo que
+   * uno se asigne. El correo tampoco, porque identifica la cuenta y cambiarlo
+   * sin confirmar la dirección nueva dejaría a la persona sin poder entrar.
+   */
+  async editarPerfil(id, datos) {
+    const entrada = datos && typeof datos === "object" ? datos : {};
+
+    const prohibidos = Object.keys(entrada).filter(
+      (k) => !AuthService.CAMPOS_PROPIOS.includes(k)
+    );
+    // La cuenta queda anclada a su correo: es lo que la identifica y lo que
+    // determina a qué empresa pertenece cuando se entra con Google o Microsoft.
+    // Cambiarlo es dar de alta otra cuenta, no editar esta.
+    if ("email" in entrada) {
+      return {
+        estado: 403,
+        message: "El correo no se puede cambiar: identifica tu cuenta.",
+      };
+    }
+
+    if (prohibidos.length) {
+      return {
+        estado: 403,
+        message: `Estos campos no se editan desde el perfil: ${prohibidos.join(", ")}`,
+      };
+    }
+
+    const cambios = {};
+    for (const campo of AuthService.CAMPOS_PROPIOS) {
+      if (entrada[campo] !== undefined) cambios[campo] = String(entrada[campo]).trim();
+    }
+    if (!Object.keys(cambios).length) {
+      return { estado: 400, message: "No enviaste ningún dato para cambiar." };
+    }
+    if (cambios.firstname === "") {
+      return { estado: 400, message: "El nombre no puede quedar vacío." };
+    }
+
+    const resultado = await UserService.updateUser(id, cambios);
+    if (resultado?.error) return { estado: resultado.status || 400, message: resultado.error };
+
+    return { estado: 200, message: "Perfil actualizado.", userData: await this.me(id) };
+  }
+
   async me(id) {
     try {
       // Se lee con el hash para poder informar oauthOnly, y se descarta enseguida.

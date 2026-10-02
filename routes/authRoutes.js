@@ -327,4 +327,38 @@ router.post("/forgot-password", (req, res) => AuthController.olvidePassword(req,
  */
 router.post("/reset-password", (req, res) => AuthController.restablecerPassword(req, res));
 
+/**
+ * @swagger
+ * /api/auth/me:
+ *   put:
+ *     summary: Edita el perfil propio
+ *     tags: [Autenticación]
+ *     description: >
+ *       Solo acepta `firstname`, `lastname` y `phonumber`. Es una lista blanca:
+ *       cualquier otro campo se rechaza con 403, para que el rol, la empresa,
+ *       el XP y el nivel no se puedan asignar uno mismo. El correo tampoco: la
+ *       cuenta queda anclada a su dirección, que es lo que la identifica y lo
+ *       que determina su organización al entrar con Google o Microsoft.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               firstname: { type: string, maxLength: 50 }
+ *               lastname:  { type: string }
+ *               phonumber: { type: string, example: "+57 300 0000000" }
+ *     responses:
+ *       200:
+ *         description: Perfil actualizado, devuelve el usuario completo
+ *       400:
+ *         description: No se envió ningún dato, o el nombre quedó vacío
+ *       403:
+ *         description: Se intentó editar un campo que no es del perfil
+ */
+router.put("/me", verifyJWT, (req, res) => AuthController.editarPerfil(req, res));
+
 module.exports = router;

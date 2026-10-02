@@ -100,7 +100,9 @@ class UserController {
       }
 
       const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
-      const response = await UserService.updateUser(id, updateData, tenantId);
+      // El actor firma la auditoría y decide si puede tocar a este usuario.
+      const actor = { id: req.user.id, email: req.user.email, role: req.user.role };
+      const response = await UserService.updateUser(id, updateData, tenantId, actor);
       if (response.error) return res.status(response.status || 400).json(response);
       return res.status(200).json(response);
     } catch (error) {

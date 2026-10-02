@@ -102,6 +102,23 @@ class AuthController {
     }
   }
 
+  /** Edición del perfil propio (HU-070). El id sale del token, nunca del body. */
+  async editarPerfil(req, res) {
+    try {
+      const r = await AuthService.editarPerfil(req.user.id, req.body);
+      return res.status(r.estado).json(
+        r.userData ? { message: r.message, userData: r.userData } : { message: r.message }
+      );
+    } catch (error) {
+      // El flujo de cambio de correo lanza errores con su propio status; sin
+      // esto todos salían como 500 y parecían fallos del servidor.
+      console.error("Error en AuthController.editarPerfil:", error.message);
+      return res
+        .status(error.status || 500)
+        .json({ message: error.status ? error.message : "Error interno del servidor." });
+    }
+  }
+
   async me(req, res) {
     // Verificar si el token fue decodificado correctamente
     if (!req.user) {
