@@ -187,6 +187,85 @@ class GroupService {
     return { message: "Usuarios eliminados del grupo correctamente" };
   }
 
+  /**
+   * Asigna cursos a un equipo (HU-024).
+   *
+   * No hace falta tocar nada más para que los integrantes lo vean: el curso
+   * les llega siguiendo la cadena usuario → equipo → curso, así que la fila
+   * nueva ya alcanza.
+   */
+  static async addCoursesToGroup(groupId, courseIds, tenantId = null) {
+    if (!Array.isArray(courseIds) || courseIds.length === 0) {
+      const err = new Error("Debe enviar al menos un curso.");
+      err.status = 400;
+      throw err;
+    }
+
+    const { data: grupo } = await delTenant(
+      supabase.from("groups").select("id, tenant_id").eq("id", groupId),
+      tenantId
+    ).maybeSingle();
+    if (!grupo) {
+      const err = new Error("Grupo no encontrado");
+      err.status = 404;
+      throw err;
+    }
+
+    // La empresa sale del GRUPO, no de quien llama, para que la regla valga
+    // también cuando opera un superadmin.
+    const { data: validos } = await supabase
+      .from("courses").select("id").in("id", courseIds).eq("tenant_id", grupo.tenant_id);
+
+    const permitidos = new Set((validos || []).map((c) => c.id));
+    const rechazados = [...new Set(courseIds)].filter((id) => !permitidos.has(id));
+    if (rechazados.length) {
+      const err = new Error(
+        `Estos cursos no pertenecen a la organización del equipo: ${rechazados.join(", ")}`
+      );
+      err.status = 400;
+      throw err;
+    }
+
+    // UNIQUE(id_group, id_course) en la base: asignar dos veces el mismo curso
+    // no duplica ni falla.
+    const filas = [...permitidos].map((id) => ({ id_group: groupId, id_course: id }));
+    const { error } = await supabase
+      .from("groups_courses")
+      .upsert(filas, { onConflict: "id_group,id_course" });
+    if (error) throw new Error(error.message);
+
+    return { message: "Cursos asignados al equipo correctamente" };
+  }
+
+  /**
+   * Quita cursos del equipo. Solo desaparece el acceso: el progreso de cada
+   * persona vive en xp_movimientos y no se toca, así que volver a asignarlo
+   * devuelve el curso con lo ya avanzado.
+   */
+  static async removeCoursesFromGroup(groupId, courseIds, tenantId = null) {
+    if (!Array.isArray(courseIds) || courseIds.length === 0) {
+      const err = new Error("Debe enviar al menos un curso.");
+      err.status = 400;
+      throw err;
+    }
+
+    const { data: existe } = await delTenant(
+      supabase.from("groups").select("id").eq("id", groupId),
+      tenantId
+    ).maybeSingle();
+    if (!existe) {
+      const err = new Error("Grupo no encontrado");
+      err.status = 404;
+      throw err;
+    }
+
+    const { error } = await supabase
+      .from("groups_courses").delete().eq("id_group", groupId).in("id_course", courseIds);
+    if (error) throw new Error(error.message);
+
+    return { message: "Cursos retirados del equipo correctamente" };
+  }
+
   static async updateGroup(id, updateData, tenantId = null) {
     const { data: existing } = await delTenant(
       supabase.from("groups").select("id").eq("id", id),

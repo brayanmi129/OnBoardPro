@@ -79,6 +79,31 @@ class GroupController {
     }
   }
 
+  // Cursos del equipo (HU-024)
+  static async addCourses(req, res) {
+    try {
+      const r = await GroupService.addCoursesToGroup(
+        req.params.id, req.body?.courseIds, tenantDe(req)
+      );
+      res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al asignar cursos al equipo:", error.message);
+      res.status(error.status || 400).json({ error: error.message });
+    }
+  }
+
+  static async removeCourses(req, res) {
+    try {
+      const r = await GroupService.removeCoursesFromGroup(
+        req.params.id, req.body?.courseIds, tenantDe(req)
+      );
+      res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al retirar cursos del equipo:", error.message);
+      res.status(error.status || 400).json({ error: error.message });
+    }
+  }
+
   // 🟠 Actualizar grupo
   static async update(req, res) {
     try {

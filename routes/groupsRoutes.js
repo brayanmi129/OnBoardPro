@@ -233,4 +233,79 @@ router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), Grou
  */
 router.get("/me", verifyJWT, GroupController.getMyGroups);
 
+/**
+ * @swagger
+ * /api/groups/{id}/add-courses:
+ *   post:
+ *     summary: Asigna cursos a un equipo
+ *     tags: [Grupos]
+ *     description: >
+ *       Los integrantes del equipo ven los cursos de inmediato: el acceso se
+ *       resuelve siguiendo la cadena usuario → equipo → curso. Solo se aceptan
+ *       cursos de la misma organización que el equipo; si alguno no lo es, se
+ *       rechaza el lote entero. Asignar dos veces el mismo curso no duplica.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [courseIds]
+ *             properties:
+ *               courseIds:
+ *                 type: array
+ *                 items: { type: string }
+ *     responses:
+ *       200:
+ *         description: Cursos asignados
+ *       400:
+ *         description: Lista vacía, o algún curso es de otra organización
+ *       404:
+ *         description: El equipo no existe o es de otra organización
+ */
+router.post("/:id/add-courses", verifyJWT, requireRole("admin", "superadmin"), GroupController.addCourses);
+
+/**
+ * @swagger
+ * /api/groups/{id}/remove-courses:
+ *   delete:
+ *     summary: Retira cursos de un equipo
+ *     tags: [Grupos]
+ *     description: >
+ *       Quita el acceso, no el progreso: lo que cada persona haya avanzado vive
+ *       en el historial de XP y no se toca. Volver a asignar el curso lo
+ *       devuelve con lo ya hecho.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [courseIds]
+ *             properties:
+ *               courseIds:
+ *                 type: array
+ *                 items: { type: string }
+ *     responses:
+ *       200:
+ *         description: Cursos retirados
+ *       404:
+ *         description: El equipo no existe o es de otra organización
+ */
+router.delete("/:id/remove-courses", verifyJWT, requireRole("admin", "superadmin"), GroupController.removeCourses);
+
 module.exports = router;

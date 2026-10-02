@@ -2377,12 +2377,30 @@ async function verGrupo(id) {
         : vacio("Este equipo no tiene integrantes",
                 puedeEditar ? "Añadí personas con el botón de arriba." : "")}
 
-      <h3 class="sec-h">Cursos asignados</h3>
+      <div class="sec-head">
+        <h3 class="sec-h" style="margin:0">Cursos asignados</h3>
+        ${puedeEditar
+          ? `<button class="btn btn-primary btn-sm" onclick="asignarCursos()">＋ Asignar cursos</button>`
+          : ""}
+      </div>
+
       ${g.courses?.length
-        ? `<div class="card-grid">${g.courses.map(c =>
-            fichaCurso(c.name, c.instructor ?? "Sin instructor", c.status)).join("")}</div>`
+        ? `<div class="lista-act">${g.courses.map(c => `
+            <article class="act">
+              <span class="act-ico">${icon("courses")}</span>
+              <div class="act-txt">
+                <h4>${escHtml(c.name)}</h4>
+                <p class="muted small">${escHtml(c.instructor || "Sin instructor")} · ${escHtml(c.status || "—")}</p>
+              </div>
+              ${puedeEditar
+                ? `<button class="btn btn-danger btn-sm" title="Retirar del equipo"
+                           onclick="quitarCurso('${c.id}','${escHtml(c.name)}')">${icon("cross")}</button>`
+                : ""}
+            </article>`).join("")}</div>`
         : vacio("Sin cursos asignados",
-                "Asignar cursos a un equipo todavía no está disponible en el backend (HU-024).")}
+                puedeEditar
+                  ? "Asigná cursos con el botón de arriba: los integrantes los ven de inmediato."
+                  : "Cuando tu organización asigne cursos a este equipo, aparecerán acá.")}
     `);
   } catch (err) {
     setContent(errorBox(err) +
@@ -2444,6 +2462,63 @@ async function quitarIntegrante(userId, email) {
     verGrupo(grupoActual);
   } catch (err) {
     avisar(err?.error || err?.message || "No se pudo quitar.");
+  }
+}
+
+// Igual que con las personas: solo se ofrecen los cursos que el equipo aún no
+// tiene. El backend rechaza los de otra empresa, así que la lista ya viene
+// filtrada por su propio alcance.
+async function asignarCursos() {
+  try {
+    const [g, cursos] = await Promise.all([
+      api("GET", `/api/groups/get/id/${grupoActual}`),
+      api("GET", "/api/courses/get/all?porPagina=200"),
+    ]);
+    const dentro = new Set((g.courses || []).map(c => c.id));
+    const fuera = cursos.filter(c => !dentro.has(c.id));
+
+    if (!fuera.length) {
+      return avisar("Este equipo ya tiene todos los cursos de la organización.", "info");
+    }
+
+    openModal(`Asignar cursos a "${g.name}"`, `
+      <p class="small muted" style="margin-bottom:10px">
+        Los integrantes del equipo los ven apenas se asignan.
+      </p>
+      <div class="lista-check">
+        ${fuera.map(c => `
+          <label class="check-fila">
+            <input type="checkbox" value="${c.id}" class="chk-curso">
+            <span>
+              <strong>${escHtml(c.name)}</strong>
+              <span class="small muted"> · ${escHtml(c.instructor || "sin instructor")} · ${escHtml(c.status || "—")}</span>
+            </span>
+          </label>`).join("")}
+      </div>
+    `, async () => {
+      const courseIds = [...document.querySelectorAll(".chk-curso:checked")].map(c => c.value);
+      if (!courseIds.length) throw { message: "No marcaste ningún curso." };
+      await api("POST", `/api/groups/${grupoActual}/add-courses`, { courseIds });
+      closeModal(); verGrupo(grupoActual);
+    });
+  } catch (err) {
+    avisar(err?.message || "No se pudo cargar la lista de cursos.");
+  }
+}
+
+async function quitarCurso(courseId, nombre) {
+  const ok = await confirmar({
+    titulo: `¿Retirar "${nombre}" del equipo?`,
+    detalle: "Se quita el acceso, no el progreso: lo que ya avanzaron se conserva y vuelve si lo reasignás.",
+    accion: "Retirar",
+  });
+  if (!ok) return;
+  try {
+    await api("DELETE", `/api/groups/${grupoActual}/remove-courses`, { courseIds: [courseId] });
+    avisar("Curso retirado del equipo.", "ok");
+    verGrupo(grupoActual);
+  } catch (err) {
+    avisar(err?.error || err?.message || "No se pudo retirar.");
   }
 }
 
