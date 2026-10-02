@@ -24,9 +24,35 @@ class ActivitiesService {
   static async getAll(tenantId = null) {
     const { data, error } = await delTenant(supabase.from("activities").select("*"), tenantId);
     if (error) throw new Error(error.message);
+
     // No se devuelve el adjunto firmado en el listado: firmar N archivos en
     // cada consulta es caro y casi nunca se abren todos. Se pide por actividad.
-    return (data || []).map(aObjeto);
+    const actividades = (data || []).map(aObjeto);
+
+    // Sin esto el cliente recibe un sectionId suelto y no puede decir a qué
+    // sección ni a qué curso pertenece la actividad sin pedir el árbol entero.
+    const seccionIds = [...new Set(actividades.map((a) => a.sectionId).filter(Boolean))];
+    if (!seccionIds.length) return actividades;
+
+    const { data: secciones } = await supabase
+      .from("sections").select("id, name, course_id").in("id", seccionIds);
+    const cursoIds = [...new Set((secciones || []).map((x) => x.course_id))];
+    const { data: cursos } = cursoIds.length
+      ? await supabase.from("courses").select("id, name").in("id", cursoIds)
+      : { data: [] };
+
+    const porSeccion = new Map((secciones || []).map((x) => [x.id, x]));
+    const porCurso = new Map((cursos || []).map((c) => [c.id, c.name]));
+
+    return actividades.map((a) => {
+      const sec = a.sectionId ? porSeccion.get(a.sectionId) : null;
+      return {
+        ...a,
+        sectionName: sec?.name ?? null,
+        courseId: sec?.course_id ?? null,
+        courseName: sec ? porCurso.get(sec.course_id) ?? null : null,
+      };
+    });
   }
 
   static async create(data, file) {

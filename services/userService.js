@@ -184,15 +184,30 @@ class UserService {
     });
   }
 
-  static async deleteUser(id) {
-    const { data } = await supabase.from("users").delete().eq("id", id).select("id").maybeSingle();
-    if (!data) throw new Error("Usuario no encontrado");
+  static async deleteUser(id, tenantId = null) {
+    let consulta = supabase.from("users").delete().eq("id", id);
+    if (tenantId) consulta = consulta.eq("tenant_id", tenantId);
+    const { data } = await consulta.select("id").maybeSingle();
+    if (!data) {
+      const err = new Error("Usuario no encontrado");
+      err.status = 404; // antes salía como 500, que sugería un fallo del servidor
+      throw err;
+    }
     return id;
   }
 
-  static async updateUser(id, updateData) {
-    const { data: existing } = await supabase.from("users").select("id").eq("id", id).maybeSingle();
-    if (!existing) return { error: "Usuario no encontrado" };
+  static async updateUser(id, updateData, tenantId = null) {
+    // Sin este filtro un admin podía editar usuarios de otra empresa: lo
+    // comprobamos y funcionaba. El tenant llega del JWT, nunca del cuerpo.
+    let consulta = supabase.from("users").select("id").eq("id", id);
+    if (tenantId) consulta = consulta.eq("tenant_id", tenantId);
+    const { data: existing } = await consulta.maybeSingle();
+    // Un usuario de otra empresa se responde igual que uno inexistente.
+    if (!existing) return { error: "Usuario no encontrado", status: 404 };
+
+    // La empresa no se cambia por esta vía: permitirlo dejaría mover a una
+    // persona de un cliente a otro con solo mandar un campo más.
+    if (tenantId) delete updateData.tenantId;
 
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, SALT_ROUNDS);

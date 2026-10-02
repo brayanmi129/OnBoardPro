@@ -351,6 +351,23 @@
     }
     .paginador span { margin-left: 8px; }
 
+    .grupo-seccion { border-bottom: 1px solid var(--border); }
+    .grupo-seccion:last-child { border-bottom: none; }
+    .grupo-seccion-tit {
+      padding: 9px 16px 0;
+      font-size: 12px; font-weight: 600; letter-spacing: .04em;
+      text-transform: uppercase; color: var(--muted);
+    }
+
+    .lista-check { display: flex; flex-direction: column; max-height: 46vh; overflow-y: auto; }
+    .check-fila {
+      display: flex; align-items: center; gap: 10px;
+      padding: 9px 4px; border-bottom: 1px solid var(--border); cursor: pointer;
+    }
+    .check-fila:last-child { border-bottom: none; }
+    .check-fila:hover { background: var(--primary-soft); }
+    .check-fila input { width: 16px; height: 16px; flex: none; accent-color: var(--primary); }
+
     /* ── MI PERFIL ─────────────────────────────────────── */
     .perfil-hero {
       display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
@@ -2266,7 +2283,10 @@ async function borrarActividad(id, titulo) {
   try {
     await api("DELETE", `/api/activities/${id}`);
     avisar("Actividad eliminada.", "ok");
-    verCurso(cursoActual);
+    // La misma ficha se usa en el detalle del curso y en la lista general:
+    // hay que redibujar la pantalla en la que está parado el usuario.
+    if (state.section === "activities") renderActivities();
+    else verCurso(cursoActual);
   } catch (err) { avisar(err?.message || "No se pudo eliminar."); }
 }
 
@@ -2278,14 +2298,17 @@ async function renderGroups() {
     const groups = await api("GET", "/api/groups/get/all");
     const rows = groups.map(g => tr(
       `<code class="small">${g.id}</code>`,
-      `<strong>${g.name || "—"}</strong>`,
-      g.tenantId ? `<code class="small">${g.tenantId}</code>` : "—",
-      `<button class="btn btn-danger btn-sm" onclick="deleteGroup('${g.id}','${escHtml(g.name)}')">Eliminar</button>`,
+      `<strong>${escHtml(g.name || "—")}</strong>` +
+        (g.description ? `<br><span class="small muted">${escHtml(g.description)}</span>` : ""),
+      `${icon("users")} ${g.users?.length ?? 0}`,
+      `${icon("courses")} ${g.courses?.length ?? 0}`,
+      `<button class="btn btn-ghost btn-sm" onclick="verGrupo('${g.id}')">Ver</button>
+       <button class="btn btn-danger btn-sm" onclick="deleteGroup('${g.id}','${escHtml(g.name)}')">Eliminar</button>`,
     )).join("");
 
     setContent(
-      sectionHeader(`${groups.length} grupo(s)`, "Nuevo grupo", "openCreateGroup") +
-      tableWrap(["ID","Nombre","Tenant",""], rows)
+      sectionHeader(`${groups.length} equipo(s)`, "Nuevo equipo", "openCreateGroup") +
+      tableWrap(["ID", "Nombre", "Integrantes", "Cursos", ""], rows)
     );
   } catch (err) {
     setContent(`<div class="alert alert-error">${err.message}</div>`);
@@ -2301,6 +2324,129 @@ function openCreateGroup() {
   });
 }
 
+// ── Detalle de un grupo ─────────────────────────────────────────────────────
+// Igual que el curso: no es una sección del menú, se entra desde la tabla.
+let grupoActual = null;
+
+async function verGrupo(id) {
+  grupoActual = id;
+  $("page-title").textContent = "Equipo";
+  setContent(`<div class="sk-cards"><div class="sk"></div><div class="sk"></div></div>`);
+  try {
+    const g = await api("GET", `/api/groups/get/id/${id}`);
+    const puedeEditar = ["admin", "superadmin"].includes(state.user?.role);
+
+    setContent(`
+      <button class="volver" onclick="navigate('groups')">
+        ${icon("atras")}<span>Volver a equipos</span>
+      </button>
+
+      <div class="curso-titulo">
+        <div>
+          <h2>${escHtml(g.name)}</h2>
+          <p class="muted">${escHtml(g.description || "Sin descripción")}</p>
+        </div>
+        <code class="small">${g.id}</code>
+      </div>
+
+      <div class="stats-grid" style="margin-top:16px">
+        ${tarjetaCifra(`${icon("users")} ${g.users?.length ?? 0}`, "Integrantes")}
+        ${tarjetaCifra(`${icon("courses")} ${g.courses?.length ?? 0}`, "Cursos asignados")}
+      </div>
+
+      <div class="sec-head">
+        <h3 class="sec-h" style="margin:0">Integrantes</h3>
+        ${puedeEditar
+          ? `<button class="btn btn-primary btn-sm" onclick="agregarIntegrantes()">＋ Añadir personas</button>`
+          : ""}
+      </div>
+
+      ${g.users?.length
+        ? `<div class="lista-act">${g.users.map(u => `
+            <article class="act">
+              <span class="act-ico">${icon("users")}</span>
+              <div class="act-txt">
+                <h4>${escHtml([u.firstname, u.lastname].filter(Boolean).join(" ") || u.email)}</h4>
+                <p class="muted small">${escHtml(u.email)} · ${escHtml(ROL_ES[u.role] ?? u.role)}</p>
+              </div>
+              ${puedeEditar
+                ? `<button class="btn btn-danger btn-sm" title="Quitar del equipo"
+                           onclick="quitarIntegrante('${u.id}','${escHtml(u.email)}')">${icon("cross")}</button>`
+                : ""}
+            </article>`).join("")}</div>`
+        : vacio("Este equipo no tiene integrantes",
+                puedeEditar ? "Añadí personas con el botón de arriba." : "")}
+
+      <h3 class="sec-h">Cursos asignados</h3>
+      ${g.courses?.length
+        ? `<div class="card-grid">${g.courses.map(c =>
+            fichaCurso(c.name, c.instructor ?? "Sin instructor", c.status)).join("")}</div>`
+        : vacio("Sin cursos asignados",
+                "Asignar cursos a un equipo todavía no está disponible en el backend (HU-024).")}
+    `);
+  } catch (err) {
+    setContent(errorBox(err) +
+      `<button class="volver" style="margin-top:12px"
+               onclick="navigate('groups')">${icon("atras")}<span>Volver a equipos</span></button>`);
+  }
+}
+
+// Se listan solo las personas que todavía no están en el equipo: ofrecer a las
+// que ya están solo produce una petición que el backend ignora.
+async function agregarIntegrantes() {
+  try {
+    const [g, personas] = await Promise.all([
+      api("GET", `/api/groups/get/id/${grupoActual}`),
+      api("GET", "/api/users/get/all?porPagina=200"),
+    ]);
+    const dentro = new Set((g.users || []).map(u => u.id));
+    const fuera = personas.filter(u => !dentro.has(u.id) && u.role !== "superadmin");
+
+    if (!fuera.length) {
+      return avisar("Todas las personas de la organización ya están en este equipo.", "info");
+    }
+
+    openModal(`Añadir a "${g.name}"`, `
+      <p class="small muted" style="margin-bottom:10px">
+        Marcá a quién querés añadir. Se envían todas juntas en una sola operación.
+      </p>
+      <div class="lista-check">
+        ${fuera.map(u => `
+          <label class="check-fila">
+            <input type="checkbox" value="${u.id}" class="chk-persona">
+            <span>
+              <strong>${escHtml([u.firstname, u.lastname].filter(Boolean).join(" ") || u.email)}</strong>
+              <span class="small muted"> · ${escHtml(u.email)} · ${escHtml(ROL_ES[u.role] ?? u.role)}</span>
+            </span>
+          </label>`).join("")}
+      </div>
+    `, async () => {
+      const userIds = [...document.querySelectorAll(".chk-persona:checked")].map(c => c.value);
+      if (!userIds.length) throw { message: "No marcaste a nadie." };
+      await api("POST", `/api/groups/${grupoActual}/add-users`, { userIds });
+      closeModal(); verGrupo(grupoActual);
+    });
+  } catch (err) {
+    avisar(err?.message || "No se pudo cargar la lista de personas.");
+  }
+}
+
+async function quitarIntegrante(userId, email) {
+  const ok = await confirmar({
+    titulo: `¿Quitar a ${email} del equipo?`,
+    detalle: "La persona no se elimina: solo deja de pertenecer a este equipo.",
+    accion: "Quitar",
+  });
+  if (!ok) return;
+  try {
+    await api("DELETE", `/api/groups/${grupoActual}/remove-users`, { userIds: [userId] });
+    avisar("Persona quitada del equipo.", "ok");
+    verGrupo(grupoActual);
+  } catch (err) {
+    avisar(err?.error || err?.message || "No se pudo quitar.");
+  }
+}
+
 async function deleteGroup(id, name) {
   if (!await confirmar({ titulo: `Eliminar ${name}`, detalle: "Sus integrantes y cursos no se borran, solo dejan de estar asociados." })) return;
   try { await api("DELETE", `/api/groups/delete/${id}`); renderGroups(); }
@@ -2310,35 +2456,80 @@ async function deleteGroup(id, name) {
 // ═══════════════════════════════════════════════════════════════════════════
 // ACTIVITIES
 // ═══════════════════════════════════════════════════════════════════════════
+// La pantalla anterior leía campos que no existen (`course_id`, `attachment`)
+// y enlazaba el adjunto directo al bucket, que es privado y no abre. Ahora
+// agrupa por curso y sección, que es como está organizado el contenido.
 async function renderActivities() {
   try {
     const acts = await api("GET", "/api/activities/get/all");
-    const rows = acts.map(a => tr(
-      `<code class="small">${a.id}</code>`,
-      `<strong>${a.title || "—"}</strong>`,
-      a.course_id ? `<code class="small">${a.course_id}</code>` : "—",
-      a.type ? badge(a.type) : "—",
-      `${icon("xp")} ${a.xp ?? 0} xp`,
-      a.deliverable ? `${icon("check")} Sí` : `${icon("cross")} No`,
-      a.attachment ? `<a href="${a.attachment}" target="_blank" class="btn btn-ghost btn-sm">${icon("attach")} Ver</a>` : "—",
-    )).join("");
+    const puedeEditar = ["admin", "superadmin", "instructor"].includes(state.user?.role);
+
+    if (!acts.length) {
+      return setContent(
+        sectionHeader("0 actividades") +
+        vacio("Todavía no hay actividades",
+              "Se crean desde el detalle de un curso, dentro de una sección.")
+      );
+    }
+
+    // Agrupar por curso y, dentro, por sección. Las que no tienen sección van
+    // aparte: existen en la base pero no las ve ningún aprendiz.
+    const porCurso = new Map();
+    const sueltas = [];
+    for (const a of acts) {
+      if (!a.sectionId) { sueltas.push(a); continue; }
+      const curso = a.courseName || a.courseId || "(curso desconocido)";
+      if (!porCurso.has(curso)) porCurso.set(curso, new Map());
+      const secciones = porCurso.get(curso);
+      const sec = a.sectionName || a.sectionId;
+      if (!secciones.has(sec)) secciones.set(sec, []);
+      secciones.get(sec).push(a);
+    }
+
+    const bloques = [...porCurso.entries()].map(([curso, secciones]) => `
+      <section class="seccion">
+        <header class="seccion-head" style="cursor:default">
+          <span class="sec-chevron">${icon("courses")}</span>
+          <div class="sec-titulo">
+            <h4>${escHtml(curso)}</h4>
+            <span class="small muted">${[...secciones.values()].flat().length} actividad(es)</span>
+          </div>
+        </header>
+        <div>
+          ${[...secciones.entries()].map(([sec, items]) => `
+            <div class="grupo-seccion">
+              <div class="grupo-seccion-tit">${escHtml(sec)}</div>
+              <div class="lista-act">${items.map(a => fichaActividad(a, puedeEditar)).join("")}</div>
+            </div>`).join("")}
+        </div>
+      </section>`).join("");
 
     setContent(
       sectionHeader(`${acts.length} actividad(es)`) +
-      tableWrap(["ID","Título","Curso ID","Tipo","XP","Entregable","Archivo"], rows) +
-      `<div class="alert alert-warning" style="margin-top:16px">
-        ${icon("warn")} Crear actividades requiere subir un archivo (multipart/form-data).
-        Usa <a href="${API}/api-docs" target="_blank" style="color:inherit;font-weight:700">Swagger UI</a> para esa operación.
-      </div>`
+      bloques +
+      (sueltas.length
+        ? `<section class="seccion">
+             <header class="seccion-head" style="cursor:default;background:#fff7ed">
+               <span class="sec-chevron">${icon("warn")}</span>
+               <div class="sec-titulo">
+                 <h4>Sin sección asignada</h4>
+                 <span class="small muted">
+                   ${sueltas.length} actividad(es) que ningún aprendiz puede ver
+                 </span>
+               </div>
+             </header>
+             <div class="lista-act">${sueltas.map(a => fichaActividad(a, puedeEditar)).join("")}</div>
+           </section>`
+        : "") +
+      `<p class="small muted" style="margin-top:14px">
+         Las actividades se crean desde el detalle de un curso, dentro de la sección
+         que les corresponde.
+       </p>`
     );
   } catch (err) {
-    setContent(`<div class="alert alert-error">${err.message}</div>`);
+    setContent(errorBox(err));
   }
 }
-
-// ═══════════════════════════════════════════════════════════════════════════
-// RANKING
-// ═══════════════════════════════════════════════════════════════════════════
 async function renderRanking() {
   try {
     const ranking = await api("GET", "/api/gamification/ranking");

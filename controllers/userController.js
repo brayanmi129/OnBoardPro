@@ -81,10 +81,11 @@ class UserController {
   static async deleteUser(req, res) {
     try {
       const { id } = req.params;
-      await UserService.deleteUser(id);
+      const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
+      await UserService.deleteUser(id, tenantId);
       return res.status(200).json({ message: `Usuario ${id} eliminado correctamente` });
     } catch (error) {
-      return res.status(500).json({ message: error.message });
+      return res.status(error.status || 500).json({ message: error.message });
     }
   }
 
@@ -98,8 +99,9 @@ class UserController {
         return res.status(403).json({ message: "No puedes asignar el rol superadmin" });
       }
 
-      const response = await UserService.updateUser(id, updateData);
-      if (response.error) return res.status(400).json(response);
+      const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
+      const response = await UserService.updateUser(id, updateData, tenantId);
+      if (response.error) return res.status(response.status || 400).json(response);
       return res.status(200).json(response);
     } catch (error) {
       if (error instanceof zod.ZodError) {
