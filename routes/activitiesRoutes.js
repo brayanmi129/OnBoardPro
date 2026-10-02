@@ -135,6 +135,66 @@ router.get("/:id/adjunto", verifyJWT, ActivitiesController.adjunto);
 /**
  * @swagger
  * /api/activities/{id}:
+ *   put:
+ *     summary: Edita una actividad
+ *     tags: [Actividades]
+ *     description: >
+ *       Acepta JSON o multipart. Si se envía un `archivo`, reemplaza al
+ *       anterior y el viejo se borra del bucket. La empresa, la sección y el
+ *       orden no se editan por acá.
+ *       Un **instructor** solo puede modificar actividades de los cursos que
+ *       dicta; un admin o un superadmin, cualquiera dentro de su alcance.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:       { type: string, maxLength: 100 }
+ *               name:        { type: string, maxLength: 50 }
+ *               type:        { type: string, enum: [Tarea, Recurso, Examen] }
+ *               description: { type: string, maxLength: 400 }
+ *               deliverable: { type: boolean }
+ *               xp:
+ *                 type: integer
+ *                 minimum: 0
+ *                 maximum: 1000
+ *                 description: Puntos que otorga al completarla.
+ *         multipart/form-data:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               title:   { type: string }
+ *               archivo: { type: string, format: binary }
+ *     responses:
+ *       200:
+ *         description: Actividad actualizada
+ *       400:
+ *         description: No se envió nada que cambiar, o los datos no son válidos
+ *       403:
+ *         description: La actividad no pertenece a un curso que dicte el instructor
+ *       404:
+ *         description: No existe o es de otra organización
+ */
+router.put(
+  "/:id",
+  verifyJWT,
+  requireRole("admin", "superadmin", "instructor"),
+  subida.material,
+  ActivitiesController.actualizar
+);
+
+/**
+ * @swagger
+ * /api/activities/{id}:
  *   delete:
  *     summary: Elimina una actividad y su archivo
  *     tags: [Actividades]

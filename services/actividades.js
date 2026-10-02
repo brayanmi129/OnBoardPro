@@ -111,20 +111,118 @@ class ActivitiesService {
   }
 
   /**
-   * Elimina la actividad y su archivo. Se borra primero la fila: si fallara el
-   * archivo quedaría un huérfano en Storage, molesto pero inofensivo; al revés
-   * quedaría una actividad apuntando a un adjunto que ya no existe.
+   * Busca una actividad comprobando que quien pregunta pueda tocarla.
+   *
+   * Criterio 1 de HU-036: un instructor solo alcanza las actividades de los
+   * cursos que dicta. El vínculo no es directo —la actividad cuelga de una
+   * sección y la sección de un curso— así que hay que recorrerlo.
+   * Un admin o un superadmin no tienen esa restricción dentro de su alcance.
    */
-  static async eliminar(id, tenantId = null) {
-    const { data } = await delTenant(
-      supabase.from("activities").select("id, adjunto").eq("id", id),
+  static async _alAlcanceDe(id, actor) {
+    const tenantId = actor?.role === "superadmin" ? null : actor?.tenantId;
+    const { data: actividad } = await delTenant(
+      supabase.from("activities").select("*").eq("id", id),
       tenantId
     ).maybeSingle();
-    if (!data) {
+    if (!actividad) {
       const err = new Error("Actividad no encontrada");
       err.status = 404;
       throw err;
     }
+
+    if (actor?.role !== "instructor") return actividad;
+
+    // Sin sección no pertenece a ningún curso, así que ningún instructor la
+    // tiene asignada.
+    if (!actividad.section_id) {
+      const err = new Error("Esta actividad no pertenece a un curso que dictes.");
+      err.status = 403;
+      throw err;
+    }
+
+    const { data: seccion } = await supabase
+      .from("sections").select("course_id").eq("id", actividad.section_id).maybeSingle();
+    const { data: curso } = seccion
+      ? await supabase.from("courses").select("instructor").eq("id", seccion.course_id).maybeSingle()
+      : { data: null };
+
+    if (!curso || curso.instructor !== actor.email) {
+      const err = new Error("Esta actividad no pertenece a un curso que dictes.");
+      err.status = 403;
+      throw err;
+    }
+    return actividad;
+  }
+
+  /**
+   * Edita una actividad. El archivo es opcional: si viene uno nuevo reemplaza
+   * al anterior y el viejo se borra del bucket, porque nadie más lo referencia.
+   */
+  static async actualizar(id, datos, file, actor) {
+    const actual = await ActivitiesService._alAlcanceDe(id, actor);
+
+    // Lista blanca: la empresa, la sección y el orden no se cambian por acá.
+    // Mover una actividad de sección es otra operación, y la empresa no se
+    // toca nunca desde el cliente.
+    const EDITABLES = ["name", "title", "type", "description", "deliverable", "xp"];
+    const cambios = {};
+    for (const campo of EDITABLES) {
+      if (datos?.[campo] !== undefined) cambios[campo] = datos[campo];
+    }
+    if (cambios.deliverable !== undefined) {
+      cambios.deliverable = cambios.deliverable === true || cambios.deliverable === "true";
+    }
+    if (cambios.xp !== undefined) cambios.xp = Number(cambios.xp);
+
+    let rutaNueva = null;
+    if (file) {
+      const { ruta } = await subirMaterial({
+        tenantId: actual.tenant_id,
+        buffer: file.buffer,
+        nombreOriginal: file.originalname,
+        mime: file.mimetype,
+      });
+      rutaNueva = ruta;
+      cambios.adjunto = ruta;
+      cambios.mime = file.mimetype;
+    }
+
+    if (!Object.keys(cambios).length) {
+      const err = new Error("No enviaste ningún dato para cambiar.");
+      err.status = 400;
+      throw err;
+    }
+
+    const validation = activitieSchema.schema.partial().safeParse(cambios);
+    if (!validation.success) {
+      if (rutaNueva) await borrar(MATERIALES, rutaNueva);
+      throw errorDeValidacion(validation.error);
+    }
+
+    const { error } = await supabase
+      .from("activities").update(aFila(validation.data)).eq("id", id);
+    if (error) {
+      if (rutaNueva) await borrar(MATERIALES, rutaNueva);
+      throw new Error(error.message);
+    }
+
+    // Recién ahora: si la escritura hubiera fallado, el archivo viejo sigue
+    // siendo el bueno.
+    if (rutaNueva && actual.adjunto && actual.adjunto !== rutaNueva) {
+      await borrar(MATERIALES, actual.adjunto);
+    }
+
+    return { message: "Actividad actualizada", cambios: validation.data };
+  }
+
+  /**
+   * Elimina la actividad y su archivo. Se borra primero la fila: si fallara el
+   * archivo quedaría un huérfano en Storage, molesto pero inofensivo; al revés
+   * quedaría una actividad apuntando a un adjunto que ya no existe.
+   */
+  static async eliminar(id, actor) {
+    // Mismo alcance que editar: un instructor no borra lo de otro curso.
+    const data = await ActivitiesService._alAlcanceDe(id, actor);
 
     const { error } = await supabase.from("activities").delete().eq("id", id);
     if (error) throw new Error(error.message);

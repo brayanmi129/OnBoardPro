@@ -9,6 +9,18 @@ function tenantDe(req) {
   return req.user.role === "superadmin" ? null : req.user.tenantId;
 }
 
+// Para editar y borrar no alcanza con la empresa: un instructor solo puede
+// tocar las actividades de los cursos que dicta, y eso se resuelve con su
+// correo y su rol.
+function actorDe(req) {
+  return {
+    id: req.user.id,
+    email: req.user.email,
+    role: req.user.role,
+    tenantId: req.user.tenantId,
+  };
+}
+
 class ActivitiesController {
   static async getAll(req, res) {
     try {
@@ -35,9 +47,21 @@ class ActivitiesController {
     }
   }
 
+  static async actualizar(req, res) {
+    try {
+      const r = await ActivitiesService.actualizar(
+        req.params.id, req.body, req.file || null, actorDe(req)
+      );
+      return res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al actualizar la actividad:", error.message);
+      return res.status(error.status || 500).json({ message: error.message });
+    }
+  }
+
   static async eliminar(req, res) {
     try {
-      const r = await ActivitiesService.eliminar(req.params.id, tenantDe(req));
+      const r = await ActivitiesService.eliminar(req.params.id, actorDe(req));
       return res.status(200).json(r);
     } catch (error) {
       console.error("Error al eliminar la actividad:", error.message);

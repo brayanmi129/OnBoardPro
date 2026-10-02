@@ -2204,7 +2204,9 @@ function fichaActividad(a, puedeEditar) {
       ? `<button class="btn btn-ghost btn-sm" onclick="abrirAdjunto('${a.id}', this)">Abrir</button>`
       : `<span class="small muted">Sin adjunto</span>`}
     ${puedeEditar
-      ? `<button class="btn btn-danger btn-sm" title="Eliminar"
+      ? `<button class="btn btn-ghost btn-sm" title="Editar"
+                 onclick='editarActividad(${JSON.stringify(a).replace(/'/g, "&apos;")})'>${icon("editar")}</button>
+         <button class="btn btn-danger btn-sm" title="Eliminar"
                  onclick="borrarActividad('${a.id}','${escHtml(a.title || a.name)}')">${icon("cross")}</button>`
       : ""}
   </article>`;
@@ -2307,6 +2309,64 @@ function agregarActividad(sectionId, nombreSeccion) {
     if (!res.ok) throw data;
 
     closeModal(); verCurso(cursoActual);
+  });
+}
+
+// El XP se edita acá: es el valor que la actividad otorga al completarse.
+// Cambiarlo no toca los puntos ya acreditados, que viven en su propio historial.
+function editarActividad(a) {
+  openModal(`Editar "${a.title || a.name}"`, `
+    <div class="form-group"><label>Título</label>
+      <input id="f-e-title" maxlength="100" value="${escHtml(a.title ?? "")}"></div>
+    <div class="form-group"><label>Nombre interno</label>
+      <input id="f-e-name" maxlength="50" value="${escHtml(a.name ?? "")}"></div>
+    <div class="form-group"><label>Tipo</label>
+      <select id="f-e-type">
+        ${["Recurso", "Tarea", "Examen"].map(t =>
+          `<option value="${t}" ${a.type === t ? "selected" : ""}>${t}</option>`).join("")}
+      </select></div>
+    <div class="form-group"><label>Descripción</label>
+      <input id="f-e-desc" maxlength="400" value="${escHtml(a.description ?? "")}"></div>
+    <div class="form-group"><label>XP que otorga</label>
+      <input id="f-e-xp" type="number" min="0" max="1000" value="${a.xp ?? 0}">
+      <span class="hint">Puntos al completarla. No afecta al XP ya ganado.</span></div>
+    <div class="form-group">
+      <label><input type="checkbox" id="f-e-deliv" ${a.deliverable ? "checked" : ""}>
+        Espera una entrega del aprendiz</label></div>
+    <div class="form-group"><label>Reemplazar archivo <span class="hint">(opcional)</span></label>
+      <input id="f-e-file" type="file"
+             accept="image/*,application/pdf,video/mp4,video/webm,video/quicktime">
+      <span class="hint">Si elegís uno, el anterior se borra.</span></div>
+  `, async () => {
+    const archivo = $("f-e-file").files?.[0];
+    const campos = {
+      title: $("f-e-title").value,
+      name: $("f-e-name").value,
+      type: $("f-e-type").value,
+      description: $("f-e-desc").value,
+      xp: Number($("f-e-xp").value),
+      deliverable: $("f-e-deliv").checked,
+    };
+
+    if (archivo) {
+      // Con archivo hay que ir por multipart, así que api() no sirve.
+      const fd = new FormData();
+      Object.entries(campos).forEach(([k, v]) => fd.append(k, v));
+      fd.append("archivo", archivo);
+      const res = await fetch(`${API}/api/activities/${a.id}`, {
+        method: "PUT",
+        headers: state.token ? { Authorization: `Bearer ${state.token}` } : {},
+        body: fd,
+      });
+      const data = await res.json().catch(() => ({ message: res.statusText }));
+      if (!res.ok) throw data;
+    } else {
+      await api("PUT", `/api/activities/${a.id}`, campos);
+    }
+
+    closeModal();
+    if (state.section === "activities") renderActivities();
+    else verCurso(cursoActual);
   });
 }
 
