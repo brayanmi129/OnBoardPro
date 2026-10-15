@@ -74,7 +74,16 @@ const opcionesCors = {
 app.use(cors(opcionesCors));
 app.options("*", cors(opcionesCors));
 
-app.use(express.json());
+// 100 KB (el valor por defecto) se queda corto para cuerpos legítimos como una
+// lista larga de ids o una descripción extensa. 1 MB alcanza de sobra para
+// cualquier JSON de esta API.
+//
+// No se sube más: los archivos NO viajan por acá. Van por multipart a los
+// endpoints que usan multer, que aceptan hasta 50 MB y los mandan derecho a
+// Storage sin cargarlos enteros en memoria como JSON. Permitir un JSON de 50 MB
+// abriría esa puerta en todos los endpoints, incluso los que solo esperan dos
+// campos.
+app.use(express.json({ limit: "1mb" }));
 app.use(express.static("public"));
 
 // Routes
@@ -119,6 +128,23 @@ app.use((err, req, res, next) => {
     console.warn(err.message);
     return res.status(403).json({ message: err.message });
   }
+
+  // Cuerpo demasiado grande. Es culpa de lo que mandó el cliente, no un fallo
+  // del servidor: salía como 500 y el mensaje no decía nada, así que depurarlo
+  // obligaba a leer los logs de Render.
+  if (err?.type === "entity.too.large" || err?.status === 413) {
+    const mb = (err.limit / 1024 / 1024).toFixed(1);
+    console.warn(
+      `[cuerpo grande] ${req.method} ${req.originalUrl} · ${err.length} bytes, límite ${err.limit}`
+    );
+    return res.status(413).json({
+      message:
+        `El cuerpo de la petición supera el límite de ${mb} MB. ` +
+        `Si estás subiendo un archivo, envialo como multipart/form-data ` +
+        `(campo "archivo" o "banner"), no dentro del JSON.`,
+    });
+  }
+
   console.error(err);
   res.status(500).json({ message: "Error interno del servidor." });
 });

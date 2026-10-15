@@ -169,11 +169,6 @@ class ActivitiesService {
     for (const campo of EDITABLES) {
       if (datos?.[campo] !== undefined) cambios[campo] = datos[campo];
     }
-    if (cambios.deliverable !== undefined) {
-      cambios.deliverable = cambios.deliverable === true || cambios.deliverable === "true";
-    }
-    if (cambios.xp !== undefined) cambios.xp = Number(cambios.xp);
-
     let rutaNueva = null;
     if (file) {
       const { ruta } = await subirMaterial({

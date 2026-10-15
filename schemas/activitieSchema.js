@@ -15,12 +15,18 @@ class activitieSchema {
     // En qué sección del curso queda. Sin esto la actividad nace suelta y
     // no aparece en ningún curso, porque el contenido se lee por sección.
     sectionId: zod.string().max(50).nullable().optional(),
-    orden: zod.number().int().min(0).optional(),
+    orden: zod.coerce.number().int().min(0).optional(),
     // XP que otorga al completarla. Se puede cambiar después: el XP ya
     // acreditado no se toca, porque vive en el libro de movimientos.
     xp: zod.coerce.number().int().min(0).max(1000).optional(),
     tenantId: zod.string().nullable().optional(),
-    deliverable: zod.boolean().default(false),
+    // multipart/form-data manda todo como texto: un checkbox llega como
+    // "true", no como true. Se convierte acá y no en cada servicio, para
+    // que crear y editar se comporten igual. Mismo motivo que el coerce de xp.
+    deliverable: zod.preprocess(
+      (v) => (typeof v === "string" ? ["true", "1", "on"].includes(v.toLowerCase()) : v),
+      zod.boolean().default(false)
+    ),
   });
 
   constructor({ id, name, type, title, description, adjunto, deliverable }) {
