@@ -183,3 +183,66 @@ CREATE TABLE IF NOT EXISTS role_changes (
 );
 
 CREATE INDEX IF NOT EXISTS idx_role_changes_user ON role_changes(user_id, created_at DESC);
+
+-- ── Entregas (HU-046, HU-048, HU-050) ─────────────────────────────
+-- Esto es onboarding, no un curso con notas: a nadie se le pone un 85. Se
+-- revisa el trabajo y se decide si está bien o si hay que rehacerlo.
+--
+--   entregado  esperando revisión           el aprendiz puede reemplazarla
+--   rehacer    el instructor pidió cambios  el aprendiz puede reemplazarla
+--   aprobada   lista                        se acredita el XP, ya no se toca
+--
+-- El estado "rehacer" es lo que resuelve HU-050 (permitir reenvío) sin tener
+-- que guardar un historial de intentos.
+CREATE TABLE IF NOT EXISTS entregas (
+  id            VARCHAR(50) PRIMARY KEY,
+  activity_id   VARCHAR(50) NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+  user_id       VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tenant_id     VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE,
+  archivo       TEXT,
+  mime          VARCHAR(100),
+  comentario    TEXT,
+  estado        VARCHAR(20) NOT NULL DEFAULT 'entregado'
+                CHECK (estado IN ('entregado', 'aprobada', 'rehacer')),
+  entregado_at  TIMESTAMPTZ DEFAULT NOW(),
+  feedback      TEXT,
+  revisado_por  VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+  revisado_at   TIMESTAMPTZ,
+
+  CONSTRAINT una_entrega_por_actividad UNIQUE (activity_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_entregas_actividad ON entregas(activity_id, estado);
+CREATE INDEX IF NOT EXISTS idx_entregas_user ON entregas(user_id);
+
+-- ── Exámenes (HU-041) ───────────────────────────────────────────────────────
+-- Un examen no es una entidad aparte: es una actividad de tipo 'Examen' con
+-- preguntas colgando. Así hereda sección, curso, empresa y XP sin duplicar nada.
+--
+-- El puntaje total NO se guarda: se calcula sumando el de sus preguntas. Si se
+-- guardara aparte, agregar una pregunta lo dejaría desactualizado y tendríamos
+-- dos números que se contradicen.
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS tiempo_limite INTEGER;
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS intentos_permitidos INTEGER NOT NULL DEFAULT 1;
+
+CREATE TABLE IF NOT EXISTS preguntas (
+  id          VARCHAR(50) PRIMARY KEY,
+  activity_id VARCHAR(50) NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+  tenant_id   VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE,
+  enunciado   TEXT NOT NULL,
+  puntaje     INTEGER NOT NULL DEFAULT 1,
+  orden       INTEGER NOT NULL DEFAULT 0,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Las opciones se borran con su pregunta: solas no significan nada.
+CREATE TABLE IF NOT EXISTS opciones (
+  id          VARCHAR(50) PRIMARY KEY,
+  pregunta_id VARCHAR(50) NOT NULL REFERENCES preguntas(id) ON DELETE CASCADE,
+  texto       TEXT NOT NULL,
+  es_correcta BOOLEAN NOT NULL DEFAULT FALSE,
+  orden       INTEGER NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_preguntas_actividad ON preguntas(activity_id, orden);
+CREATE INDEX IF NOT EXISTS idx_opciones_pregunta ON opciones(pregunta_id, orden);

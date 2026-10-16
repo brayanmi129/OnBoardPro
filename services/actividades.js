@@ -3,6 +3,8 @@ const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacio
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { subirMaterial, urlFirmada, borrar, MATERIALES } = require("../helpers/storage.js");
 const activitieSchema = require("../schemas/activitieSchema.js");
+const { xpDeActividad } = require("../helpers/niveles.js");
+const AvisoService = require("./avisoService.js");
 
 // La base guarda tenant_id; la API expone tenantId, igual que en el resto.
 function aFila(d) {
@@ -58,6 +60,10 @@ class ActivitiesService {
   static async create(data, file) {
     const actividad = { ...data, id: crypto.randomBytes(3).toString("hex") };
 
+    // Si no se indica, el XP sale del tipo. Así una actividad recién creada ya
+    // otorga puntos sin que nadie tenga que configurarla.
+    actividad.xp = xpDeActividad(actividad);
+
     // Se comprueba antes de subir nada: si la sección no sirve, no tiene
     // sentido dejar un archivo huérfano en Storage para después borrarlo.
     if (actividad.sectionId) {
@@ -106,6 +112,13 @@ class ActivitiesService {
       if (rutaSubida) await borrar(MATERIALES, rutaSubida);
       throw new Error(error.message);
     }
+
+    // Sin await: quien crea la actividad no tiene por qué esperar a que salgan
+    // los correos, y que el envío falle no debe hacer fallar la creación.
+    AvisoService.actividadNueva({
+      actividad: validation.data,
+      sectionId: validation.data.sectionId,
+    });
 
     return validation.data;
   }

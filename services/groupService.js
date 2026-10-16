@@ -1,6 +1,7 @@
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacion.js");
 const GroupSchema = require("../schemas/groupSchema.js");
+const AvisoService = require("./avisoService.js");
 const crypto = require("crypto");
 
 
@@ -233,6 +234,10 @@ class GroupService {
       .from("groups_courses")
       .upsert(filas, { onConflict: "id_group,id_course" });
     if (error) throw new Error(error.message);
+
+    // Sin await: el curso ya quedó asignado y quien lo asigna no tiene por qué
+    // esperar a que salgan los correos.
+    AvisoService.cursoAsignado({ courseIds: [...permitidos], groupIds: [groupId] });
 
     return { message: "Cursos asignados al equipo correctamente" };
   }

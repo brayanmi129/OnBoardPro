@@ -39,36 +39,66 @@ class GamificationService {
   static async completarActividad(userId, actividadId, tenantId = null) {
     let consulta = supabase
       .from("activities")
-      .select("id, title, xp, tenant_id")
+      .select("id, title, type, xp, tenant_id")
       .eq("id", actividadId);
     if (tenantId) consulta = consulta.eq("tenant_id", tenantId);
 
     const { data: actividad } = await consulta.maybeSingle();
     if (!actividad) throw fallo("Actividad no encontrada", 404);
 
+    // Criterio 1 de HU-040: marcarse algo como hecho solo vale para material
+    // que se consume —un PDF, un video—. Sin esto el botón era una máquina de
+    // puntos gratis: comprobamos que un aprendiz podía cobrar un examen sin
+    // rendirlo y una tarea sin entregar nada. Esas dos pagan por su propio
+    // camino: la tarea al calificarse, el examen al resolverse.
+    if (actividad.type !== "Recurso") {
+      throw fallo(
+        actividad.type === "Tarea"
+          ? "Las tareas se completan entregando el trabajo."
+          : "Los exámenes se completan resolviéndolos.",
+        409
+      );
+    }
+
+    const resumen = await GamificationService.acreditar({
+      userId,
+      actividadId: actividad.id,
+      tenantId: actividad.tenant_id,
+      puntos: actividad.xp ?? 0,
+      motivo: "actividad_completada",
+      siRepite: "Ya habías completado esta actividad.",
+    });
+
+    return { message: `Actividad completada. +${actividad.xp ?? 0} XP`, ...resumen };
+  }
+
+  /**
+   * Escribe un movimiento de XP y recalcula el total.
+   *
+   * Lo usan tanto "marcar completada" como la calificación de una entrega. El
+   * UNIQUE (user_id, activity_id) garantiza que una actividad pague una sola
+   * vez, sin importar por cuál de los dos caminos llegue.
+   */
+  static async acreditar({ userId, actividadId, tenantId, puntos, motivo, siRepite }) {
     const { error } = await supabase.from("xp_movimientos").insert({
       id: crypto.randomBytes(8).toString("hex"),
       user_id: userId,
-      tenant_id: actividad.tenant_id,
-      activity_id: actividad.id,
-      xp: actividad.xp ?? 0,
-      motivo: "actividad_completada",
+      tenant_id: tenantId ?? null,
+      activity_id: actividadId,
+      xp: puntos ?? 0,
+      motivo: motivo || "actividad_completada",
     });
 
     if (error) {
-      // 23505 es la violación de UNIQUE: ya la había completado.
+      // 23505 es la violación de UNIQUE: ya había cobrado esta actividad.
       if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
-        throw fallo("Ya habías completado esta actividad.", 409);
+        throw fallo(siRepite || "Esta actividad ya otorgó su XP.", 409);
       }
       throw new Error(error.message);
     }
 
     const resumen = await GamificationService.recalcular(userId);
-    return {
-      message: `Actividad completada. +${actividad.xp ?? 0} XP`,
-      xpGanado: actividad.xp ?? 0,
-      ...resumen,
-    };
+    return { xpGanado: puntos ?? 0, ...resumen };
   }
 
   /**

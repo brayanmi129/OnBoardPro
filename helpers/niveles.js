@@ -55,4 +55,26 @@ function progreso(xp) {
   };
 }
 
-module.exports = { umbral, nivelPara, progreso, NIVEL_MAXIMO };
+
+// Cuánto XP otorga cada tipo de actividad cuando no se indica otra cosa.
+//
+// Antes el valor por defecto era 0, así que una actividad creada sin tocar ese
+// campo no daba puntos: 11 de las 13 que existían valían 0 y la gamificación
+// no hacía nada. Ahora el tipo alcanza para que funcione, y quien quiera
+// afinar un caso concreto sigue pudiendo poner su propio valor.
+//
+// La escala sigue el esfuerzo: mirar un material cuesta menos que resolver una
+// tarea, y eso menos que un examen.
+const XP_POR_TIPO = {
+  Recurso: 10, // leer un PDF, ver un video
+  Tarea: 30,   // entregar un trabajo, que además alguien corrige
+  Examen: 50,  // la evaluación del curso
+};
+
+/** XP que corresponde a una actividad: el suyo si lo tiene, el de su tipo si no. */
+function xpDeActividad({ xp, type }) {
+  if (xp !== undefined && xp !== null && xp !== "") return Number(xp);
+  return XP_POR_TIPO[type] ?? XP_POR_TIPO.Recurso;
+}
+
+module.exports = { umbral, nivelPara, progreso, NIVEL_MAXIMO, XP_POR_TIPO, xpDeActividad };

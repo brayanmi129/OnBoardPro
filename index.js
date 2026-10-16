@@ -95,6 +95,8 @@ const groupRoutes = require("./routes/groupsRoutes.js");
 const gamificationRoutes = require("./routes/gamificationRoutes.js");
 const tenantRoutes = require("./routes/tenantRoutes.js");
 const sectionRoutes = require("./routes/sectionsRoutes.js");
+const entregaRoutes = require("./routes/entregasRoutes.js");
+const examenRoutes = require("./routes/examenesRoutes.js");
 
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
@@ -108,6 +110,8 @@ app.use("/api/tenants", tenantRoutes);
 // (/courses/:id/sections, /sections/:id, /activities/:id/seccion). Si se
 // montara antes, taparía rutas de los routers de arriba.
 app.use("/api", sectionRoutes);
+app.use("/api", entregaRoutes);
+app.use("/api", examenRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

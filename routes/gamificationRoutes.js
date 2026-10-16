@@ -3,6 +3,7 @@ const express = require("express");
 const router = express.Router();
 const verifyJWT = require("../middlewares/jwt.js");
 const gamificationController = require("../controllers/gamificationController");
+const PendientesService = require("../services/pendientesService.js");
 
 /**
  * @swagger
@@ -88,5 +89,47 @@ router.get("/me", verifyJWT, gamificationController.miProgreso);
  *         description: Ya había completado esa actividad
  */
 router.post("/activities/:id/completar", verifyJWT, gamificationController.completar);
+
+/**
+ * @swagger
+ * /api/gamification/pendientes:
+ *   get:
+ *     summary: Qué tengo pendiente ahora
+ *     tags: [Gamificación]
+ *     description: >
+ *       Pensado para llamarlo al iniciar sesión. La respuesta cambia según el rol:
+ *
+ *       **Aprendiz**: actividades de sus cursos que todavía no completó, cuánto XP
+ *       hay en juego, su nivel y las entregas que le calificaron últimamente.
+ *
+ *       **Instructor**: entregas esperando corrección y secciones vacías de sus cursos.
+ *
+ *       **Admin / superadmin**: aprendices sin equipo, equipos sin cursos y cursos
+ *       sin instructor, que son las tres cosas que dejan a alguien sin poder trabajar.
+ *
+ *       Todo se calcula al momento: no hay tabla de pendientes. Una lista guardada
+ *       se desincroniza; una calculada no puede mentir.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Resumen de pendientes según el rol
+ *       401:
+ *         description: Token ausente o inválido
+ */
+router.get("/pendientes", verifyJWT, async (req, res) => {
+  try {
+    const actor = {
+      id: req.user.id,
+      email: req.user.email,
+      role: req.user.role,
+      tenantId: req.user.tenantId,
+    };
+    return res.status(200).json(await PendientesService.de(actor));
+  } catch (error) {
+    console.error("Error al calcular los pendientes:", error.message);
+    return res.status(500).json({ message: "Error al calcular los pendientes" });
+  }
+});
 
 module.exports = router;
