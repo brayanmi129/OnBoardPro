@@ -63,7 +63,7 @@ function calendario() {
 }
 
 function backlog() {
-  const d = JSON.parse(fs.readFileSync(path.join(__dirname, "../docs/backlog.data.json"), "utf8"));
+  const d = JSON.parse(fs.readFileSync(path.join(__dirname, "../docs/tecnico/backlog.data.json"), "utf8"));
   const metas = Object.fromEntries((d.meta?.plan?.sprints || []).map((s) => [s.n, s.meta]));
 
   // Las claves reales de Jira las dejó jira-import.js al crear las incidencias.
@@ -133,7 +133,7 @@ async function main() {
         await api("PUT", `/rest/api/2/issue/${h.jiraKey}`, { fields: { duedate: iso(s.fin) } });
         console.log(`   ✓ ${hu} (${h.jiraKey})  Sprint ${h.sprint} → Sprint ${destino}   vence ${iso(s.fin)}`);
         // Refleja el cambio en el backlog para que Excel y HTML no se desincronicen
-        const ruta = path.join(__dirname, "../docs/backlog.data.json");
+        const ruta = path.join(__dirname, "../docs/tecnico/backlog.data.json");
         const doc = JSON.parse(fs.readFileSync(ruta, "utf8"));
         const t = doc.historias.find((x) => x.id === hu);
         if (t) { t.sprint = destino; fs.writeFileSync(ruta, JSON.stringify(doc, null, 2), "utf8"); }

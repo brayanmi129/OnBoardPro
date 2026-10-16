@@ -1043,13 +1043,13 @@
         }
       }
     },
-    "/api/entregas/{id}/calificar": {
+    "/api/entregas/{id}/revisar": {
       "put": {
-        "summary": "Califica una entrega y acredita su XP",
+        "summary": "Revisa una entrega y decide si queda completa",
         "tags": [
           "Entregas"
         ],
-        "description": "La nota se valida contra `nota_maxima` de la actividad (100 por defecto) y la retroalimentación es **obligatoria**: una nota sin explicación no le dice al aprendiz qué hizo mal. Al calificar se acredita el XP de la actividad, no al subir el archivo: entregar cualquier cosa no debería dar puntos. Recalificar no vuelve a pagar, porque una actividad otorga XP una sola vez. Un instructor solo corrige entregas de los cursos que dicta.\n",
+        "description": "**No hay nota.** Esto es onboarding, no un curso: quien revisa decide si el trabajo está completo (`aprobada: true`) o si hay que rehacerlo (`aprobada: false`), y explica por qué.\nEl comentario es obligatorio en los dos casos: \"aprobado\" sin decir qué estuvo bien enseña poco, y \"rehacelo\" sin decir qué corregir no se puede cumplir.\nAl aprobar se acredita el XP de la actividad —nunca al subir el archivo— y una actividad paga una sola vez, así que volver a aprobar no duplica puntos. Si se piden cambios, la entrega pasa a `rehacer` y el aprendiz puede reemplazarla.\nUn instructor solo revisa entregas de los cursos que dicta.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1073,17 +1073,17 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "nota",
+                  "aprobada",
                   "feedback"
                 ],
                 "properties": {
-                  "nota": {
-                    "type": "number",
-                    "example": 85
+                  "aprobada": {
+                    "type": "boolean",
+                    "description": "true la da por completa; false pide cambios."
                   },
                   "feedback": {
                     "type": "string",
-                    "example": "Buen trabajo. Revisá el manejo de errores."
+                    "example": "Cubriste los tres puntos. Agregá el procedimiento de escalamiento."
                   }
                 }
               }
@@ -1092,10 +1092,10 @@
         },
         "responses": {
           "200": {
-            "description": "Entrega calificada, devuelve el XP acreditado"
+            "description": "Devuelve estado, xpAcreditado y nivel"
           },
           "400": {
-            "description": "Nota fuera del rango, o falta la retroalimentación"
+            "description": "Falta indicar si queda aprobada, o falta el comentario"
           },
           "403": {
             "description": "La entrega no pertenece a un curso que dicte el instructor"
@@ -1134,6 +1134,283 @@
           },
           "404": {
             "description": "No existe, no tiene archivo, o no tenés acceso"
+          }
+        }
+      }
+    },
+    "/api/activities/{id}/examen": {
+      "get": {
+        "summary": "El examen completo, con sus preguntas",
+        "tags": [
+          "Exámenes"
+        ],
+        "description": "Devuelve las preguntas con sus opciones y el `puntajeTotal`, que se calcula sumando el puntaje de cada pregunta: no se guarda en ningún lado, así agregar una pregunta no deja un total desactualizado.\nCon `?resolver=true` se obtiene **lo mismo que verá el aprendiz**, sin revelar cuál opción es la correcta. Eso es la previsualización del criterio 3, y es la misma forma que consumirá quien lo rinda.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Id de la actividad de tipo Examen.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "resolver",
+            "description": "true para ocultar las respuestas correctas.",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve titulo, tiempoLimite, intentosPermitidos, puntajeTotal, preguntas y listoParaPublicar"
+          },
+          "404": {
+            "description": "La actividad no existe o es de otra organización"
+          },
+          "409": {
+            "description": "La actividad no es de tipo Examen"
+          }
+        }
+      }
+    },
+    "/api/activities/{id}/preguntas": {
+      "post": {
+        "summary": "Agrega una pregunta al examen",
+        "tags": [
+          "Exámenes"
+        ],
+        "description": "Cada pregunta necesita al menos dos opciones y **exactamente una** correcta: sin ninguna no se puede calificar, y con dos tampoco, porque todavía no hay selección múltiple. Se valida todo antes de escribir, y si fallan las opciones se deshace la pregunta: una pregunta sin opciones no sirve de nada.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "enunciado",
+                  "opciones"
+                ],
+                "properties": {
+                  "enunciado": {
+                    "type": "string",
+                    "example": "¿Cada cuánto se renueva la credencial de acceso?"
+                  },
+                  "puntaje": {
+                    "type": "integer",
+                    "default": 1
+                  },
+                  "opciones": {
+                    "type": "array",
+                    "minItems": 2,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "texto",
+                        "esCorrecta"
+                      ],
+                      "properties": {
+                        "texto": {
+                          "type": "string"
+                        },
+                        "esCorrecta": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Pregunta agregada"
+          },
+          "400": {
+            "description": "Falta el enunciado, hay menos de dos opciones, o no hay exactamente una correcta"
+          },
+          "403": {
+            "description": "El examen no pertenece a un curso que dicte el instructor"
+          },
+          "409": {
+            "description": "La actividad no es de tipo Examen"
+          }
+        }
+      }
+    },
+    "/api/activities/{id}/examen/config": {
+      "put": {
+        "summary": "Configura tiempo límite e intentos",
+        "tags": [
+          "Exámenes"
+        ],
+        "description": "El puntaje total no se configura: sale de sumar las preguntas. `tiempoLimite` en minutos, o null para no limitar.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tiempoLimite": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 480
+                  },
+                  "intentosPermitidos": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Examen configurado"
+          },
+          "400": {
+            "description": "Valores fuera de rango, o no se envió nada"
+          }
+        }
+      }
+    },
+    "/api/preguntas/{id}": {
+      "put": {
+        "summary": "Edita una pregunta",
+        "tags": [
+          "Exámenes"
+        ],
+        "description": "Si se envían `opciones`, reemplazan a las anteriores por completo: editarlas una por una obligaría a llevar la cuenta de cuál se borró, y el conjunto tiene que seguir teniendo exactamente una correcta.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "enunciado": {
+                    "type": "string"
+                  },
+                  "puntaje": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "opciones": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "texto": {
+                          "type": "string"
+                        },
+                        "esCorrecta": {
+                          "type": "boolean"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Pregunta actualizada"
+          },
+          "400": {
+            "description": "Enunciado vacío, puntaje inválido, o las opciones no tienen una sola correcta"
+          },
+          "404": {
+            "description": "La pregunta no existe"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Elimina una pregunta y sus opciones",
+        "tags": [
+          "Exámenes"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Pregunta eliminada"
+          },
+          "404": {
+            "description": "La pregunta no existe"
           }
         }
       }
@@ -1234,6 +1511,28 @@
           },
           "409": {
             "description": "Ya había completado esa actividad"
+          }
+        }
+      }
+    },
+    "/api/gamification/pendientes": {
+      "get": {
+        "summary": "Qué tengo pendiente ahora",
+        "tags": [
+          "Gamificación"
+        ],
+        "description": "Pensado para llamarlo al iniciar sesión. La respuesta cambia según el rol:\n**Aprendiz**: actividades de sus cursos que todavía no completó, cuánto XP hay en juego, su nivel y las entregas que le calificaron últimamente.\n**Instructor**: entregas esperando corrección y secciones vacías de sus cursos.\n**Admin / superadmin**: aprendices sin equipo, equipos sin cursos y cursos sin instructor, que son las tres cosas que dejan a alguien sin poder trabajar.\nTodo se calcula al momento: no hay tabla de pendientes. Una lista guardada se desincroniza; una calculada no puede mentir.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Resumen de pendientes según el rol"
+          },
+          "401": {
+            "description": "Token ausente o inválido"
           }
         }
       }
@@ -1648,6 +1947,277 @@
           },
           "404": {
             "description": "El equipo no existe o es de otra organización"
+          }
+        }
+      }
+    },
+    "/api/gamification/logros/opciones": {
+      "get": {
+        "summary": "Categorías y tipos de condición disponibles",
+        "tags": [
+          "Logros"
+        ],
+        "description": "Lo que necesita el formulario de creación para armar sus listas desplegables, en vez de tenerlas escritas a mano en el frontend y que se desincronicen del backend.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve categorias y condiciones con su unidad y un ejemplo"
+          }
+        }
+      }
+    },
+    "/api/gamification/logros": {
+      "post": {
+        "summary": "Crea un logro",
+        "tags": [
+          "Logros"
+        ],
+        "description": "La organización sale del token, nunca del cuerpo: si viniera del cliente, un administrador podría crear logros dentro de otra empresa. Solo un superadministrador puede enviar `tenantId` para crear en una organización distinta a la suya.\nNo se admiten condiciones basadas en notas: en onboarding no hay calificación, la entrega se aprueba o se pide rehacer.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "nombre",
+                  "categoria",
+                  "tipoCondicion",
+                  "meta"
+                ],
+                "properties": {
+                  "nombre": {
+                    "type": "string",
+                    "example": "En marcha"
+                  },
+                  "descripcion": {
+                    "type": "string",
+                    "example": "La segunda parada del camino."
+                  },
+                  "categoria": {
+                    "type": "string",
+                    "enum": [
+                      "Progreso",
+                      "Constancia",
+                      "Nivel",
+                      "Ranking",
+                      "Entregas",
+                      "Juegos"
+                    ]
+                  },
+                  "tipoCondicion": {
+                    "type": "string",
+                    "enum": [
+                      "actividades_completadas",
+                      "secciones_completadas",
+                      "cursos_completados",
+                      "racha_dias",
+                      "nivel_alcanzado",
+                      "entregas_aprobadas",
+                      "posicion_ranking",
+                      "juegos_completados"
+                    ]
+                  },
+                  "meta": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 10
+                  },
+                  "xpRecompensa": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "default": 0
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Logro creado"
+          },
+          "400": {
+            "description": "Falta un campo, la categoría o el tipo de condición no existen, o la meta no es un entero positivo"
+          },
+          "403": {
+            "description": "Solo un administrador puede crear logros"
+          },
+          "409": {
+            "description": "Ya hay un logro con ese nombre en la organización"
+          }
+        }
+      },
+      "get": {
+        "summary": "El catálogo de logros de mi organización",
+        "tags": [
+          "Logros"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "categoria",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "activo",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de logros ordenada por categoría y meta"
+          }
+        }
+      }
+    },
+    "/api/gamification/logros/{id}": {
+      "get": {
+        "summary": "Un logro",
+        "tags": [
+          "Logros"
+        ],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "El logro"
+          },
+          "404": {
+            "description": "No existe o es de otra organización"
+          }
+        }
+      },
+      "put": {
+        "summary": "Edita un logro",
+        "tags": [
+          "Logros"
+        ],
+        "description": "Se puede enviar un solo campo. Desactivarlo con `activo: false` lo saca de circulación sin borrarlo, que es lo que conviene cuando alguien ya lo consiguió.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "nombre": {
+                    "type": "string"
+                  },
+                  "descripcion": {
+                    "type": "string"
+                  },
+                  "categoria": {
+                    "type": "string"
+                  },
+                  "tipoCondicion": {
+                    "type": "string"
+                  },
+                  "meta": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "xpRecompensa": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "activo": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Logro actualizado"
+          },
+          "400": {
+            "description": "No se envió nada que cambiar, o un valor es inválido"
+          },
+          "404": {
+            "description": "No existe o es de otra organización"
+          },
+          "409": {
+            "description": "Ya hay un logro con ese nombre"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Elimina un logro",
+        "tags": [
+          "Logros"
+        ],
+        "description": "Si el logro ya circuló conviene desactivarlo en vez de borrarlo, para no dejar sin respaldo a quien lo haya conseguido.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logro eliminado"
+          },
+          "404": {
+            "description": "No existe o es de otra organización"
           }
         }
       }
@@ -2367,8 +2937,16 @@
       "description": "Trabajos que suben los aprendices en las actividades marcadas como entregables, y su calificación.\n"
     },
     {
+      "name": "Exámenes",
+      "description": "Preguntas y configuración de las actividades de tipo Examen. Un examen no es una entidad aparte: es una actividad con preguntas colgando, así que hereda sección, curso, empresa y XP.\n"
+    },
+    {
       "name": "Grupos",
       "description": "Endpoints relacionados con la gestión de grupos"
+    },
+    {
+      "name": "Logros",
+      "description": "Catálogo de logros de la organización (HU-059). Un logro es la definición de una meta —\"completar 10 actividades\", \"llegar al nivel 5\"—, no el hecho de haberla conseguido: el desbloqueo automático llega con HU-061.\n"
     },
     {
       "name": "Secciones",

@@ -97,6 +97,7 @@ const tenantRoutes = require("./routes/tenantRoutes.js");
 const sectionRoutes = require("./routes/sectionsRoutes.js");
 const entregaRoutes = require("./routes/entregasRoutes.js");
 const examenRoutes = require("./routes/examenesRoutes.js");
+const logrosRoutes = require("./routes/logrosRoutes.js");
 
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
@@ -104,6 +105,9 @@ app.use("/api/courses", courseRoutes);
 app.use("/api/activities", activitiesRoutes);
 app.use("/api/groups", groupRoutes);
 app.use("/api/gamification", gamificationRoutes);
+// Comparte prefijo con el router de arriba: sus rutas cuelgan de /logros y no
+// chocan con /me, /ranking ni /pendientes.
+app.use("/api/gamification", logrosRoutes);
 app.use("/api/tenants", tenantRoutes);
 
 // Va al final y montado en /api porque sus rutas cruzan varios recursos

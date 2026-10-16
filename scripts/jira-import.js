@@ -65,7 +65,7 @@ async function api(metodo, ruta, cuerpo) {
 }
 
 function cargarBacklog() {
-  const d = JSON.parse(fs.readFileSync(path.join(__dirname, "../docs/backlog.data.json"), "utf8"));
+  const d = JSON.parse(fs.readFileSync(path.join(__dirname, "../docs/tecnico/backlog.data.json"), "utf8"));
   const epicas = d.epicas.filter((e) => e.id !== "E15");
   const historias = d.historias.filter((h) => h.epica !== "E15");
   return { epicas, historias, nomEpica: Object.fromEntries(epicas.map((e) => [e.id, e.nombre])) };

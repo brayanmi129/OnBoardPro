@@ -1,4 +1,4 @@
-// Exporta el Swagger que sirve el backend a docs/openapi.json.
+// Exporta el Swagger que sirve el backend a docs/tecnico/openapi.json.
 //
 // El archivo se desfasa en cuanto alguien agrega un endpoint y no lo vuelve a
 // exportar, y como el frontend se guía por él, un archivo viejo manda a llamar
@@ -8,8 +8,8 @@ const fs = require("fs");
 const path = require("path");
 const { swaggerSpec } = require("../config/swagger");
 
-const destino = path.join(__dirname, "..", "docs", "openapi.json");
+const destino = path.join(__dirname, "..", "docs", "tecnico", "openapi.json");
 fs.writeFileSync(destino, JSON.stringify(swaggerSpec, null, 2) + "\n");
 
 const rutas = Object.keys(swaggerSpec.paths || {});
-console.log(`docs/openapi.json actualizado: ${rutas.length} rutas`);
+console.log(`docs/tecnico/openapi.json actualizado: ${rutas.length} rutas`);

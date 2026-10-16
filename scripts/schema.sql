@@ -246,3 +246,61 @@ CREATE TABLE IF NOT EXISTS opciones (
 
 CREATE INDEX IF NOT EXISTS idx_preguntas_actividad ON preguntas(activity_id, orden);
 CREATE INDEX IF NOT EXISTS idx_opciones_pregunta ON opciones(pregunta_id, orden);
+
+
+-- ---------------------------------------------------------------- HU-058
+-- La columna `streak` ya existía en users, pero nada la actualizaba porque no
+-- había dónde guardar el último día activo: sin esa fecha no se puede saber si
+-- la racha sigue o se cortó.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS ultima_actividad DATE;
+
+-- La racha máxima se guarda aparte porque la actual se pierde al cortarse, y
+-- los logros de constancia preguntan si alguna vez se llegó a N días.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS racha_maxima INTEGER DEFAULT 0;
+
+
+-- ---------------------------------------------------------------- HU-059
+-- Un logro es la definición de una meta, no el hecho de haberla conseguido.
+-- Quién lo desbloqueó se guardará aparte cuando se implemente HU-061.
+CREATE TABLE IF NOT EXISTS logros (
+  id             VARCHAR(50) PRIMARY KEY,
+  tenant_id      VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE,
+  nombre         VARCHAR(100) NOT NULL,
+  descripcion    TEXT,
+  categoria      VARCHAR(30) NOT NULL
+                 CHECK (categoria IN ('Progreso', 'Constancia', 'Nivel', 'Ranking', 'Entregas', 'Juegos')),
+
+  -- Qué se mide. La lista sale de la hoja "Condiciones y disparadores" del
+  -- backlog, menos las condiciones de nota: en onboarding no hay calificación,
+  -- la entrega se aprueba o se pide rehacer.
+  tipo_condicion VARCHAR(40) NOT NULL
+                 CHECK (tipo_condicion IN (
+                   'actividades_completadas',
+                   'secciones_completadas',
+                   'cursos_completados',
+                   'racha_dias',
+                   'nivel_alcanzado',
+                   'entregas_aprobadas',
+                   'posicion_ranking',
+                   'juegos_completados'
+                 )),
+
+  -- Cuánto hace falta: 10 actividades, 7 días, nivel 5, puesto 1.
+  meta           INTEGER NOT NULL CHECK (meta > 0),
+
+  -- XP que paga el logro al desbloquearse. Puede ser 0: hay logros que valen
+  -- por la insignia y no por los puntos.
+  xp_recompensa  INTEGER NOT NULL DEFAULT 0 CHECK (xp_recompensa >= 0),
+
+  activo         BOOLEAN DEFAULT TRUE,
+  creado_por     VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+  created_at     TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Dos logros con el mismo nombre en una organización serían indistinguibles en
+-- la interfaz. Se compara en minúsculas para que "Primer paso" y "primer paso"
+-- choquen.
+CREATE UNIQUE INDEX IF NOT EXISTS logros_nombre_unico
+  ON logros (tenant_id, lower(nombre));
+
+CREATE INDEX IF NOT EXISTS logros_tenant ON logros (tenant_id);

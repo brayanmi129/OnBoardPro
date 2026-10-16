@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { nivelPara, progreso } = require("../helpers/niveles.js");
+const { siguienteRacha } = require("../helpers/racha.js");
 
 function fallo(message, status) {
   const err = new Error(message);
@@ -97,8 +98,54 @@ class GamificationService {
       throw new Error(error.message);
     }
 
+    // La racha se mueve acá y no al iniciar sesión: entrar no es estar activo.
+    // Cuenta el día en que se hizo algo que otorgó puntos.
+    const racha = await GamificationService.registrarDiaActivo(userId);
+
     const resumen = await GamificationService.recalcular(userId);
-    return { xpGanado: puntos ?? 0, ...resumen };
+    return { xpGanado: puntos ?? 0, ...resumen, racha };
+  }
+
+  /**
+   * Suma el día de hoy a la racha de días activos (HU-058).
+   *
+   * Se llama desde `acreditar`, así que da igual por qué camino se ganaron los
+   * puntos: completar un recurso, aprobar una entrega o resolver un examen
+   * cuentan todos como actividad del día.
+   *
+   * Si ya había actividad hoy no escribe nada: la racha cuenta días, no veces.
+   */
+  static async registrarDiaActivo(userId) {
+    const { data: usuario } = await supabase
+      .from("users")
+      .select("streak, racha_maxima, ultima_actividad")
+      .eq("id", userId)
+      .maybeSingle();
+    if (!usuario) return null;
+
+    const siguiente = siguienteRacha({
+      ultimaActividad: usuario.ultima_actividad,
+      racha: usuario.streak,
+      rachaMaxima: usuario.racha_maxima,
+    });
+
+    if (siguiente.cambio) {
+      await supabase
+        .from("users")
+        .update({
+          streak: siguiente.racha,
+          racha_maxima: siguiente.rachaMaxima,
+          ultima_actividad: siguiente.ultimaActividad,
+        })
+        .eq("id", userId);
+    }
+
+    return {
+      dias: siguiente.racha,
+      maxima: siguiente.rachaMaxima,
+      // Para que la interfaz sepa si corresponde celebrar algo o quedarse quieta.
+      crecioHoy: siguiente.cambio,
+    };
   }
 
   /**
@@ -137,7 +184,10 @@ class GamificationService {
   /** Mi XP, mi nivel y cuánto me falta para el siguiente (HU-056). */
   static async miProgreso(userId) {
     const { data: usuario } = await supabase
-      .from("users").select("xp, level").eq("id", userId).maybeSingle();
+      .from("users")
+      .select("xp, level, streak, racha_maxima, ultima_actividad")
+      .eq("id", userId)
+      .maybeSingle();
     if (!usuario) throw fallo("Usuario no encontrado", 404);
 
     const { count } = await supabase
@@ -145,10 +195,27 @@ class GamificationService {
       .select("id", { count: "exact", head: true })
       .eq("user_id", userId);
 
+    // La racha guardada puede estar vencida: si la última actividad fue hace
+    // tres días, en la base sigue diciendo 5 hasta que la persona vuelva. Se
+    // recalcula al leerla para no mostrar una racha que ya se cortó.
+    const vigente = siguienteRacha({
+      ultimaActividad: usuario.ultima_actividad,
+      racha: usuario.streak,
+      rachaMaxima: usuario.racha_maxima,
+    });
+
     return {
       ...progreso(usuario.xp || 0),
       nivel: Math.max(usuario.level || 0, nivelPara(usuario.xp || 0)),
       actividadesCompletadas: count ?? 0,
+      racha: {
+        // Si al registrar hoy la racha arrancaría de nuevo en 1, es que se
+        // cortó: pasó más de un día sin actividad. Si solo subiría un escalón,
+        // sigue viva y lo que vale es lo guardado.
+        dias: vigente.cambio && vigente.racha === 1 ? 0 : usuario.streak || 0,
+        maxima: usuario.racha_maxima || 0,
+        activaHoy: !vigente.cambio,
+      },
     };
   }
 
