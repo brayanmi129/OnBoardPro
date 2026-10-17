@@ -119,26 +119,88 @@ class EntregaService {
   }
 
   /** Todas las entregas de una actividad, para quien la corrige. */
+  /**
+   * Quiénes deberían entregar esta actividad.
+   *
+   * No sale de las entregas sino del camino al revés: la actividad cuelga de
+   * una sección, la sección de un curso, el curso está asignado a grupos y en
+   * los grupos está la gente. Sin esto solo se ve a quien ya entregó, que es
+   * justo lo contrario de lo que necesita quien revisa.
+   */
+  static async _aQuienLeToca(actividadId) {
+    const { data: actividad } = await supabase
+      .from("activities").select("section_id").eq("id", actividadId).maybeSingle();
+    if (!actividad?.section_id) return [];
+
+    const { data: seccion } = await supabase
+      .from("sections").select("course_id").eq("id", actividad.section_id).maybeSingle();
+    if (!seccion?.course_id) return [];
+
+    const { data: grupos } = await supabase
+      .from("groups_courses").select("id_group").eq("id_course", seccion.course_id);
+    if (!grupos?.length) return [];
+
+    const { data: integrantes } = await supabase
+      .from("users_groups").select("id_user")
+      .in("id_group", grupos.map((g) => g.id_group));
+    if (!integrantes?.length) return [];
+
+    const { data: personas } = await supabase
+      .from("users").select("id, firstname, lastname, email, role")
+      .in("id", [...new Set(integrantes.map((i) => i.id_user))]);
+
+    // Solo aprendices: quien dicta o administra no entrega nada.
+    return (personas || []).filter((u) => u.role === "student");
+  }
+
+  /**
+   * Las entregas de una actividad, incluyendo a quien todavía no entregó
+   * (HU-048).
+   *
+   * Los que faltan vienen con estado `sin_entregar` y sin id de entrega: para
+   * quien revisa, saber quién no entregó vale tanto como ver lo entregado.
+   */
   static async listar(actividadId, actor) {
     let q = supabase.from("activities").select("id, tenant_id").eq("id", actividadId);
     if (actor.role !== "superadmin") q = q.eq("tenant_id", actor.tenantId);
     const { data: actividad } = await q.maybeSingle();
     if (!actividad) throw fallo("Actividad no encontrada", 404);
 
-    const { data: entregas } = await supabase
-      .from("entregas").select("*")
-      .eq("activity_id", actividadId)
-      .order("entregado_at", { ascending: true });
+    const [{ data: entregas }, aprendices] = await Promise.all([
+      supabase.from("entregas").select("*")
+        .eq("activity_id", actividadId)
+        .order("entregado_at", { ascending: true }),
+      EntregaService._aQuienLeToca(actividadId),
+    ]);
 
-    if (!entregas?.length) return [];
+    const porId = new Map(aprendices.map((u) => [u.id, u]));
 
-    // Quién entregó, para no mostrar solo ids.
-    const { data: personas } = await supabase
-      .from("users").select("id, firstname, lastname, email")
-      .in("id", entregas.map((e) => e.user_id));
-    const porId = new Map((personas || []).map((u) => [u.id, u]));
+    // Quien entregó pero ya no está en ningún grupo del curso igual aparece:
+    // su trabajo existe y hay que revisarlo.
+    const faltantes = (entregas || []).map((e) => e.user_id).filter((id) => !porId.has(id));
+    if (faltantes.length) {
+      const { data: sueltos } = await supabase
+        .from("users").select("id, firstname, lastname, email").in("id", faltantes);
+      for (const u of sueltos || []) porId.set(u.id, u);
+    }
 
-    return entregas.map((e) => ({ ...aObjeto(e), aprendiz: porId.get(e.user_id) ?? null }));
+    const entregado = new Set((entregas || []).map((e) => e.user_id));
+
+    return [
+      ...(entregas || []).map((e) => ({
+        ...aObjeto(e),
+        aprendiz: porId.get(e.user_id) ?? null,
+      })),
+      ...aprendices
+        .filter((u) => !entregado.has(u.id))
+        .map((u) => ({
+          id: null,
+          activityId: actividadId,
+          userId: u.id,
+          estado: "sin_entregar",
+          aprendiz: { id: u.id, firstname: u.firstname, lastname: u.lastname, email: u.email },
+        })),
+    ];
   }
 
   /**
@@ -181,14 +243,17 @@ class EntregaService {
     if (typeof aprobada !== "boolean") {
       throw fallo("Indicá si la entrega queda aprobada o hay que rehacerla.", 400);
     }
-    if (!feedback || !String(feedback).trim()) {
-      throw fallo("El comentario es obligatorio.", 400);
+    // El comentario solo es obligatorio al pedir cambios: "rehacelo" sin decir
+    // qué corregir no se puede cumplir. Al dar por completada una entrega, en
+    // cambio, no siempre hay algo que agregar.
+    if (!aprobada && (!feedback || !String(feedback).trim())) {
+      throw fallo("Explicá qué hay que corregir.", 400);
     }
 
     const estado = aprobada ? "aprobada" : "rehacer";
     const { error } = await supabase.from("entregas").update({
       estado,
-      feedback: String(feedback).trim(),
+      feedback: feedback ? String(feedback).trim() : null,
       revisado_por: actor.id,
       revisado_at: new Date().toISOString(),
     }).eq("id", entregaId);

@@ -30,6 +30,60 @@ class GamificationService {
   }
 
   /**
+   * Los que mas XP llevan dentro de un curso.
+   *
+   * El ranking general es de toda la organizacion y no sirve para saber como
+   * va un curso concreto. Acá se suma solo el XP que salio de las actividades
+   * de ese curso, siguiendo el rastro que deja cada movimiento:
+   * movimiento -> actividad -> seccion -> curso.
+   */
+  static async rankingDeCurso(courseId, actor, { limite = 3 } = {}) {
+    const tenantId = actor?.role === "superadmin" ? null : actor?.tenantId;
+
+    let q = supabase.from("courses").select("id, instructor").eq("id", courseId);
+    if (tenantId) q = q.eq("tenant_id", tenantId);
+    const { data: curso } = await q.maybeSingle();
+    if (!curso) throw fallo("Curso no encontrado", 404);
+
+    const { data: secciones } = await supabase
+      .from("sections").select("id").eq("course_id", courseId);
+    if (!secciones?.length) return [];
+
+    const { data: actividades } = await supabase
+      .from("activities").select("id")
+      .in("section_id", secciones.map((s) => s.id));
+    if (!actividades?.length) return [];
+
+    const { data: movimientos } = await supabase
+      .from("xp_movimientos").select("user_id, xp")
+      .in("activity_id", actividades.map((a) => a.id));
+    if (!movimientos?.length) return [];
+
+    const porPersona = new Map();
+    for (const m of movimientos) {
+      porPersona.set(m.user_id, (porPersona.get(m.user_id) || 0) + (m.xp || 0));
+    }
+
+    const { data: personas } = await supabase
+      .from("users").select("id, firstname, lastname, level, role")
+      .in("id", [...porPersona.keys()]);
+
+    return (personas || [])
+      // El instructor y los administradores no compiten con sus aprendices.
+      .filter((u) => u.role === "student")
+      .map((u) => ({
+        id: u.id,
+        firstname: u.firstname,
+        lastname: u.lastname,
+        level: u.level,
+        xp: porPersona.get(u.id) || 0,
+      }))
+      .sort((a, b) => b.xp - a.xp || a.firstname.localeCompare(b.firstname))
+      .slice(0, Math.max(Number(limite) || 3, 1))
+      .map((u, i) => ({ ...u, posicion: i + 1 }));
+  }
+
+  /**
    * Marca una actividad como completada y acredita su XP (HU-052).
    *
    * El registro del movimiento es lo que define "completado": no hay otra

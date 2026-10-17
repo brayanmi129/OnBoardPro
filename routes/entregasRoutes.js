@@ -116,8 +116,8 @@ router.get("/activities/:id/entregas", verifyJWT, puedeCorregir, EntregaControll
  *       si el trabajo está completo (`aprobada: true`) o si hay que rehacerlo
  *       (`aprobada: false`), y explica por qué.
  *
- *       El comentario es obligatorio en los dos casos: "aprobado" sin decir
- *       qué estuvo bien enseña poco, y "rehacelo" sin decir qué corregir no se
+ *       El comentario es opcional al dar por completada la entrega y
+ *       obligatorio al pedir cambios: "rehacelo" sin decir qué corregir no se
  *       puede cumplir.
  *
  *       Al aprobar se acredita el XP de la actividad —nunca al subir el
@@ -140,7 +140,7 @@ router.get("/activities/:id/entregas", verifyJWT, puedeCorregir, EntregaControll
  *         application/json:
  *           schema:
  *             type: object
- *             required: [aprobada, feedback]
+ *             required: [aprobada]
  *             properties:
  *               aprobada:
  *                 type: boolean
@@ -152,7 +152,7 @@ router.get("/activities/:id/entregas", verifyJWT, puedeCorregir, EntregaControll
  *       200:
  *         description: Devuelve estado, xpAcreditado y nivel
  *       400:
- *         description: Falta indicar si queda aprobada, o falta el comentario
+ *         description: Falta indicar si queda aprobada, o se piden cambios sin comentario
  *       403:
  *         description: La entrega no pertenece a un curso que dicte el instructor
  *       404:

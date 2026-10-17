@@ -4,6 +4,7 @@ const router = express.Router();
 const verifyJWT = require("../middlewares/jwt.js");
 const gamificationController = require("../controllers/gamificationController");
 const PendientesService = require("../services/pendientesService.js");
+const GamificationService = require("../services/gamificationService.js");
 
 /**
  * @swagger
@@ -88,6 +89,50 @@ router.get("/me", verifyJWT, gamificationController.miProgreso);
  *       409:
  *         description: Ya había completado esa actividad
  */
+/**
+ * @swagger
+ * /api/gamification/courses/{id}/ranking:
+ *   get:
+ *     summary: Los aprendices con más XP dentro de un curso
+ *     tags: [Gamificación]
+ *     description: >
+ *       A diferencia de /ranking, que es de toda la organización, acá solo
+ *       cuenta el XP que salió de las actividades de ese curso. Sirve para el
+ *       resumen del instructor, que quiere ver cómo va cada curso suyo.
+ *
+ *       Solo aparecen aprendices: quien dicta o administra no compite.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         description: Id del curso.
+ *         schema: { type: string }
+ *       - in: query
+ *         name: limite
+ *         description: Cuántos devolver. Por defecto 3.
+ *         schema: { type: integer, default: 3 }
+ *     responses:
+ *       200:
+ *         description: Lista ordenada por XP, con su posición
+ *       404:
+ *         description: El curso no existe o es de otra organización
+ */
+router.get("/courses/:id/ranking", verifyJWT, async (req, res) => {
+  try {
+    const r = await GamificationService.rankingDeCurso(
+      req.params.id,
+      { id: req.user.id, role: req.user.role, tenantId: req.user.tenantId },
+      { limite: req.query.limite }
+    );
+    return res.status(200).json(r);
+  } catch (error) {
+    console.error("Error al calcular el ranking del curso:", error.message);
+    return res.status(error.status || 500).json({ message: error.message });
+  }
+});
+
 router.post("/activities/:id/completar", verifyJWT, gamificationController.completar);
 
 /**

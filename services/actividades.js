@@ -22,6 +22,25 @@ function delTenant(query, tenantId) {
   return tenantId ? query.eq("tenant_id", tenantId) : query;
 }
 
+/**
+ * Un recurso no pide entrega.
+ *
+ * Un recurso es material que se consume —un PDF, un video— y se da por visto
+ * marcandolo como completado. Pedirle una entrega dejaba actividades que el
+ * aprendiz no podia cerrar por ningun camino: ni subiendo archivo, porque el
+ * boton de completar solo acepta recursos, ni marcandolas, porque esperaban
+ * una entrega que nadie iba a revisar.
+ */
+function comprobarEntregable(type, deliverable) {
+  if (type === "Recurso" && deliverable === true) {
+    const err = new Error(
+      "Un recurso no puede pedir entrega: solo las tareas y los exámenes."
+    );
+    err.status = 400;
+    throw err;
+  }
+}
+
 class ActivitiesService {
   static async getAll(tenantId = null) {
     const { data, error } = await delTenant(supabase.from("activities").select("*"), tenantId);
@@ -100,6 +119,8 @@ class ActivitiesService {
       actividad.adjunto = ruta;
       actividad.mime = file.mimetype;
     }
+
+    comprobarEntregable(actividad.type ?? "Recurso", actividad.deliverable);
 
     const validation = activitieSchema.schema.safeParse(actividad);
     if (!validation.success) {
@@ -198,6 +219,14 @@ class ActivitiesService {
     for (const campo of EDITABLES) {
       if (datos?.[campo] !== undefined) cambios[campo] = datos[campo];
     }
+    // El tipo que vale es el que queda despues del cambio: cambiar una tarea
+    // entregable a recurso tiene que fallar igual que marcar entregable un
+    // recurso que ya lo era.
+    comprobarEntregable(
+      cambios.type ?? actual.type,
+      cambios.deliverable ?? actual.deliverable
+    );
+
     let rutaNueva = null;
     if (file) {
       const { ruta } = await subirMaterial({

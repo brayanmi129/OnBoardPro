@@ -1049,7 +1049,7 @@
         "tags": [
           "Entregas"
         ],
-        "description": "**No hay nota.** Esto es onboarding, no un curso: quien revisa decide si el trabajo está completo (`aprobada: true`) o si hay que rehacerlo (`aprobada: false`), y explica por qué.\nEl comentario es obligatorio en los dos casos: \"aprobado\" sin decir qué estuvo bien enseña poco, y \"rehacelo\" sin decir qué corregir no se puede cumplir.\nAl aprobar se acredita el XP de la actividad —nunca al subir el archivo— y una actividad paga una sola vez, así que volver a aprobar no duplica puntos. Si se piden cambios, la entrega pasa a `rehacer` y el aprendiz puede reemplazarla.\nUn instructor solo revisa entregas de los cursos que dicta.\n",
+        "description": "**No hay nota.** Esto es onboarding, no un curso: quien revisa decide si el trabajo está completo (`aprobada: true`) o si hay que rehacerlo (`aprobada: false`), y explica por qué.\nEl comentario es opcional al dar por completada la entrega y obligatorio al pedir cambios: \"rehacelo\" sin decir qué corregir no se puede cumplir.\nAl aprobar se acredita el XP de la actividad —nunca al subir el archivo— y una actividad paga una sola vez, así que volver a aprobar no duplica puntos. Si se piden cambios, la entrega pasa a `rehacer` y el aprendiz puede reemplazarla.\nUn instructor solo revisa entregas de los cursos que dicta.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1073,8 +1073,7 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "aprobada",
-                  "feedback"
+                  "aprobada"
                 ],
                 "properties": {
                   "aprobada": {
@@ -1095,7 +1094,7 @@
             "description": "Devuelve estado, xpAcreditado y nivel"
           },
           "400": {
-            "description": "Falta indicar si queda aprobada, o falta el comentario"
+            "description": "Falta indicar si queda aprobada, o se piden cambios sin comentario"
           },
           "403": {
             "description": "La entrega no pertenece a un curso que dicte el instructor"
@@ -1511,6 +1510,48 @@
           },
           "409": {
             "description": "Ya había completado esa actividad"
+          }
+        }
+      }
+    },
+    "/api/gamification/courses/{id}/ranking": {
+      "get": {
+        "summary": "Los aprendices con más XP dentro de un curso",
+        "tags": [
+          "Gamificación"
+        ],
+        "description": "A diferencia de /ranking, que es de toda la organización, acá solo cuenta el XP que salió de las actividades de ese curso. Sirve para el resumen del instructor, que quiere ver cómo va cada curso suyo.\nSolo aparecen aprendices: quien dicta o administra no compite.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Id del curso.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limite",
+            "description": "Cuántos devolver. Por defecto 3.",
+            "schema": {
+              "type": "integer",
+              "default": 3
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista ordenada por XP, con su posición"
+          },
+          "404": {
+            "description": "El curso no existe o es de otra organización"
           }
         }
       }
