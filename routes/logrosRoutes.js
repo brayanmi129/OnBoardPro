@@ -59,10 +59,12 @@ router.get("/logros/opciones", verifyJWT, (req, res) => {
  *     summary: Crea un logro
  *     tags: [Logros]
  *     description: >
- *       La organización sale del token, nunca del cuerpo: si viniera del
+ *       Un logro vive en uno de tres alcances: genérico (sin organización,
+ *       válido para todas, solo lo crea el superadministrador), de una empresa,
+ *       o de un curso concreto si se envía `cursoId`.
+ *
+ *       La organización sale del token y nunca del cuerpo: si viniera del
  *       cliente, un administrador podría crear logros dentro de otra empresa.
- *       Solo un superadministrador puede enviar `tenantId` para crear en una
- *       organización distinta a la suya.
  *
  *       No se admiten condiciones basadas en notas: en onboarding no hay
  *       calificación, la entrega se aprueba o se pide rehacer.
@@ -87,7 +89,7 @@ router.get("/logros/opciones", verifyJWT, (req, res) => {
  *                 enum: [Progreso, Constancia, Nivel, Ranking, Entregas, Juegos]
  *               tipoCondicion:
  *                 type: string
- *                 enum: [actividades_completadas, secciones_completadas, cursos_completados, racha_dias, nivel_alcanzado, entregas_aprobadas, posicion_ranking, juegos_completados]
+ *                 enum: [actividades_completadas, secciones_completadas, cursos_completados, examenes_aprobados, racha_dias, nivel_alcanzado, entregas_aprobadas, posicion_ranking, juegos_completados]
  *               meta:
  *                 type: integer
  *                 minimum: 1
@@ -96,13 +98,25 @@ router.get("/logros/opciones", verifyJWT, (req, res) => {
  *                 type: integer
  *                 minimum: 0
  *                 default: 0
+ *               cursoId:
+ *                 type: string
+ *                 description: >
+ *                   Ata el logro a un curso. Si se omite, vale para toda la
+ *                   organización.
+ *               generico:
+ *                 type: boolean
+ *                 default: false
+ *                 description: >
+ *                   Lo deja sin organización, válido para todas. Solo un
+ *                   superadministrador puede crearlos; a los demás les
+ *                   responde 403.
  *     responses:
  *       201:
  *         description: Logro creado
  *       400:
  *         description: Falta un campo, la categoría o el tipo de condición no existen, o la meta no es un entero positivo
  *       403:
- *         description: Solo un administrador puede crear logros
+ *         description: No es administrador, o pidió un logro genérico sin ser superadministrador
  *       409:
  *         description: Ya hay un logro con ese nombre en la organización
  */
@@ -130,6 +144,12 @@ router.post("/logros", verifyJWT, puedeAdministrar, async (req, res) => {
  *       - in: query
  *         name: activo
  *         schema: { type: boolean }
+ *       - in: query
+ *         name: cursoId
+ *         description: >
+ *           Los de ese curso. Con `general` trae los que no pertenecen a
+ *           ninguno.
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Lista de logros ordenada por categoría y meta

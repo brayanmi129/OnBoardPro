@@ -24,6 +24,7 @@ const CONDICIONES = {
   actividades_completadas: { unidad: "actividades", texto: (n) => `Completar ${n} actividades` },
   secciones_completadas: { unidad: "secciones", texto: (n) => `Completar ${n} secciones` },
   cursos_completados: { unidad: "cursos", texto: (n) => `Terminar ${n} cursos al 100%` },
+  examenes_aprobados: { unidad: "exámenes", texto: (n) => `Aprobar ${n} exámenes` },
   racha_dias: { unidad: "días seguidos", texto: (n) => `Mantener ${n} días seguidos de actividad` },
   nivel_alcanzado: { unidad: "nivel", texto: (n) => `Alcanzar el nivel ${n}` },
   entregas_aprobadas: { unidad: "entregas", texto: (n) => `Tener ${n} entregas aprobadas` },
@@ -33,7 +34,7 @@ const CONDICIONES = {
 
 const CATEGORIAS = ["Progreso", "Constancia", "Nivel", "Ranking", "Entregas", "Juegos"];
 
-const CAMPOS = "id, tenant_id, nombre, descripcion, categoria, tipo_condicion, meta, xp_recompensa, activo, creado_por, created_at";
+const CAMPOS = "id, tenant_id, course_id, nombre, descripcion, categoria, tipo_condicion, meta, xp_recompensa, activo, creado_por, created_at";
 
 function presentar(l) {
   const cond = CONDICIONES[l.tipo_condicion];
@@ -50,6 +51,10 @@ function presentar(l) {
       // frase y todas las pantallas la escriban igual.
       descripcion: cond ? cond.texto(l.meta) : null,
     },
+    // Nulo cuando el logro vale para toda la organización.
+    cursoId: l.course_id || null,
+    // Sin empresa es genérico: lo creó el superadmin y vale para todas.
+    generico: !l.tenant_id,
     xpRecompensa: l.xp_recompensa,
     activo: l.activo !== false,
     creadoPor: l.creado_por || null,
@@ -121,6 +126,10 @@ class LogroService {
       limpio.xp_recompensa = xp;
     }
 
+    if (datos.cursoId !== undefined) {
+      limpio.course_id = datos.cursoId || null;
+    }
+
     if (datos.activo !== undefined) {
       limpio.activo = datos.activo === true || datos.activo === "true";
     }
@@ -137,11 +146,19 @@ class LogroService {
   static async crear(actor, datos) {
     const limpio = LogroService._validar(datos);
 
-    // Un superadmin puede crear en una organización concreta; para el resto es
-    // siempre la suya.
-    const tenantId =
-      actor.role === "superadmin" && datos.tenantId ? datos.tenantId : actor.tenantId;
-    if (!tenantId) throw fallo("No se pudo determinar la organización del logro.", 400);
+    // Tres alcances. El genérico vale para todas las organizaciones y solo lo
+    // crea el superadmin: un admin podría definir insignias para empresas que
+    // no son la suya.
+    let tenantId;
+    if (actor.role === "superadmin") {
+      tenantId = datos.generico === true ? null : datos.tenantId || actor.tenantId || null;
+    } else {
+      if (datos.generico === true) {
+        throw fallo("Solo un superadministrador crea logros para todas las organizaciones.", 403);
+      }
+      tenantId = actor.tenantId;
+      if (!tenantId) throw fallo("No se pudo determinar la organización del logro.", 400);
+    }
 
     const id = crypto.randomBytes(8).toString("hex");
     const { error } = await supabase.from("logros").insert({
@@ -166,10 +183,19 @@ class LogroService {
   }
 
   /** El catálogo de la organización. Lo ve cualquiera que haya iniciado sesión. */
-  static async listar(actor, { categoria, activo } = {}) {
+  /**
+   * El catálogo que le corresponde a quien pregunta: los de su organización
+   * más los genéricos, que valen para todas. El superadmin ve todo.
+   */
+  static async listar(actor, { categoria, activo, cursoId } = {}) {
     let q = supabase.from("logros").select(CAMPOS);
-    if (actor.role !== "superadmin") q = q.eq("tenant_id", actor.tenantId);
+    if (actor.role !== "superadmin") {
+      q = q.or(`tenant_id.eq.${actor.tenantId},tenant_id.is.null`);
+    }
     if (categoria) q = q.eq("categoria", categoria);
+    // `cursoId=general` trae los que no pertenecen a ningún curso.
+    if (cursoId === "general") q = q.is("course_id", null);
+    else if (cursoId) q = q.eq("course_id", cursoId);
     if (activo !== undefined) q = q.eq("activo", activo === "true" || activo === true);
 
     const { data, error } = await q.order("categoria").order("meta");

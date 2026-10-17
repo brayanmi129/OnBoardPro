@@ -341,3 +341,38 @@ WHERE a.adjunto IS NOT NULL
 -- Una actividad puede no tener material, y desde ahora los archivos viven en
 -- `materiales`. La columna queda por compatibilidad con lo ya desplegado.
 ALTER TABLE activities ALTER COLUMN adjunto DROP NOT NULL;
+
+
+-- Un logro vive en uno de tres alcances, de mas general a mas concreto:
+--
+--   tenant_id NULL, course_id NULL  -> generico: lo crea el superadmin y vale
+--                                      para todas las organizaciones
+--                                      ("Completa tu primer curso")
+--   tenant_id = X,  course_id NULL  -> de esa empresa, para todos sus cursos
+--   tenant_id = X,  course_id = Y   -> de ese curso concreto
+--                                      ("Terminaste Onboarding General")
+ALTER TABLE logros ADD COLUMN IF NOT EXISTS course_id VARCHAR(50)
+  REFERENCES courses(id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS logros_curso ON logros (course_id);
+
+-- Postgres considera distintos dos NULL, asi que el indice unico por empresa
+-- no impide dos genericos con el mismo nombre. Hace falta uno aparte.
+CREATE UNIQUE INDEX IF NOT EXISTS logros_nombre_generico
+  ON logros (lower(nombre)) WHERE tenant_id IS NULL;
+
+-- Aprobar un examen no estaba entre las condiciones y es de las mas naturales
+-- en onboarding ("Aprobaste la evaluacion de seguridad").
+ALTER TABLE logros DROP CONSTRAINT IF EXISTS logros_tipo_condicion_check;
+ALTER TABLE logros ADD CONSTRAINT logros_tipo_condicion_check
+  CHECK (tipo_condicion IN (
+    'actividades_completadas',
+    'secciones_completadas',
+    'cursos_completados',
+    'examenes_aprobados',
+    'racha_dias',
+    'nivel_alcanzado',
+    'entregas_aprobadas',
+    'posicion_ranking',
+    'juegos_completados'
+  ));
