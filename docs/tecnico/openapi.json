@@ -1420,7 +1420,7 @@
         "summary": "Obtiene el ranking de usuarios por nivel",
         "description": "Retorna una lista de usuarios ordenados por nivel (descendente), excluyendo administradores e instructores. Solo incluye firstname, lastname, level e id.\n",
         "tags": [
-          "Gamification"
+          "Gamificación"
         ],
         "responses": {
           "200": {

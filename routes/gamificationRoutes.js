@@ -15,7 +15,7 @@ const PendientesService = require("../services/pendientesService.js");
  *       excluyendo administradores e instructores.
  *       Solo incluye firstname, lastname, level e id.
  *     tags:
- *       - Gamification
+ *       - Gamificación
  *     responses:
  *       200:
  *         description: Ranking generado correctamente
