@@ -74,6 +74,10 @@ const opcionesCors = {
 app.use(cors(opcionesCors));
 app.options("*", cors(opcionesCors));
 
+// Antes de las rutas para que registre todas, incluidas las que rechaza
+// verifyJWT o requireRole.
+app.use(require("./middlewares/logPeticiones.js"));
+
 // 100 KB (el valor por defecto) se queda corto para cuerpos legítimos como una
 // lista larga de ids o una descripción extensa. 1 MB alcanza de sobra para
 // cualquier JSON de esta API.
@@ -98,6 +102,7 @@ const sectionRoutes = require("./routes/sectionsRoutes.js");
 const entregaRoutes = require("./routes/entregasRoutes.js");
 const examenRoutes = require("./routes/examenesRoutes.js");
 const logrosRoutes = require("./routes/logrosRoutes.js");
+const materialesRoutes = require("./routes/materialesRoutes.js");
 
 app.use("/api/users", userRoutes);
 app.use("/api/auth", authRoutes);
@@ -116,6 +121,7 @@ app.use("/api/tenants", tenantRoutes);
 app.use("/api", sectionRoutes);
 app.use("/api", entregaRoutes);
 app.use("/api", examenRoutes);
+app.use("/api", materialesRoutes);
 
 app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 

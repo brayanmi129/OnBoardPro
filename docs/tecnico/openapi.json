@@ -2222,6 +2222,130 @@
         }
       }
     },
+    "/api/activities/{id}/materiales": {
+      "get": {
+        "summary": "El material de apoyo de una actividad",
+        "tags": [
+          "Material de apoyo"
+        ],
+        "description": "Devuelve cada archivo con su nombre original, tipo, tamaño y una URL temporal para abrirlo o descargarlo. La ruta interna del bucket no se expone nunca.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Id de la actividad.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de materiales, ordenada como se cargaron"
+          },
+          "404": {
+            "description": "La actividad no existe o es de otra organización"
+          }
+        }
+      },
+      "post": {
+        "summary": "Agrega un archivo a la actividad",
+        "tags": [
+          "Material de apoyo"
+        ],
+        "description": "Se envía como multipart/form-data con el archivo en el campo `archivo` (imagen, PDF o video, hasta 50 MB). Se agrega al final de la lista: no reemplaza a los que ya estaban.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "archivo"
+                ],
+                "properties": {
+                  "archivo": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Material agregado"
+          },
+          "400": {
+            "description": "No se envió ningún archivo"
+          },
+          "403": {
+            "description": "La actividad no pertenece a un curso que dicte el instructor"
+          },
+          "404": {
+            "description": "La actividad no existe o es de otra organización"
+          }
+        }
+      }
+    },
+    "/api/materiales/{id}": {
+      "delete": {
+        "summary": "Quita un archivo de la actividad",
+        "tags": [
+          "Material de apoyo"
+        ],
+        "description": "Borra el archivo del almacenamiento y no solo su referencia: si se eliminara nada más la fila, el archivo obsoleto seguiría en el bucket.\nLa confirmación la pide la interfaz; acá la operación ya es definitiva. Un instructor solo quita material de los cursos que dicta.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Id del material, no el de la actividad.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Material eliminado"
+          },
+          "403": {
+            "description": "La actividad no pertenece a un curso que dicte el instructor"
+          },
+          "404": {
+            "description": "El material no existe"
+          }
+        }
+      }
+    },
     "/api/courses/{id}/sections": {
       "get": {
         "summary": "Lista las secciones de un curso con sus actividades",
@@ -2947,6 +3071,10 @@
     {
       "name": "Logros",
       "description": "Catálogo de logros de la organización (HU-059). Un logro es la definición de una meta —\"completar 10 actividades\", \"llegar al nivel 5\"—, no el hecho de haberla conseguido: el desbloqueo automático llega con HU-061.\n"
+    },
+    {
+      "name": "Material de apoyo",
+      "description": "Archivos de una actividad. Una actividad puede tener varios: subir uno nuevo no reemplaza a los anteriores. Viven en un bucket privado, así que cada consulta devuelve enlaces firmados que vencen en una hora.\n"
     },
     {
       "name": "Secciones",

@@ -45,7 +45,15 @@ const requireRole = require("../middlewares/requireRole.js");
  *       403:
  *         description: Sin permisos
  */
-router.get("/get/all", verifyJWT, requireRole("admin", "superadmin"), UserController.getAll);
+// El instructor lo lee para saber a quien tiene en sus cursos. El listado ya
+// viene filtrado por organizacion, asi que no ve gente de otra empresa, y
+// crear, editar y borrar siguen siendo de admin para arriba.
+router.get(
+  "/get/all",
+  verifyJWT,
+  requireRole("admin", "superadmin", "instructor"),
+  UserController.getAll
+);
 
 /**
  * @swagger

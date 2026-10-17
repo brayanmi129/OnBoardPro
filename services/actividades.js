@@ -113,6 +113,22 @@ class ActivitiesService {
       throw new Error(error.message);
     }
 
+    // El archivo que vino con la actividad entra también en `materiales`, que
+    // es donde vive el material desde HU-037. Sin esto la actividad se crea
+    // con adjunto pero su detalle aparece sin nada.
+    if (rutaSubida) {
+      await supabase.from("materiales").insert({
+        id: crypto.randomBytes(8).toString("hex"),
+        activity_id: validation.data.id,
+        tenant_id: validation.data.tenantId ?? null,
+        nombre: file.originalname,
+        ruta: rutaSubida,
+        mime: file.mimetype,
+        tamano: file.size ?? null,
+        orden: 0,
+      });
+    }
+
     // Sin await: quien crea la actividad no tiene por qué esperar a que salgan
     // los correos, y que el envío falle no debe hacer fallar la creación.
     AvisoService.actividadNueva({

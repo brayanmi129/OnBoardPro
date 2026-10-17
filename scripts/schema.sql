@@ -304,3 +304,40 @@ CREATE UNIQUE INDEX IF NOT EXISTS logros_nombre_unico
   ON logros (tenant_id, lower(nombre));
 
 CREATE INDEX IF NOT EXISTS logros_tenant ON logros (tenant_id);
+
+
+-- HU-037, HU-038 y HU-039: material de apoyo.
+--
+-- Las tres historias hablan de "archivos" en plural, pero la actividad tenia
+-- una sola columna `adjunto`: subir otro reemplazaba al anterior. Los
+-- materiales pasan a una tabla propia, uno por fila.
+CREATE TABLE IF NOT EXISTS materiales (
+  id          VARCHAR(50) PRIMARY KEY,
+  activity_id VARCHAR(50) NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+  tenant_id   VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE,
+  -- El nombre con el que se subio, para mostrarlo. La ruta del bucket lleva un
+  -- identificador aleatorio y no sirve para que una persona lo reconozca.
+  nombre      TEXT NOT NULL,
+  ruta        TEXT NOT NULL,
+  mime        VARCHAR(100),
+  tamano      INTEGER,
+  orden       INTEGER NOT NULL DEFAULT 0,
+  subido_por  VARCHAR(50) REFERENCES users(id) ON DELETE SET NULL,
+  created_at  TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_materiales_actividad ON materiales(activity_id, orden);
+
+-- Los adjuntos que ya estaban cargados pasan a ser el primer material de su
+-- actividad. El NOT EXISTS deja volver a ejecutar esto sin duplicar nada.
+INSERT INTO materiales (id, activity_id, tenant_id, nombre, ruta, mime, orden)
+SELECT substr(md5(random()::text || a.id), 1, 16),
+       a.id, a.tenant_id, regexp_replace(a.adjunto, '^.*/', ''), a.adjunto, a.mime, 0
+FROM activities a
+WHERE a.adjunto IS NOT NULL
+  AND a.adjunto <> ''
+  AND NOT EXISTS (SELECT 1 FROM materiales m WHERE m.activity_id = a.id);
+
+-- Una actividad puede no tener material, y desde ahora los archivos viven en
+-- `materiales`. La columna queda por compatibilidad con lo ya desplegado.
+ALTER TABLE activities ALTER COLUMN adjunto DROP NOT NULL;

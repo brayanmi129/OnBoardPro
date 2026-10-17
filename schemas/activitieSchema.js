@@ -10,7 +10,8 @@ class activitieSchema {
     // Ya no es una URL: con Supabase Storage se guarda la ruta dentro del
     // bucket privado y la URL se firma al momento de leerla. Las actividades
     // viejas tienen acá un enlace de Drive, que también entra como texto.
-    adjunto: zod.string().min(1),
+    // Opcional desde HU-039: se puede quitar el material y dejar la actividad.
+    adjunto: zod.string().min(1).nullish(),
     mime: zod.string().max(100).optional(),
     // En qué sección del curso queda. Sin esto la actividad nace suelta y
     // no aparece en ningún curso, porque el contenido se lee por sección.

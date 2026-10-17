@@ -90,6 +90,17 @@ class CourseService {
     const mapa = await actividadesPorCurso(cursos.map((c) => c.id));
     if (mapa) for (const c of cursos) c.actividades = mapa.get(c.id) || [];
 
+    // El superadmin ve cursos de varias organizaciones mezclados y necesita
+    // distinguirlas. Con el id solo (`tenant-uc`) no se puede mostrar nada
+    // legible, así que se resuelve el nombre acá y no en cada cliente.
+    const tenantIds = [...new Set(cursos.map((c) => c.tenantId).filter(Boolean))];
+    if (tenantIds.length) {
+      const { data: organizaciones } = await supabase
+        .from("tenants").select("id, name").in("id", tenantIds);
+      const porId = new Map((organizaciones || []).map((o) => [o.id, o.name]));
+      for (const c of cursos) c.tenantName = porId.get(c.tenantId) ?? null;
+    }
+
     return {
       cursos,
       total: count ?? cursos.length,

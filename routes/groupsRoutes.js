@@ -79,7 +79,7 @@ router.get("/get/id/:id", verifyJWT, GroupController.getById);
  *       400:
  *         description: Error en los datos
  */
-router.post("/create", verifyJWT, requireRole("admin", "superadmin"), GroupController.create);
+router.post("/create", verifyJWT, requireRole("admin", "superadmin", "instructor"), GroupController.create);
 
 /**
  * @swagger
@@ -140,7 +140,7 @@ router.put("/update/:id", verifyJWT, requireRole("admin", "superadmin"), GroupCo
  *       200:
  *         description: Usuarios agregados correctamente
  */
-router.post("/:id/add-users", verifyJWT, requireRole("admin", "superadmin"), GroupController.addUsers);
+router.post("/:id/add-users", verifyJWT, requireRole("admin", "superadmin", "instructor"), GroupController.addUsers);
 
 /**
  * @swagger
@@ -173,7 +173,7 @@ router.post("/:id/add-users", verifyJWT, requireRole("admin", "superadmin"), Gro
  *       400:
  *         description: Error al eliminar usuarios
  */
-router.delete("/:id/remove-users", verifyJWT, requireRole("admin", "superadmin"), GroupController.removeUsers);
+router.delete("/:id/remove-users", verifyJWT, requireRole("admin", "superadmin", "instructor"), GroupController.removeUsers);
 
 /**
  * @swagger
