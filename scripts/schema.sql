@@ -376,3 +376,113 @@ ALTER TABLE logros ADD CONSTRAINT logros_tipo_condicion_check
     'posicion_ranking',
     'juegos_completados'
   ));
+
+
+-- ---------------------------------------------------------------- Sprint 8
+-- 4) Rendir el examen (HU-044, HU-045)
+--
+-- Qué porcentaje del puntaje hace falta para aprobar. No es una nota: en
+-- onboarding el examen se aprueba o no, y aprobarlo es lo que paga el XP.
+ALTER TABLE activities ADD COLUMN IF NOT EXISTS porcentaje_aprobacion INTEGER NOT NULL DEFAULT 70
+  CHECK (porcentaje_aprobacion BETWEEN 1 AND 100);
+
+-- Cada vez que alguien abre el examen es un intento. Se guarda al abrirlo, y
+-- no al enviarlo, porque el tiempo límite se mide desde ahí: si se registrara
+-- recién al enviar, cualquiera podría tomarse todo el tiempo que quisiera.
+--
+-- Las respuestas van en JSONB con la corrección ya hecha. Una tabla aparte por
+-- respuesta no aporta nada: nunca se consultan sueltas, siempre con su intento.
+CREATE TABLE IF NOT EXISTS intentos_examen (
+  id             VARCHAR(50) PRIMARY KEY,
+  activity_id    VARCHAR(50) NOT NULL REFERENCES activities(id) ON DELETE CASCADE,
+  user_id        VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tenant_id      VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE,
+  numero         INTEGER NOT NULL,
+  estado         VARCHAR(20) NOT NULL DEFAULT 'en_curso'
+                 CHECK (estado IN ('en_curso', 'finalizado')),
+  iniciado_at    TIMESTAMPTZ DEFAULT NOW(),
+  finalizado_at  TIMESTAMPTZ,
+  respuestas     JSONB,
+  puntaje        INTEGER,
+  puntaje_total  INTEGER,
+  porcentaje     INTEGER,
+  aprobado       BOOLEAN,
+
+  -- Dos peticiones simultáneas no pueden abrir el mismo número de intento: es
+  -- la base la que frena el doble clic, igual que con el XP.
+  CONSTRAINT un_numero_por_intento UNIQUE (activity_id, user_id, numero)
+);
+
+CREATE INDEX IF NOT EXISTS idx_intentos_actividad ON intentos_examen(activity_id, user_id);
+CREATE INDEX IF NOT EXISTS idx_intentos_aprobados ON intentos_examen(user_id) WHERE aprobado;
+
+-- 5) Logros desbloqueados (HU-061, HU-062)
+--
+-- El catálogo dice qué se puede ganar; esta tabla dice quién lo ganó y cuándo.
+-- El UNIQUE hace que un logro se gane una sola vez aunque dos acreditaciones
+-- disparen la evaluación al mismo tiempo.
+CREATE TABLE IF NOT EXISTS logros_usuario (
+  id              VARCHAR(50) PRIMARY KEY,
+  logro_id        VARCHAR(50) NOT NULL REFERENCES logros(id) ON DELETE CASCADE,
+  user_id         VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tenant_id       VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE,
+  xp_otorgado     INTEGER NOT NULL DEFAULT 0,
+  desbloqueado_at TIMESTAMPTZ DEFAULT NOW(),
+
+  CONSTRAINT un_logro_por_persona UNIQUE (logro_id, user_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_logros_usuario ON logros_usuario(user_id);
+
+-- La recompensa de un logro entra al libro de XP como cualquier otro
+-- movimiento, pero no viene de una actividad: se identifica por el logro. El
+-- UNIQUE (user_id, activity_id) no la frena porque activity_id va en NULL.
+ALTER TABLE xp_movimientos ADD COLUMN IF NOT EXISTS logro_id VARCHAR(50)
+  REFERENCES logros(id) ON DELETE SET NULL;
+
+
+-- ---------------------------------------------------------------- Logros transversales e íconos
+
+-- 1) Ícono de los logros
+--
+-- Un emoji o el nombre de un ícono que entienda el front. Es opcional: si un
+-- logro no tiene, la API devuelve uno genérico según su categoría.
+ALTER TABLE logros ADD COLUMN IF NOT EXISTS icono VARCHAR(100);
+
+-- 2) Catálogo transversal
+--
+-- Logros genéricos (tenant_id NULL): valen para todas las organizaciones y
+-- solo el superadmin los edita. Cada empresa puede sumar los suyos encima.
+--
+-- Se insertan solo si no existe ya un genérico con ese nombre, así correr el
+-- script dos veces no los duplica ni pisa los cambios que se les hayan hecho.
+INSERT INTO logros (id, tenant_id, course_id, nombre, descripcion, categoria, tipo_condicion, meta, xp_recompensa, icono, activo)
+SELECT v.id, NULL, NULL, v.nombre, v.descripcion, v.categoria, v.tipo_condicion, v.meta, v.xp_recompensa, v.icono, TRUE
+FROM (VALUES
+  ('logro-primer-paso',      'Primer paso',      'Completaste tu primera actividad.',              'Progreso',   'actividades_completadas', 1, 10,  '🚀'),
+  ('logro-primer-examen',    'Primer examen',    'Aprobaste tu primer examen.',                    'Progreso',   'examenes_aprobados',      1, 20,  '📝'),
+  ('logro-primera-entrega',  'Primera entrega',  'Te aprobaron tu primera entrega.',               'Entregas',   'entregas_aprobadas',      1, 20,  '📦'),
+  ('logro-curso-terminado',  'Curso terminado',  'Completaste un curso al 100%.',                  'Progreso',   'cursos_completados',      1, 50,  '🎓'),
+  ('logro-constante',        'Constante',        'Tuviste actividad 3 días seguidos.',             'Constancia', 'racha_dias',              3, 15,  '🔥'),
+  ('logro-imparable',        'Imparable',        'Tuviste actividad 7 días seguidos.',             'Constancia', 'racha_dias',              7, 40,  '⚡'),
+  ('logro-nivel-5',          'Nivel 5',          'Llegaste al nivel 5.',                           'Nivel',      'nivel_alcanzado',         5, 30,  '⭐'),
+  ('logro-top-3',            'Top 3',            'Quedaste entre los 3 primeros del ranking.',     'Ranking',    'posicion_ranking',        3, 50,  '🏆')
+) AS v(id, nombre, descripcion, categoria, tipo_condicion, meta, xp_recompensa, icono)
+WHERE NOT EXISTS (
+  SELECT 1 FROM logros l WHERE l.tenant_id IS NULL AND lower(l.nombre) = lower(v.nombre)
+);
+
+-- 3) Un logro genérico no puede estar atado a un curso
+--
+-- Un curso es de una sola empresa: un genérico atado a él solo lo podría ganar
+-- esa empresa, y entonces no es genérico. El logro "Test" quedó así; se suelta
+-- del curso antes de poner la regla, para que la restricción no falle.
+UPDATE logros SET course_id = NULL WHERE tenant_id IS NULL AND course_id IS NOT NULL;
+
+ALTER TABLE logros DROP CONSTRAINT IF EXISTS logros_generico_sin_curso;
+ALTER TABLE logros ADD CONSTRAINT logros_generico_sin_curso
+  CHECK (tenant_id IS NOT NULL OR course_id IS NULL);
+
+-- El logro "Test" se puede borrar si ya no sirve. Quien lo ganó conserva el XP:
+-- el movimiento pierde la referencia al logro pero sigue sumando.
+-- DELETE FROM logros WHERE tenant_id IS NULL AND nombre = 'Test';

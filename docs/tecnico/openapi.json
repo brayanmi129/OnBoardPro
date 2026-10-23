@@ -819,6 +819,192 @@
         }
       }
     },
+    "/api/courses/update/{id}": {
+      "put": {
+        "summary": "Edita un curso",
+        "tags": [
+          "Cursos"
+        ],
+        "description": "Solo cambia los campos que se envían. La organización y el id no se editan.\nUn instructor solo edita los cursos que dicta y no puede reasignar el instructor. Al reasignarlo, el correo tiene que ser de un instructor o administrador de la misma organización.\nPasar `status` a `Abierto` es publicar: un curso sin actividades no se puede publicar.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 50
+                  },
+                  "instructor": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "grupo": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "status": {
+                    "type": "string",
+                    "enum": [
+                      "Abierto",
+                      "Cerrado"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Curso actualizado, devuelve el curso"
+          },
+          "400": {
+            "description": "Datos inválidos, no se envió nada, o el instructor no es válido"
+          },
+          "403": {
+            "description": "El instructor no dicta este curso o intentó reasignarlo"
+          },
+          "404": {
+            "description": "El curso no existe o es de otra organización"
+          },
+          "409": {
+            "description": "Se intentó publicar un curso sin actividades"
+          }
+        }
+      }
+    },
+    "/api/courses/{id}/instructor": {
+      "put": {
+        "summary": "Cambia el instructor de un curso",
+        "tags": [
+          "Cursos"
+        ],
+        "description": "Solo administradores. `instructor` puede ser el correo o el id de la persona, que tiene que ser un instructor o administrador activo de la organización del curso.\nEl contenido que armó el instructor anterior se queda en el curso, y las entregas pendientes pasan a revisarlas quien llega. El nuevo instructor recibe un correo avisándole.\nPara ver a quién se puede asignar: GET /api/users/get/role/instructor.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "instructor"
+                ],
+                "properties": {
+                  "instructor": {
+                    "type": "string",
+                    "description": "Correo o id del nuevo instructor.",
+                    "example": "instructor@empresa.com"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Devuelve message, anterior (correo) e instructor"
+          },
+          "400": {
+            "description": "Falta el instructor, no existe en la organización, no puede dictar o está desactivado"
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          },
+          "404": {
+            "description": "El curso no existe o es de otra organización"
+          }
+        }
+      }
+    },
+    "/api/courses/{id}/publicar": {
+      "put": {
+        "summary": "Publica o despublica un curso",
+        "tags": [
+          "Cursos"
+        ],
+        "description": "Un curso despublicado (`status: Cerrado`) desaparece para el aprendiz: no sale en \"mis cursos\", no se puede abrir, y no se pueden completar actividades, entregar ni rendir exámenes en él. Quien lo arma sí lo sigue viendo, para probarlo antes de abrirlo.\nDespublicar no borra el progreso ni el XP ganado.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "publicado"
+                ],
+                "properties": {
+                  "publicado": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Devuelve message y el status resultante"
+          },
+          "400": {
+            "description": "Falta `publicado` o no es booleano"
+          },
+          "403": {
+            "description": "El instructor no dicta este curso"
+          },
+          "409": {
+            "description": "Se intentó publicar un curso sin actividades"
+          }
+        }
+      }
+    },
     "/api/courses/me": {
       "get": {
         "summary": "Obtiene los cursos del usuario autenticado",
@@ -1143,7 +1329,7 @@
         "tags": [
           "Exámenes"
         ],
-        "description": "Devuelve las preguntas con sus opciones y el `puntajeTotal`, que se calcula sumando el puntaje de cada pregunta: no se guarda en ningún lado, así agregar una pregunta no deja un total desactualizado.\nCon `?resolver=true` se obtiene **lo mismo que verá el aprendiz**, sin revelar cuál opción es la correcta. Eso es la previsualización del criterio 3, y es la misma forma que consumirá quien lo rinda.\n",
+        "description": "Devuelve las preguntas con sus opciones y el `puntajeTotal`, que se calcula sumando el puntaje de cada pregunta: no se guarda en ningún lado, así agregar una pregunta no deja un total desactualizado.\nCon `?resolver=true` se obtiene **lo mismo que verá el aprendiz**, sin revelar cuál opción es la correcta. Sirve para previsualizar el examen antes de publicarlo, y es la misma forma que consumirá quien lo rinda.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1179,15 +1365,160 @@
             "description": "La actividad no es de tipo Examen"
           }
         }
-      }
-    },
-    "/api/activities/{id}/preguntas": {
-      "post": {
-        "summary": "Agrega una pregunta al examen",
+      },
+      "put": {
+        "summary": "Guarda el examen completo (configuración y preguntas)",
         "tags": [
           "Exámenes"
         ],
-        "description": "Cada pregunta necesita al menos dos opciones y **exactamente una** correcta: sin ninguna no se puede calificar, y con dos tampoco, porque todavía no hay selección múltiple. Se valida todo antes de escribir, y si fallan las opciones se deshace la pregunta: una pregunta sin opciones no sirve de nada.\n",
+        "description": "Es lo que manda el editor al pulsar \"Guardar\". Lo que no se envía no se toca: mandar solo la configuración no borra las preguntas.\n`preguntas` es la lista **entera y en orden**. Una pregunta con `id` se edita, una sin `id` se crea, y la que no viene en la lista se borra.\nCada pregunta necesita al menos dos opciones y **exactamente una** correcta. Se valida todo antes de escribir: si una pregunta está mal no se guarda nada, y el error dice cuál.\nSi alguien ya rindió el examen, las preguntas no se pueden cambiar (409); la configuración sí.\nEl puntaje total no se envía: sale de sumar las preguntas.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Id de la actividad de tipo Examen.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tiempoLimite": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 480,
+                    "description": "En minutos, o null para no limitar."
+                  },
+                  "intentosPermitidos": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 10
+                  },
+                  "porcentajeAprobacion": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100,
+                    "default": 70
+                  },
+                  "preguntas": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "enunciado",
+                        "opciones"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "Solo para editar una pregunta que ya existe."
+                        },
+                        "enunciado": {
+                          "type": "string",
+                          "example": "¿Cada cuánto se renueva la credencial de acceso?"
+                        },
+                        "puntaje": {
+                          "type": "integer",
+                          "default": 1
+                        },
+                        "opciones": {
+                          "type": "array",
+                          "minItems": 2,
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "texto",
+                              "esCorrecta"
+                            ],
+                            "properties": {
+                              "texto": {
+                                "type": "string"
+                              },
+                              "esCorrecta": {
+                                "type": "boolean"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Examen guardado, devuelve el examen completo con los ids de las preguntas"
+          },
+          "400": {
+            "description": "Valores fuera de rango, nada que guardar, una pregunta mal armada, o un id de pregunta que no es de este examen\n"
+          },
+          "403": {
+            "description": "El examen no pertenece a un curso que dicte el instructor"
+          },
+          "409": {
+            "description": "La actividad no es un examen, o ya fue rendido y se intentaron cambiar las preguntas"
+          }
+        }
+      }
+    },
+    "/api/activities/{id}/examen/iniciar": {
+      "post": {
+        "summary": "Abre un intento y devuelve el examen para resolver",
+        "tags": [
+          "Exámenes"
+        ],
+        "description": "Solo para aprendices. El intento se registra al abrirlo y no al enviarlo, porque el tiempo límite corre desde acá: `intento.venceAt` dice hasta cuándo se puede enviar.\nSi ya había un intento abierto y sigue en tiempo, **se retoma** en vez de gastar otro. El examen viene sin las respuestas correctas.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve intento, intentosRestantes y examen"
+          },
+          "403": {
+            "description": "Quien llama no es aprendiz"
+          },
+          "409": {
+            "description": "El examen no tiene preguntas, ya está aprobado, no quedan intentos o el curso no está publicado\n"
+          }
+        }
+      }
+    },
+    "/api/activities/{id}/examen/responder": {
+      "post": {
+        "summary": "Envía las respuestas del intento abierto y lo corrige",
+        "tags": [
+          "Exámenes"
+        ],
+        "description": "La corrección es automática y sale de la base. Una pregunta sin responder cuenta como incorrecta. Si el porcentaje alcanza el `porcentajeAprobacion` del examen, se acredita su XP y se evalúan los logros: la respuesta trae `logrosDesbloqueados`.\nLa opción correcta de cada pregunta (`detalle[].opcionCorrecta`) solo viene si aprobó o si ya no le quedan intentos.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1210,33 +1541,23 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "enunciado",
-                  "opciones"
+                  "respuestas"
                 ],
                 "properties": {
-                  "enunciado": {
-                    "type": "string",
-                    "example": "¿Cada cuánto se renueva la credencial de acceso?"
-                  },
-                  "puntaje": {
-                    "type": "integer",
-                    "default": 1
-                  },
-                  "opciones": {
+                  "respuestas": {
                     "type": "array",
-                    "minItems": 2,
                     "items": {
                       "type": "object",
                       "required": [
-                        "texto",
-                        "esCorrecta"
+                        "preguntaId",
+                        "opcionId"
                       ],
                       "properties": {
-                        "texto": {
+                        "preguntaId": {
                           "type": "string"
                         },
-                        "esCorrecta": {
-                          "type": "boolean"
+                        "opcionId": {
+                          "type": "string"
                         }
                       }
                     }
@@ -1247,28 +1568,25 @@
           }
         },
         "responses": {
-          "201": {
-            "description": "Pregunta agregada"
+          "200": {
+            "description": "Devuelve aprobado, puntaje, porcentaje, xpAcreditado, logrosDesbloqueados y detalle"
           },
           "400": {
-            "description": "Falta el enunciado, hay menos de dos opciones, o no hay exactamente una correcta"
-          },
-          "403": {
-            "description": "El examen no pertenece a un curso que dicte el instructor"
+            "description": "Respuestas mal formadas, o preguntas u opciones que no son de este examen"
           },
           "409": {
-            "description": "La actividad no es de tipo Examen"
+            "description": "No hay intento abierto, ya se envió, o se acabó el tiempo"
           }
         }
       }
     },
-    "/api/activities/{id}/examen/config": {
-      "put": {
-        "summary": "Configura tiempo límite e intentos",
+    "/api/activities/{id}/examen/intentos": {
+      "get": {
+        "summary": "Mis intentos en un examen",
         "tags": [
           "Exámenes"
         ],
-        "description": "El puntaje total no se configura: sale de sumar las preguntas. `tiempoLimite` en minutos, o null para no limitar.\n",
+        "description": "Cuántos intentos usé, cuántos me quedan, mi mejor porcentaje y si ya aprobé.",
         "security": [
           {
             "bearerAuth": []
@@ -1284,46 +1602,20 @@
             }
           }
         ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "properties": {
-                  "tiempoLimite": {
-                    "type": "integer",
-                    "nullable": true,
-                    "minimum": 1,
-                    "maximum": 480
-                  },
-                  "intentosPermitidos": {
-                    "type": "integer",
-                    "minimum": 1,
-                    "maximum": 10
-                  }
-                }
-              }
-            }
-          }
-        },
         "responses": {
           "200": {
-            "description": "Examen configurado"
-          },
-          "400": {
-            "description": "Valores fuera de rango, o no se envió nada"
+            "description": "Resumen e historial de intentos"
           }
         }
       }
     },
-    "/api/preguntas/{id}": {
-      "put": {
-        "summary": "Edita una pregunta",
+    "/api/activities/{id}/examen/resultados": {
+      "get": {
+        "summary": "Resultados del examen por aprendiz",
         "tags": [
           "Exámenes"
         ],
-        "description": "Si se envían `opciones`, reemplazan a las anteriores por completo: editarlas una por una obligaría a llevar la cuenta de cuál se borró, y el conjunto tiene que seguir teniendo exactamente una correcta.\n",
+        "description": "Para quien dicta o administra el curso. Incluye a quien todavía no lo rindió, con estado `sin_rendir`. Los demás estados son `en_curso`, `aprobado` y `no_aprobado`.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1333,6 +1625,47 @@
           {
             "in": "path",
             "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve resumen y aprendices con su mejor porcentaje"
+          },
+          "403": {
+            "description": "El examen no pertenece a un curso que dicte el instructor"
+          }
+        }
+      }
+    },
+    "/api/activities/{id}/preguntas/{preguntaId}": {
+      "put": {
+        "summary": "Edita una pregunta del examen",
+        "tags": [
+          "Exámenes"
+        ],
+        "description": "La pregunta tiene que ser de ese examen; si no, 404. Solo cambia lo que se envía. Si se envían `opciones`, reemplazan a las anteriores por completo: editarlas una por una obligaría a llevar la cuenta de cuál se borró, y el conjunto tiene que seguir teniendo exactamente una correcta.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Id de la actividad de tipo Examen.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "preguntaId",
             "required": true,
             "schema": {
               "type": "string"
@@ -1380,12 +1713,12 @@
             "description": "Enunciado vacío, puntaje inválido, o las opciones no tienen una sola correcta"
           },
           "404": {
-            "description": "La pregunta no existe"
+            "description": "El examen no existe, o la pregunta no es de ese examen"
           }
         }
       },
       "delete": {
-        "summary": "Elimina una pregunta y sus opciones",
+        "summary": "Elimina una pregunta del examen, con sus opciones",
         "tags": [
           "Exámenes"
         ],
@@ -1399,6 +1732,15 @@
             "in": "path",
             "name": "id",
             "required": true,
+            "description": "Id de la actividad de tipo Examen.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "preguntaId",
+            "required": true,
             "schema": {
               "type": "string"
             }
@@ -1409,7 +1751,7 @@
             "description": "Pregunta eliminada"
           },
           "404": {
-            "description": "La pregunta no existe"
+            "description": "El examen no existe, o la pregunta no es de ese examen"
           }
         }
       }
@@ -2017,7 +2359,7 @@
         "tags": [
           "Logros"
         ],
-        "description": "Un logro vive en uno de tres alcances: genérico (sin organización, válido para todas, solo lo crea el superadministrador), de una empresa, o de un curso concreto si se envía `cursoId`.\nLa organización sale del token y nunca del cuerpo: si viniera del cliente, un administrador podría crear logros dentro de otra empresa.\nNo se admiten condiciones basadas en notas: en onboarding no hay calificación, la entrega se aprueba o se pide rehacer.\n",
+        "description": "Un logro vive en uno de tres alcances: genérico (sin organización, válido para todas, solo lo crea el superadministrador), de una empresa, o de un curso concreto si se envía `cursoId`.\nLa organización sale del token y nunca del cuerpo: si viniera del cliente, un administrador podría crear logros dentro de otra empresa.\nUn logro genérico no puede atarse a un curso: el curso es de una sola empresa.\nLa **categoría no se envía**: sale del `tipoCondicion` (racha → Constancia, nivel → Nivel, etc.). El `icono` es opcional; sin uno, la API devuelve el de la categoría.\nNo se admiten condiciones basadas en notas: en onboarding no hay calificación, la entrega se aprueba o se pide rehacer.\n",
         "security": [
           {
             "bearerAuth": []
@@ -2031,7 +2373,6 @@
                 "type": "object",
                 "required": [
                   "nombre",
-                  "categoria",
                   "tipoCondicion",
                   "meta"
                 ],
@@ -2044,16 +2385,11 @@
                     "type": "string",
                     "example": "La segunda parada del camino."
                   },
-                  "categoria": {
+                  "icono": {
                     "type": "string",
-                    "enum": [
-                      "Progreso",
-                      "Constancia",
-                      "Nivel",
-                      "Ranking",
-                      "Entregas",
-                      "Juegos"
-                    ]
+                    "maxLength": 100,
+                    "description": "Emoji o nombre de ícono. Si se omite se usa el de la categoría.",
+                    "example": "🚀"
                   },
                   "tipoCondicion": {
                     "type": "string",
@@ -2098,7 +2434,7 @@
             "description": "Logro creado"
           },
           "400": {
-            "description": "Falta un campo, la categoría o el tipo de condición no existen, o la meta no es un entero positivo"
+            "description": "Falta un campo, el tipo de condición no existe, la meta no es un entero positivo, o se ató un logro genérico a un curso\n"
           },
           "403": {
             "description": "No es administrador, o pidió un logro genérico sin ser superadministrador"
@@ -2145,6 +2481,25 @@
         "responses": {
           "200": {
             "description": "Lista de logros ordenada por categoría y meta"
+          }
+        }
+      }
+    },
+    "/api/gamification/logros/mios": {
+      "get": {
+        "summary": "Mis logros, ganados y por ganar",
+        "tags": [
+          "Logros"
+        ],
+        "description": "Todos los logros activos que le corresponden a quien pregunta (los de su organización y los genéricos), con `desbloqueado`, la fecha y el `progreso` de cada uno.\nAntes de responder evalúa los pendientes: un logro de ranking que se ganó porque otros quedaron atrás aparece sin esperar a la próxima actividad. Los recién ganados vienen con `nuevo: true`.\nPrimero van los ganados, del más reciente al más viejo; después los que faltan, de los más avanzados a los menos.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve ganados, total, nuevos y logros"
           }
         }
       }
@@ -2213,11 +2568,14 @@
                   "descripcion": {
                     "type": "string"
                   },
-                  "categoria": {
-                    "type": "string"
+                  "icono": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "null vuelve al ícono de la categoría"
                   },
                   "tipoCondicion": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Cambia también la categoría"
                   },
                   "meta": {
                     "type": "integer",
@@ -3129,7 +3487,7 @@
     },
     {
       "name": "Logros",
-      "description": "Catálogo de logros de la organización (HU-059). Un logro es la definición de una meta —\"completar 10 actividades\", \"llegar al nivel 5\"—, no el hecho de haberla conseguido: el desbloqueo automático llega con HU-061.\n"
+      "description": "Catálogo de logros de la organización. Un logro es la definición de una meta —\"completar 10 actividades\", \"llegar al nivel 5\"—, no el hecho de haberla conseguido. El desbloqueo es automático: se evalúa cada vez que alguien gana XP, y cada persona ve los suyos en GET /api/gamification/logros/mios.\n"
     },
     {
       "name": "Material de apoyo",

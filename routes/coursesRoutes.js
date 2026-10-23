@@ -119,6 +119,142 @@ router.post("/create", verifyToken, requireRole("admin", "superadmin", "instruct
 
 /**
  * @swagger
+ * /api/courses/update/{id}:
+ *   put:
+ *     summary: Edita un curso
+ *     tags: [Cursos]
+ *     description: >
+ *       Solo cambia los campos que se envían. La organización y el id
+ *       no se editan.
+ *
+ *       Un instructor solo edita los cursos que dicta y no puede reasignar el
+ *       instructor. Al reasignarlo, el correo tiene que ser de un instructor o
+ *       administrador de la misma organización.
+ *
+ *       Pasar `status` a `Abierto` es publicar: un curso sin actividades no se
+ *       puede publicar.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name:       { type: string, maxLength: 50 }
+ *               instructor: { type: string, format: email }
+ *               grupo:      { type: string, nullable: true }
+ *               status:     { type: string, enum: [Abierto, Cerrado] }
+ *     responses:
+ *       200:
+ *         description: Curso actualizado, devuelve el curso
+ *       400:
+ *         description: Datos inválidos, no se envió nada, o el instructor no es válido
+ *       403:
+ *         description: El instructor no dicta este curso o intentó reasignarlo
+ *       404:
+ *         description: El curso no existe o es de otra organización
+ *       409:
+ *         description: Se intentó publicar un curso sin actividades
+ */
+router.put("/update/:id", verifyToken, requireRole("admin", "superadmin", "instructor"), CourseController.update);
+
+/**
+ * @swagger
+ * /api/courses/{id}/instructor:
+ *   put:
+ *     summary: Cambia el instructor de un curso
+ *     tags: [Cursos]
+ *     description: >
+ *       Solo administradores. `instructor` puede ser el correo o el id
+ *       de la persona, que tiene que ser un instructor o administrador activo
+ *       de la organización del curso.
+ *
+ *       El contenido que armó el instructor anterior se queda en el curso, y
+ *       las entregas pendientes pasan a revisarlas quien llega. El nuevo
+ *       instructor recibe un correo avisándole.
+ *
+ *       Para ver a quién se puede asignar: GET /api/users/get/role/instructor.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [instructor]
+ *             properties:
+ *               instructor:
+ *                 type: string
+ *                 description: Correo o id del nuevo instructor.
+ *                 example: instructor@empresa.com
+ *     responses:
+ *       200:
+ *         description: Devuelve message, anterior (correo) e instructor
+ *       400:
+ *         description: Falta el instructor, no existe en la organización, no puede dictar o está desactivado
+ *       403:
+ *         description: Quien llama no es administrador
+ *       404:
+ *         description: El curso no existe o es de otra organización
+ */
+router.put("/:id/instructor", verifyToken, requireRole("admin", "superadmin"), CourseController.asignarInstructor);
+
+/**
+ * @swagger
+ * /api/courses/{id}/publicar:
+ *   put:
+ *     summary: Publica o despublica un curso
+ *     tags: [Cursos]
+ *     description: >
+ *       Un curso despublicado (`status: Cerrado`) desaparece para el
+ *       aprendiz: no sale en "mis cursos", no se puede abrir, y no se pueden
+ *       completar actividades, entregar ni rendir exámenes en él. Quien lo
+ *       arma sí lo sigue viendo, para probarlo antes de abrirlo.
+ *
+ *       Despublicar no borra el progreso ni el XP ganado.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [publicado]
+ *             properties:
+ *               publicado: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Devuelve message y el status resultante
+ *       400:
+ *         description: Falta `publicado` o no es booleano
+ *       403:
+ *         description: El instructor no dicta este curso
+ *       409:
+ *         description: Se intentó publicar un curso sin actividades
+ */
+router.put("/:id/publicar", verifyToken, requireRole("admin", "superadmin", "instructor"), CourseController.publicar);
+
+/**
+ * @swagger
  * /api/courses/me:
  *   get:
  *     summary: Obtiene los cursos del usuario autenticado

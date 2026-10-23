@@ -12,6 +12,15 @@ class courseSchema {
     actividades: zod.array(zod.string()).optional(),
   });
 
+  // Para editar (HU-028): todo opcional y sin valores por defecto, porque un
+  // campo que no se envió no se toca. Ni el id ni la empresa se editan.
+  static actualizacion = zod.object({
+    name: zod.string().trim().min(1).max(50).optional(),
+    instructor: zod.string().email().optional(),
+    grupo: zod.string().min(1).max(50).nullable().optional(),
+    status: zod.enum(["Cerrado", "Abierto"]).optional(),
+  });
+
   constructor({ id, name, instructor, grupo, status, actividades = [] }) {
     this.id = id;
     this.name = name;

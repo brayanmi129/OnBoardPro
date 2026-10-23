@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { nivelPara, progreso } = require("../helpers/niveles.js");
 const { siguienteRacha } = require("../helpers/racha.js");
+const { asegurarPublicado } = require("../helpers/cursoDeActividad.js");
 
 function fallo(message, status) {
   const err = new Error(message);
@@ -100,6 +101,7 @@ class GamificationService {
 
     const { data: actividad } = await consulta.maybeSingle();
     if (!actividad) throw fallo("Actividad no encontrada", 404);
+    await asegurarPublicado(actividad.id, { role: "student" });
 
     // Criterio 1 de HU-040: marcarse algo como hecho solo vale para material
     // que se consume —un PDF, un video—. Sin esto el botón era una máquina de
@@ -156,8 +158,22 @@ class GamificationService {
     // Cuenta el día en que se hizo algo que otorgó puntos.
     const racha = await GamificationService.registrarDiaActivo(userId);
 
-    const resumen = await GamificationService.recalcular(userId);
-    return { xpGanado: puntos ?? 0, ...resumen, racha };
+    let resumen = await GamificationService.recalcular(userId);
+
+    // Ganar XP es lo único que mueve las condiciones de un logro (HU-061), así
+    // que acá se evalúan. Si falla, los puntos ya quedaron: no se deshace nada.
+    let logrosDesbloqueados = [];
+    try {
+      const DesbloqueoService = require("./desbloqueoService.js");
+      const r = await DesbloqueoService.evaluar(userId);
+      logrosDesbloqueados = r.logros;
+      // Si algún logro pagó XP, el nivel ya no es el de recién.
+      if (r.resumen) resumen = { ...r.resumen, subioDeNivel: resumen.subioDeNivel || r.resumen.subioDeNivel };
+    } catch (err) {
+      console.warn("[logros] no se pudieron evaluar:", err.message);
+    }
+
+    return { xpGanado: puntos ?? 0, ...resumen, racha, logrosDesbloqueados };
   }
 
   /**
@@ -244,10 +260,12 @@ class GamificationService {
       .maybeSingle();
     if (!usuario) throw fallo("Usuario no encontrado", 404);
 
+    // Los premios de logros también son movimientos, pero no son actividades.
     const { count } = await supabase
       .from("xp_movimientos")
       .select("id", { count: "exact", head: true })
-      .eq("user_id", userId);
+      .eq("user_id", userId)
+      .not("activity_id", "is", null);
 
     // La racha guardada puede estar vencida: si la última actividad fue hace
     // tres días, en la base sigue diciendo 5 hasta que la persona vuelva. Se

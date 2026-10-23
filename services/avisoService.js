@@ -4,10 +4,11 @@ const { enviarCorreo } = require("../helpers/mailer.js");
 /**
  * Avisos por correo cuando aparece algo nuevo para hacer.
  *
- * Solo dos eventos, los dos de creación:
+ * Solo tres eventos:
  *
- *   curso asignado    → "tenés este curso nuevo"
- *   actividad nueva   → "se agregó contenido al curso que ya tenías"
+ *   curso asignado       → "tenés este curso nuevo"
+ *   actividad nueva      → "se agregó contenido al curso que ya tenías"
+ *   instructor asignado  → "ahora dictás este curso"
  *
  * Son infrecuentes y accionables. Un correo por cada cosa que pasa se silencia
  * en una semana, y como salen de la misma cuenta que manda la recuperación de
@@ -152,6 +153,38 @@ class AvisoService {
       console.log(`[aviso] actividad nueva avisada a ${personas.length} persona(s) de ${curso.name}`);
     } catch (err) {
       console.error("[aviso] no se pudo avisar la actividad nueva:", err.message);
+    }
+  }
+
+  /**
+   * A alguien le asignaron un curso para dictar (HU-030).
+   *
+   * Sin este aviso el instructor nuevo se enteraba cuando le llegaban entregas
+   * para revisar de un curso que no sabía que tenía.
+   */
+  static async instructorAsignado({ persona, curso }) {
+    try {
+      if (!persona?.email) return;
+      const saludo = persona.firstname ? `Hola ${persona.firstname},` : "Hola,";
+      await enviarCorreo({
+        para: persona.email,
+        asunto: `Ahora dictás ${curso.name}`,
+        texto: [
+          saludo, "",
+          `Te asignaron como instructor del curso "${curso.name}". Ya podés editar su contenido y revisar las entregas.`,
+          "", `Entrá para verlo: ${FRONT()}`,
+        ].join("\n"),
+        html: envoltorio("Tenés un curso para dictar", `
+          <p style="font-size:15px;line-height:1.6;margin:0 0 12px">${saludo}</p>
+          <p style="font-size:15px;line-height:1.6;margin:0 0 18px">
+            Te asignaron como instructor del curso <strong>${curso.name}</strong>.
+            Ya podés editar su contenido y revisar las entregas.
+          </p>
+          ${boton("Ver el curso")}`),
+      });
+      console.log(`[aviso] instructor asignado avisado a ${persona.email}`);
+    } catch (err) {
+      console.error("[aviso] no se pudo avisar al instructor asignado:", err.message);
     }
   }
 }

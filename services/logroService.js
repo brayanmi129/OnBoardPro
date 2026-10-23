@@ -11,7 +11,8 @@ function fallo(message, status) {
  * Logros (HU-059).
  *
  * Un logro es la *definición* de una meta: "completar 10 actividades", "llegar
- * al nivel 5". No es el hecho de haberla conseguido; eso llega con HU-061.
+ * al nivel 5". No es el hecho de haberla conseguido: eso vive en
+ * desbloqueoService (HU-061).
  *
  * Por eso acá no hay nada de desbloqueo ni de progreso de una persona: es un
  * catálogo que administra la organización.
@@ -34,7 +35,35 @@ const CONDICIONES = {
 
 const CATEGORIAS = ["Progreso", "Constancia", "Nivel", "Ranking", "Entregas", "Juegos"];
 
-const CAMPOS = "id, tenant_id, course_id, nombre, descripcion, categoria, tipo_condicion, meta, xp_recompensa, activo, creado_por, created_at";
+// La categoría sale de lo que se mide y no se elige a mano. Elegida a mano
+// quedaban combinaciones sin sentido, como una racha en "Progreso".
+const CATEGORIA_DE = {
+  actividades_completadas: "Progreso",
+  secciones_completadas: "Progreso",
+  cursos_completados: "Progreso",
+  examenes_aprobados: "Progreso",
+  racha_dias: "Constancia",
+  nivel_alcanzado: "Nivel",
+  entregas_aprobadas: "Entregas",
+  posicion_ranking: "Ranking",
+  juegos_completados: "Juegos",
+};
+
+// El ícono es opcional. Sin uno propio, cada logro muestra el de su categoría
+// para que la interfaz nunca tenga un hueco.
+const ICONO_DE_CATEGORIA = {
+  Progreso: "🎯",
+  Constancia: "🔥",
+  Nivel: "⭐",
+  Ranking: "🏆",
+  Entregas: "📦",
+  Juegos: "🎮",
+};
+const ICONO_GENERICO = "🏅";
+
+const iconoDe = (l) => l.icono || ICONO_DE_CATEGORIA[l.categoria] || ICONO_GENERICO;
+
+const CAMPOS = "id, tenant_id, course_id, nombre, descripcion, categoria, tipo_condicion, meta, xp_recompensa, icono, activo, creado_por, created_at";
 
 function presentar(l) {
   const cond = CONDICIONES[l.tipo_condicion];
@@ -43,6 +72,9 @@ function presentar(l) {
     nombre: l.nombre,
     descripcion: l.descripcion || null,
     categoria: l.categoria,
+    icono: iconoDe(l),
+    // Para que el editor sepa si se está mostrando el genérico o uno elegido.
+    iconoPropio: Boolean(l.icono),
     condicion: {
       tipo: l.tipo_condicion,
       meta: l.meta,
@@ -63,10 +95,19 @@ function presentar(l) {
 }
 
 class LogroService {
-  /** El logro, comprobando que sea de la organización de quien pregunta. */
-  static async _logro(id, actor) {
+  /**
+   * El logro, comprobando que sea de la organización de quien pregunta.
+   *
+   * Los genéricos se pueden leer desde cualquier organización, pero solo los
+   * edita el superadmin: son de todas, no de quien los está mirando.
+   */
+  static async _logro(id, actor, { soloLectura = false } = {}) {
     let q = supabase.from("logros").select(CAMPOS).eq("id", id);
-    if (actor.role !== "superadmin") q = q.eq("tenant_id", actor.tenantId);
+    if (actor.role !== "superadmin") {
+      q = soloLectura
+        ? q.or(`tenant_id.eq.${actor.tenantId},tenant_id.is.null`)
+        : q.eq("tenant_id", actor.tenantId);
+    }
 
     const { data } = await q.maybeSingle();
     if (!data) throw fallo("Logro no encontrado", 404);
@@ -93,13 +134,6 @@ class LogroService {
       limpio.descripcion = datos.descripcion ? String(datos.descripcion).trim() : null;
     }
 
-    if (datos.categoria !== undefined || !parcial) {
-      if (!CATEGORIAS.includes(datos.categoria)) {
-        throw fallo(`La categoría debe ser una de: ${CATEGORIAS.join(", ")}.`, 400);
-      }
-      limpio.categoria = datos.categoria;
-    }
-
     if (datos.tipoCondicion !== undefined || !parcial) {
       if (!CONDICIONES[datos.tipoCondicion]) {
         throw fallo(
@@ -108,6 +142,15 @@ class LogroService {
         );
       }
       limpio.tipo_condicion = datos.tipoCondicion;
+      // Si llega `categoria` se ignora: la decide la condición.
+      limpio.categoria = CATEGORIA_DE[datos.tipoCondicion];
+    }
+
+    if (datos.icono !== undefined) {
+      const icono = datos.icono ? String(datos.icono).trim() : null;
+      if (icono && icono.length > 100) throw fallo("El ícono no puede pasar de 100 caracteres.", 400);
+      // Vacío o null vuelve al ícono genérico de la categoría.
+      limpio.icono = icono || null;
     }
 
     if (datos.meta !== undefined || !parcial) {
@@ -159,6 +202,7 @@ class LogroService {
       tenantId = actor.tenantId;
       if (!tenantId) throw fallo("No se pudo determinar la organización del logro.", 400);
     }
+    LogroService._asegurarAlcance(tenantId, limpio.course_id);
 
     const id = crypto.randomBytes(8).toString("hex");
     const { error } = await supabase.from("logros").insert({
@@ -204,14 +248,25 @@ class LogroService {
     return (data || []).map(presentar);
   }
 
+  /**
+   * Un curso es de una sola empresa: un genérico atado a uno solo lo podría
+   * ganar esa empresa, y entonces no sería genérico. La base también lo impide.
+   */
+  static _asegurarAlcance(tenantId, cursoId) {
+    if (!tenantId && cursoId) {
+      throw fallo("Un logro para todas las organizaciones no puede estar atado a un curso.", 400);
+    }
+  }
+
   static async obtener(id, actor) {
-    return presentar(await LogroService._logro(id, actor));
+    return presentar(await LogroService._logro(id, actor, { soloLectura: true }));
   }
 
   static async actualizar(id, actor, datos) {
-    await LogroService._logro(id, actor);
+    const actual = await LogroService._logro(id, actor);
 
     const limpio = LogroService._validar(datos, { parcial: true });
+    if (limpio.course_id !== undefined) LogroService._asegurarAlcance(actual.tenant_id, limpio.course_id);
     if (!Object.keys(limpio).length) throw fallo("No enviaste nada que cambiar.", 400);
 
     const { error } = await supabase.from("logros").update(limpio).eq("id", id);
@@ -238,12 +293,14 @@ class LogroService {
   /** Lo que la interfaz necesita para armar el formulario de creación. */
   static opciones() {
     return {
-      categorias: CATEGORIAS,
+      categorias: CATEGORIAS.map((c) => ({ nombre: c, icono: ICONO_DE_CATEGORIA[c] })),
       condiciones: Object.entries(CONDICIONES).map(([tipo, c]) => ({
         tipo,
         unidad: c.unidad,
+        categoria: CATEGORIA_DE[tipo],
         ejemplo: c.texto(10),
       })),
+      iconoGenerico: ICONO_GENERICO,
     };
   }
 }
@@ -251,3 +308,4 @@ class LogroService {
 module.exports = LogroService;
 module.exports.CONDICIONES = CONDICIONES;
 module.exports.CATEGORIAS = CATEGORIAS;
+module.exports.iconoDe = iconoDe;

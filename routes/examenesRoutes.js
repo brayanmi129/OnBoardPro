@@ -42,8 +42,8 @@ function responder(res, error, contexto) {
  *       lado, así agregar una pregunta no deja un total desactualizado.
  *
  *       Con `?resolver=true` se obtiene **lo mismo que verá el aprendiz**, sin
- *       revelar cuál opción es la correcta. Eso es la previsualización del
- *       criterio 3, y es la misma forma que consumirá quien lo rinda.
+ *       revelar cuál opción es la correcta. Sirve para previsualizar el examen
+ *       antes de publicarlo, y es la misma forma que consumirá quien lo rinda.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -78,80 +78,32 @@ router.get("/activities/:id/examen", verifyJWT, async (req, res) => {
 
 /**
  * @swagger
- * /api/activities/{id}/preguntas:
- *   post:
- *     summary: Agrega una pregunta al examen
- *     tags: [Exámenes]
- *     description: >
- *       Cada pregunta necesita al menos dos opciones y **exactamente una**
- *       correcta: sin ninguna no se puede calificar, y con dos tampoco, porque
- *       todavía no hay selección múltiple.
- *       Se valida todo antes de escribir, y si fallan las opciones se deshace
- *       la pregunta: una pregunta sin opciones no sirve de nada.
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string }
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             required: [enunciado, opciones]
- *             properties:
- *               enunciado:
- *                 type: string
- *                 example: ¿Cada cuánto se renueva la credencial de acceso?
- *               puntaje:
- *                 type: integer
- *                 default: 1
- *               opciones:
- *                 type: array
- *                 minItems: 2
- *                 items:
- *                   type: object
- *                   required: [texto, esCorrecta]
- *                   properties:
- *                     texto:      { type: string }
- *                     esCorrecta: { type: boolean }
- *     responses:
- *       201:
- *         description: Pregunta agregada
- *       400:
- *         description: Falta el enunciado, hay menos de dos opciones, o no hay exactamente una correcta
- *       403:
- *         description: El examen no pertenece a un curso que dicte el instructor
- *       409:
- *         description: La actividad no es de tipo Examen
- */
-router.post("/activities/:id/preguntas", verifyJWT, puedeEditar, async (req, res) => {
-  try {
-    const r = await ExamenService.agregarPregunta(req.params.id, actorDe(req), req.body || {});
-    return res.status(201).json(r);
-  } catch (error) {
-    return responder(res, error, "Error al agregar la pregunta");
-  }
-});
-
-/**
- * @swagger
- * /api/activities/{id}/examen/config:
+ * /api/activities/{id}/examen:
  *   put:
- *     summary: Configura tiempo límite e intentos
+ *     summary: Guarda el examen completo (configuración y preguntas)
  *     tags: [Exámenes]
  *     description: >
- *       El puntaje total no se configura: sale de sumar las preguntas.
- *       `tiempoLimite` en minutos, o null para no limitar.
+ *       Es lo que manda el editor al pulsar "Guardar". Lo que no se envía no se
+ *       toca: mandar solo la configuración no borra las preguntas.
+ *
+ *       `preguntas` es la lista **entera y en orden**. Una pregunta con `id` se
+ *       edita, una sin `id` se crea, y la que no viene en la lista se borra.
+ *
+ *       Cada pregunta necesita al menos dos opciones y **exactamente una**
+ *       correcta. Se valida todo antes de escribir: si una pregunta está mal no
+ *       se guarda nada, y el error dice cuál.
+ *
+ *       Si alguien ya rindió el examen, las preguntas no se pueden cambiar
+ *       (409); la configuración sí.
+ *
+ *       El puntaje total no se envía: sale de sumar las preguntas.
  *     security:
  *       - bearerAuth: []
  *     parameters:
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Id de la actividad de tipo Examen.
  *         schema: { type: string }
  *     requestBody:
  *       required: true
@@ -165,33 +117,222 @@ router.post("/activities/:id/preguntas", verifyJWT, puedeEditar, async (req, res
  *                 nullable: true
  *                 minimum: 1
  *                 maximum: 480
+ *                 description: En minutos, o null para no limitar.
  *               intentosPermitidos:
  *                 type: integer
  *                 minimum: 1
  *                 maximum: 10
+ *               porcentajeAprobacion:
+ *                 type: integer
+ *                 minimum: 1
+ *                 maximum: 100
+ *                 default: 70
+ *               preguntas:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required: [enunciado, opciones]
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                       description: Solo para editar una pregunta que ya existe.
+ *                     enunciado:
+ *                       type: string
+ *                       example: ¿Cada cuánto se renueva la credencial de acceso?
+ *                     puntaje:
+ *                       type: integer
+ *                       default: 1
+ *                     opciones:
+ *                       type: array
+ *                       minItems: 2
+ *                       items:
+ *                         type: object
+ *                         required: [texto, esCorrecta]
+ *                         properties:
+ *                           texto:      { type: string }
+ *                           esCorrecta: { type: boolean }
  *     responses:
  *       200:
- *         description: Examen configurado
+ *         description: Examen guardado, devuelve el examen completo con los ids de las preguntas
  *       400:
- *         description: Valores fuera de rango, o no se envió nada
+ *         description: >
+ *           Valores fuera de rango, nada que guardar, una pregunta mal armada, o
+ *           un id de pregunta que no es de este examen
+ *       403:
+ *         description: El examen no pertenece a un curso que dicte el instructor
+ *       409:
+ *         description: La actividad no es un examen, o ya fue rendido y se intentaron cambiar las preguntas
  */
-router.put("/activities/:id/examen/config", verifyJWT, puedeEditar, async (req, res) => {
+router.put("/activities/:id/examen", verifyJWT, puedeEditar, async (req, res) => {
   try {
-    const r = await ExamenService.configurar(req.params.id, actorDe(req), req.body || {});
+    const r = await ExamenService.guardar(req.params.id, actorDe(req), req.body || {});
     return res.status(200).json(r);
   } catch (error) {
-    return responder(res, error, "Error al configurar el examen");
+    return responder(res, error, "Error al guardar el examen");
   }
 });
 
 /**
  * @swagger
- * /api/preguntas/{id}:
- *   put:
- *     summary: Edita una pregunta
+ * /api/activities/{id}/examen/iniciar:
+ *   post:
+ *     summary: Abre un intento y devuelve el examen para resolver
  *     tags: [Exámenes]
  *     description: >
- *       Si se envían `opciones`, reemplazan a las anteriores por completo:
+ *       Solo para aprendices. El intento se registra al abrirlo y no al
+ *       enviarlo, porque el tiempo límite corre desde acá: `intento.venceAt`
+ *       dice hasta cuándo se puede enviar.
+ *
+ *       Si ya había un intento abierto y sigue en tiempo, **se retoma** en vez
+ *       de gastar otro. El examen viene sin las respuestas correctas.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Devuelve intento, intentosRestantes y examen
+ *       403:
+ *         description: Quien llama no es aprendiz
+ *       409:
+ *         description: >
+ *           El examen no tiene preguntas, ya está aprobado, no quedan intentos o
+ *           el curso no está publicado
+ */
+router.post("/activities/:id/examen/iniciar", verifyJWT, requireRole("student"), async (req, res) => {
+  try {
+    const r = await ExamenService.iniciar(req.params.id, actorDe(req));
+    return res.status(200).json(r);
+  } catch (error) {
+    return responder(res, error, "Error al iniciar el examen");
+  }
+});
+
+/**
+ * @swagger
+ * /api/activities/{id}/examen/responder:
+ *   post:
+ *     summary: Envía las respuestas del intento abierto y lo corrige
+ *     tags: [Exámenes]
+ *     description: >
+ *       La corrección es automática y sale de la base. Una pregunta
+ *       sin responder cuenta como incorrecta. Si el porcentaje alcanza el
+ *       `porcentajeAprobacion` del examen, se acredita su XP y se evalúan los
+ *       logros: la respuesta trae `logrosDesbloqueados`.
+ *
+ *       La opción correcta de cada pregunta (`detalle[].opcionCorrecta`) solo
+ *       viene si aprobó o si ya no le quedan intentos.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [respuestas]
+ *             properties:
+ *               respuestas:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   required: [preguntaId, opcionId]
+ *                   properties:
+ *                     preguntaId: { type: string }
+ *                     opcionId:   { type: string }
+ *     responses:
+ *       200:
+ *         description: Devuelve aprobado, puntaje, porcentaje, xpAcreditado, logrosDesbloqueados y detalle
+ *       400:
+ *         description: Respuestas mal formadas, o preguntas u opciones que no son de este examen
+ *       409:
+ *         description: No hay intento abierto, ya se envió, o se acabó el tiempo
+ */
+router.post("/activities/:id/examen/responder", verifyJWT, requireRole("student"), async (req, res) => {
+  try {
+    const r = await ExamenService.responder(req.params.id, actorDe(req), req.body || {});
+    return res.status(200).json(r);
+  } catch (error) {
+    return responder(res, error, "Error al enviar el examen");
+  }
+});
+
+/**
+ * @swagger
+ * /api/activities/{id}/examen/intentos:
+ *   get:
+ *     summary: Mis intentos en un examen
+ *     tags: [Exámenes]
+ *     description: Cuántos intentos usé, cuántos me quedan, mi mejor porcentaje y si ya aprobé.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Resumen e historial de intentos
+ */
+router.get("/activities/:id/examen/intentos", verifyJWT, async (req, res) => {
+  try {
+    const r = await ExamenService.misIntentos(req.params.id, actorDe(req));
+    return res.status(200).json(r);
+  } catch (error) {
+    return responder(res, error, "Error al obtener los intentos");
+  }
+});
+
+/**
+ * @swagger
+ * /api/activities/{id}/examen/resultados:
+ *   get:
+ *     summary: Resultados del examen por aprendiz
+ *     tags: [Exámenes]
+ *     description: >
+ *       Para quien dicta o administra el curso. Incluye a quien todavía
+ *       no lo rindió, con estado `sin_rendir`. Los demás estados son
+ *       `en_curso`, `aprobado` y `no_aprobado`.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Devuelve resumen y aprendices con su mejor porcentaje
+ *       403:
+ *         description: El examen no pertenece a un curso que dicte el instructor
+ */
+router.get("/activities/:id/examen/resultados", verifyJWT, puedeEditar, async (req, res) => {
+  try {
+    const r = await ExamenService.resultados(req.params.id, actorDe(req));
+    return res.status(200).json(r);
+  } catch (error) {
+    return responder(res, error, "Error al obtener los resultados");
+  }
+});
+
+/**
+ * @swagger
+ * /api/activities/{id}/preguntas/{preguntaId}:
+ *   put:
+ *     summary: Edita una pregunta del examen
+ *     tags: [Exámenes]
+ *     description: >
+ *       La pregunta tiene que ser de ese examen; si no, 404.
+ *       Solo cambia lo que se envía. Si se envían `opciones`, reemplazan a las anteriores por completo:
  *       editarlas una por una obligaría a llevar la cuenta de cuál se borró, y
  *       el conjunto tiene que seguir teniendo exactamente una correcta.
  *     security:
@@ -199,6 +340,11 @@ router.put("/activities/:id/examen/config", verifyJWT, puedeEditar, async (req, 
  *     parameters:
  *       - in: path
  *         name: id
+ *         required: true
+ *         description: Id de la actividad de tipo Examen.
+ *         schema: { type: string }
+ *       - in: path
+ *         name: preguntaId
  *         required: true
  *         schema: { type: string }
  *     requestBody:
@@ -223,11 +369,13 @@ router.put("/activities/:id/examen/config", verifyJWT, puedeEditar, async (req, 
  *       400:
  *         description: Enunciado vacío, puntaje inválido, o las opciones no tienen una sola correcta
  *       404:
- *         description: La pregunta no existe
+ *         description: El examen no existe, o la pregunta no es de ese examen
  */
-router.put("/preguntas/:id", verifyJWT, puedeEditar, async (req, res) => {
+router.put("/activities/:id/preguntas/:preguntaId", verifyJWT, puedeEditar, async (req, res) => {
   try {
-    const r = await ExamenService.editarPregunta(req.params.id, actorDe(req), req.body || {});
+    const r = await ExamenService.editarPregunta(
+      req.params.id, req.params.preguntaId, actorDe(req), req.body || {}
+    );
     return res.status(200).json(r);
   } catch (error) {
     return responder(res, error, "Error al editar la pregunta");
@@ -236,9 +384,9 @@ router.put("/preguntas/:id", verifyJWT, puedeEditar, async (req, res) => {
 
 /**
  * @swagger
- * /api/preguntas/{id}:
+ * /api/activities/{id}/preguntas/{preguntaId}:
  *   delete:
- *     summary: Elimina una pregunta y sus opciones
+ *     summary: Elimina una pregunta del examen, con sus opciones
  *     tags: [Exámenes]
  *     security:
  *       - bearerAuth: []
@@ -246,16 +394,21 @@ router.put("/preguntas/:id", verifyJWT, puedeEditar, async (req, res) => {
  *       - in: path
  *         name: id
  *         required: true
+ *         description: Id de la actividad de tipo Examen.
+ *         schema: { type: string }
+ *       - in: path
+ *         name: preguntaId
+ *         required: true
  *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Pregunta eliminada
  *       404:
- *         description: La pregunta no existe
+ *         description: El examen no existe, o la pregunta no es de ese examen
  */
-router.delete("/preguntas/:id", verifyJWT, puedeEditar, async (req, res) => {
+router.delete("/activities/:id/preguntas/:preguntaId", verifyJWT, puedeEditar, async (req, res) => {
   try {
-    const r = await ExamenService.eliminarPregunta(req.params.id, actorDe(req));
+    const r = await ExamenService.eliminarPregunta(req.params.id, req.params.preguntaId, actorDe(req));
     return res.status(200).json(r);
   } catch (error) {
     return responder(res, error, "Error al eliminar la pregunta");

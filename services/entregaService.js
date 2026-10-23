@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { subirMaterial, urlFirmada, borrar, MATERIALES } = require("../helpers/storage.js");
 const GamificationService = require("./gamificationService.js");
+const { asegurarPublicado } = require("../helpers/cursoDeActividad.js");
 
 function fallo(message, status) {
   const err = new Error(message);
@@ -48,6 +49,7 @@ class EntregaService {
    */
   static async entregar(actividadId, actor, { archivo, comentario }) {
     const actividad = await EntregaService._actividadEntregable(actividadId, actor);
+    await asegurarPublicado(actividadId, actor);
 
     const { data: previa } = await supabase
       .from("entregas").select("*")
@@ -259,15 +261,16 @@ class EntregaService {
     }).eq("id", entregaId);
     if (error) throw new Error(error.message);
 
-    // Solo al aprobar. Pedir cambios no paga.
+    // Solo al aprobar. Pedir cambios no paga. Se acredita aunque valga 0 XP:
+    // el movimiento es lo que marca la actividad como hecha y dispara los logros.
     let xp = null;
-    if (aprobada && actividad?.xp > 0) {
+    if (aprobada && actividad) {
       try {
         xp = await GamificationService.acreditar({
           userId: entrega.user_id,
           actividadId: entrega.activity_id,
           tenantId: entrega.tenant_id,
-          puntos: actividad.xp,
+          puntos: actividad.xp ?? 0,
           motivo: "entrega_aprobada",
         });
       } catch (err) {
@@ -281,6 +284,7 @@ class EntregaService {
       estado,
       xpAcreditado: xp?.xpGanado ?? 0,
       nivel: xp?.nivel,
+      logrosDesbloqueados: xp?.logrosDesbloqueados ?? [],
     };
   }
 

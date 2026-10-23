@@ -30,7 +30,7 @@ class SectionService {
   /** El curso existe y es de la empresa que pregunta; si no, 404. */
   static async _curso(courseId, tenantId) {
     const { data } = await delTenant(
-      supabase.from("courses").select("id, tenant_id").eq("id", courseId),
+      supabase.from("courses").select("id, tenant_id, status").eq("id", courseId),
       tenantId
     ).maybeSingle();
     if (!data) throw fallo("Curso no encontrado", 404);
@@ -54,7 +54,9 @@ class SectionService {
    * Quien edita el curso sí las ve, porque acaba de crearlas.
    */
   static async listar(courseId, tenantId = null, { soloConContenido = false } = {}) {
-    await SectionService._curso(courseId, tenantId);
+    const curso = await SectionService._curso(courseId, tenantId);
+    // Quien solo consume el curso (el aprendiz) no ve uno despublicado (HU-033).
+    if (soloConContenido && curso.status === "Cerrado") throw fallo("Curso no encontrado", 404);
 
     const { data: secciones, error } = await supabase
       .from("sections")

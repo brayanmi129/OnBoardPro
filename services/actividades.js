@@ -227,6 +227,26 @@ class ActivitiesService {
       cambios.deliverable ?? actual.deliverable
     );
 
+    // Cambiar el tipo de algo que ya se usó lo deja incoherente: un examen
+    // rendido que pasa a recurso conserva intentos que nadie puede ver, y una
+    // tarea con entregas que pasa a examen deja esas entregas sin dueño.
+    if (cambios.type && cambios.type !== actual.type) {
+      const [{ count: preguntas }, { count: intentos }, { count: entregas }] = await Promise.all([
+        supabase.from("preguntas").select("id", { count: "exact", head: true }).eq("activity_id", id),
+        supabase.from("intentos_examen").select("id", { count: "exact", head: true }).eq("activity_id", id),
+        supabase.from("entregas").select("id", { count: "exact", head: true }).eq("activity_id", id),
+      ]);
+      if (preguntas || intentos || entregas) {
+        const err = new Error(
+          `No se puede cambiar el tipo: esta actividad ya tiene ${
+            entregas ? "entregas" : intentos ? "intentos de examen" : "preguntas"
+          }. Creá una actividad nueva del otro tipo.`
+        );
+        err.status = 409;
+        throw err;
+      }
+    }
+
     let rutaNueva = null;
     if (file) {
       const { ruta } = await subirMaterial({
@@ -277,10 +297,26 @@ class ActivitiesService {
     // Mismo alcance que editar: un instructor no borra lo de otro curso.
     const data = await ActivitiesService._alAlcanceDe(id, actor);
 
+    // La base borra en cascada las filas que cuelgan de la actividad
+    // (materiales, entregas, preguntas, intentos), pero no los archivos de
+    // Storage: hay que juntar sus rutas antes, porque después ya no existen.
+    const [{ data: materiales }, { data: entregas }] = await Promise.all([
+      supabase.from("materiales").select("ruta").eq("activity_id", id),
+      supabase.from("entregas").select("archivo").eq("activity_id", id),
+    ]);
+
     const { error } = await supabase.from("activities").delete().eq("id", id);
     if (error) throw new Error(error.message);
 
-    await borrar(MATERIALES, data.adjunto);
+    // El XP que ya se ganó con ella se queda: el movimiento pierde la
+    // referencia (ON DELETE SET NULL) pero sigue sumando.
+    const rutas = [
+      data.adjunto,
+      ...(materiales || []).map((m) => m.ruta),
+      ...(entregas || []).map((e) => e.archivo),
+    ].filter(Boolean);
+    for (const ruta of rutas) await borrar(MATERIALES, ruta);
+
     return { message: "Actividad eliminada" };
   }
 

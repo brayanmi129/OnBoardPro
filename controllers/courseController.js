@@ -6,6 +6,15 @@ function tenantDe(req) {
   return req.user.role === "superadmin" ? null : req.user.tenantId;
 }
 
+function actorDe(req) {
+  return {
+    id: req.user.id,
+    email: req.user.email,
+    role: req.user.role,
+    tenantId: req.user.tenantId,
+  };
+}
+
 class CourseController {
   // Crear curso
   static async create(req, res) {
@@ -54,11 +63,49 @@ class CourseController {
     try {
       const { id } = req.params;
       const course = await CourseService.getById(id, tenantDe(req));
-      if (!course) return res.status(404).send("Curso no encontrado");
+      // Para el aprendiz un curso despublicado no existe (HU-033).
+      if (!course || (req.user.role === "student" && course.status === "Cerrado")) {
+        return res.status(404).send("Curso no encontrado");
+      }
       res.status(200).json(course);
     } catch (error) {
       console.error("Error al buscar curso por ID:", error);
       res.status(500).send("Error interno");
+    }
+  }
+
+  // Editar curso (HU-028)
+  static async update(req, res) {
+    try {
+      const r = await CourseService.actualizar(req.params.id, actorDe(req), req.body);
+      return res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al actualizar el curso:", error.message);
+      return res
+        .status(error.status || 500)
+        .json({ error: error.message, ...(error.campos ? { campos: error.campos } : {}) });
+    }
+  }
+
+  // Cambiar el instructor (HU-030)
+  static async asignarInstructor(req, res) {
+    try {
+      const r = await CourseService.asignarInstructor(req.params.id, actorDe(req), req.body?.instructor);
+      return res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al asignar el instructor:", error.message);
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+
+  // Publicar o despublicar (HU-033)
+  static async publicar(req, res) {
+    try {
+      const r = await CourseService.publicar(req.params.id, actorDe(req), req.body?.publicado);
+      return res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al publicar el curso:", error.message);
+      return res.status(error.status || 500).json({ error: error.message });
     }
   }
 
@@ -79,7 +126,9 @@ class CourseController {
   static async getMyCourses(req, res) {
     try {
       const id = req.user.id;
-      const courses = await CourseService.getByUser(id);
+      const courses = await CourseService.getByUser(id, {
+        soloPublicados: req.user.role === "student",
+      });
       res.status(200).json(courses);
     } catch (error) {
       console.error("Error al obtener los cursos del usuario:", error);

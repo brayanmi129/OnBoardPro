@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const LogroService = require("../services/logroService.js");
+const DesbloqueoService = require("../services/desbloqueoService.js");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
 
@@ -26,10 +27,11 @@ function responder(res, error, contexto) {
  * tags:
  *   name: Logros
  *   description: >
- *     Catálogo de logros de la organización (HU-059). Un logro es la
- *     definición de una meta —"completar 10 actividades", "llegar al nivel
- *     5"—, no el hecho de haberla conseguido: el desbloqueo automático llega
- *     con HU-061.
+ *     Catálogo de logros de la organización. Un logro es la definición de
+ *     una meta —"completar 10 actividades", "llegar al nivel 5"—, no el hecho
+ *     de haberla conseguido. El desbloqueo es automático: se evalúa cada vez
+ *     que alguien gana XP, y cada persona ve los suyos en
+ *     GET /api/gamification/logros/mios.
  */
 
 /**
@@ -66,6 +68,13 @@ router.get("/logros/opciones", verifyJWT, (req, res) => {
  *       La organización sale del token y nunca del cuerpo: si viniera del
  *       cliente, un administrador podría crear logros dentro de otra empresa.
  *
+ *       Un logro genérico no puede atarse a un curso: el curso es de una sola
+ *       empresa.
+ *
+ *       La **categoría no se envía**: sale del `tipoCondicion` (racha →
+ *       Constancia, nivel → Nivel, etc.). El `icono` es opcional; sin uno, la
+ *       API devuelve el de la categoría.
+ *
  *       No se admiten condiciones basadas en notas: en onboarding no hay
  *       calificación, la entrega se aprueba o se pide rehacer.
  *     security:
@@ -76,7 +85,7 @@ router.get("/logros/opciones", verifyJWT, (req, res) => {
  *         application/json:
  *           schema:
  *             type: object
- *             required: [nombre, categoria, tipoCondicion, meta]
+ *             required: [nombre, tipoCondicion, meta]
  *             properties:
  *               nombre:
  *                 type: string
@@ -84,9 +93,11 @@ router.get("/logros/opciones", verifyJWT, (req, res) => {
  *               descripcion:
  *                 type: string
  *                 example: La segunda parada del camino.
- *               categoria:
+ *               icono:
  *                 type: string
- *                 enum: [Progreso, Constancia, Nivel, Ranking, Entregas, Juegos]
+ *                 maxLength: 100
+ *                 description: Emoji o nombre de ícono. Si se omite se usa el de la categoría.
+ *                 example: 🚀
  *               tipoCondicion:
  *                 type: string
  *                 enum: [actividades_completadas, secciones_completadas, cursos_completados, examenes_aprobados, racha_dias, nivel_alcanzado, entregas_aprobadas, posicion_ranking, juegos_completados]
@@ -114,7 +125,9 @@ router.get("/logros/opciones", verifyJWT, (req, res) => {
  *       201:
  *         description: Logro creado
  *       400:
- *         description: Falta un campo, la categoría o el tipo de condición no existen, o la meta no es un entero positivo
+ *         description: >
+ *           Falta un campo, el tipo de condición no existe, la meta no es un
+ *           entero positivo, o se ató un logro genérico a un curso
  *       403:
  *         description: No es administrador, o pidió un logro genérico sin ser superadministrador
  *       409:
@@ -159,6 +172,38 @@ router.get("/logros", verifyJWT, async (req, res) => {
     return res.status(200).json(await LogroService.listar(actorDe(req), req.query));
   } catch (error) {
     return responder(res, error, "Error al listar los logros");
+  }
+});
+
+/**
+ * @swagger
+ * /api/gamification/logros/mios:
+ *   get:
+ *     summary: Mis logros, ganados y por ganar
+ *     tags: [Logros]
+ *     description: >
+ *       Todos los logros activos que le corresponden a quien pregunta (los de
+ *       su organización y los genéricos), con `desbloqueado`, la fecha y el
+ *       `progreso` de cada uno.
+ *
+ *       Antes de responder evalúa los pendientes: un logro de ranking
+ *       que se ganó porque otros quedaron atrás aparece sin esperar a la
+ *       próxima actividad. Los recién ganados vienen con `nuevo: true`.
+ *
+ *       Primero van los ganados, del más reciente al más viejo; después los
+ *       que faltan, de los más avanzados a los menos.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Devuelve ganados, total, nuevos y logros
+ */
+// Va antes de /logros/:id: si no, Express toma "mios" como un id.
+router.get("/logros/mios", verifyJWT, async (req, res) => {
+  try {
+    return res.status(200).json(await DesbloqueoService.mios(req.user.id));
+  } catch (error) {
+    return responder(res, error, "Error al obtener mis logros");
   }
 });
 
@@ -215,8 +260,8 @@ router.get("/logros/:id", verifyJWT, async (req, res) => {
  *             properties:
  *               nombre:        { type: string }
  *               descripcion:   { type: string }
- *               categoria:     { type: string }
- *               tipoCondicion: { type: string }
+ *               icono:         { type: string, nullable: true, description: "null vuelve al ícono de la categoría" }
+ *               tipoCondicion: { type: string, description: "Cambia también la categoría" }
  *               meta:          { type: integer, minimum: 1 }
  *               xpRecompensa:  { type: integer, minimum: 0 }
  *               activo:        { type: boolean }

@@ -3,6 +3,7 @@ const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacio
 const { supabase } = require("../helpers/supabaseHelper.js");
 const CourseSchema = require("../schemas/courseSchemas.js");
 const { subirBanner, borrar, BANNERS } = require("../helpers/storage.js");
+const AvisoService = require("./avisoService.js");
 
 
 // La base guarda tenant_id; la API expone tenantId, igual que en usuarios.
@@ -15,6 +16,16 @@ function aObjeto(r) {
   if (!r) return null;
   const { tenant_id, banner_url, ...resto } = r;
   return { ...resto, tenantId: tenant_id ?? null, bannerUrl: banner_url ?? null };
+}
+
+function fallo(message, status) {
+  const err = new Error(message);
+  err.status = status;
+  return err;
+}
+
+function presentarPersona(p) {
+  return { id: p.id, email: p.email, firstname: p.firstname, lastname: p.lastname, role: p.role };
 }
 
 // El superadmin pasa null y ve todo; cualquier otro rol llega con el suyo.
@@ -140,6 +151,152 @@ class CourseService {
   }
 
   /**
+   * El curso, si quien pregunta puede modificarlo. Un instructor solo toca los
+   * que dicta: la misma regla que ya rige para sus actividades y exámenes.
+   */
+  static async _editable(id, actor) {
+    const tenantId = actor.role === "superadmin" ? null : actor.tenantId;
+    const { data: curso } = await delTenant(
+      supabase.from("courses").select("*").eq("id", id),
+      tenantId
+    ).maybeSingle();
+    if (!curso) throw fallo("Curso no encontrado", 404);
+
+    if (actor.role === "instructor" && curso.instructor !== actor.email) {
+      throw fallo("Este curso no lo dictás vos.", 403);
+    }
+    return curso;
+  }
+
+  /**
+   * Edita un curso (HU-028). Solo cambia lo que se envía.
+   *
+   * La empresa nunca se edita: mover un curso de organización arrastraría sus
+   * secciones, entregas y XP a otra empresa. El instructor tampoco se cambia a
+   * sí mismo de curso; reasignarlo es tarea de un administrador.
+   */
+  static async actualizar(id, actor, datos) {
+    const curso = await CourseService._editable(id, actor);
+
+    const validacion = CourseSchema.actualizacion.safeParse(datos || {});
+    if (!validacion.success) throw errorDeValidacion(validacion.error);
+    const cambios = Object.fromEntries(
+      Object.entries(validacion.data).filter(([, v]) => v !== undefined)
+    );
+    if (!Object.keys(cambios).length) throw fallo("No enviaste nada que cambiar.", 400);
+
+    let nuevoInstructor = null;
+    if (cambios.instructor && cambios.instructor !== curso.instructor) {
+      if (actor.role === "instructor") {
+        throw fallo("Solo un administrador puede reasignar el instructor de un curso.", 403);
+      }
+      nuevoInstructor = await CourseService._instructorValido(curso, cambios.instructor);
+      // Se guarda el correo tal como está en usuarios: el permiso de editar se
+      // compara contra ese valor y una mayúscula de más lo rompería.
+      cambios.instructor = nuevoInstructor.email;
+    }
+
+    if (cambios.status === "Abierto" && curso.status !== "Abierto") {
+      await CourseService._asegurarContenido(id);
+    }
+
+    const { error } = await supabase.from("courses").update(cambios).eq("id", id);
+    if (error) throw new Error(error.message);
+
+    if (nuevoInstructor) {
+      AvisoService.instructorAsignado({ persona: nuevoInstructor, curso: { ...curso, ...cambios } });
+    }
+
+    return { message: "Curso actualizado", curso: await CourseService.getById(id, curso.tenant_id) };
+  }
+
+  /**
+   * La persona que va a dictar el curso, buscada por correo o por id.
+   *
+   * Antes se aceptaba cualquier correo y un curso podía quedar a cargo de
+   * alguien que no existía. Tiene que ser alguien activo de la misma empresa
+   * que pueda dictar: un instructor, o un administrador que dicte él mismo.
+   */
+  static async _instructorValido(curso, valor) {
+    const clave = String(valor || "").trim();
+    if (!clave) throw fallo("Indicá el correo o el id del instructor.", 400);
+
+    let q = supabase.from("users").select("id, email, firstname, lastname, role, status");
+    q = clave.includes("@") ? q.eq("email", clave.toLowerCase()) : q.eq("id", clave);
+    if (curso.tenant_id) q = q.eq("tenant_id", curso.tenant_id);
+    const { data: persona } = await q.maybeSingle();
+
+    if (!persona) throw fallo("No hay nadie con ese correo o id en la organización del curso.", 400);
+    if (!["instructor", "admin"].includes(persona.role)) {
+      throw fallo("Solo un instructor o un administrador puede dictar un curso.", 400);
+    }
+    if (persona.status === "Inactive") {
+      throw fallo("Esa persona está desactivada y no puede dictar cursos.", 400);
+    }
+    return persona;
+  }
+
+  /**
+   * Cambia quién dicta un curso (HU-030). Solo lo hace un administrador.
+   *
+   * Lo que el instructor anterior dejó armado (secciones, actividades,
+   * exámenes) se queda en el curso: es del curso, no de la persona. Y las
+   * entregas pendientes pasan a revisarlas quien llega, porque el permiso de
+   * revisar sale de `courses.instructor`.
+   */
+  static async asignarInstructor(id, actor, valor) {
+    const curso = await CourseService._editable(id, actor);
+    const persona = await CourseService._instructorValido(curso, valor);
+
+    if (persona.email === curso.instructor) {
+      return { message: "Esa persona ya dicta este curso.", instructor: presentarPersona(persona) };
+    }
+
+    const { error } = await supabase.from("courses").update({ instructor: persona.email }).eq("id", id);
+    if (error) throw new Error(error.message);
+
+    AvisoService.instructorAsignado({ persona, curso });
+
+    return {
+      message: "Instructor asignado.",
+      anterior: curso.instructor || null,
+      instructor: presentarPersona(persona),
+    };
+  }
+
+  /** Un curso sin ninguna actividad no se publica: el aprendiz entraría a una página vacía. */
+  static async _asegurarContenido(id) {
+    const mapa = await actividadesPorCurso([id]);
+    if (mapa && !(mapa.get(id) || []).length) {
+      throw fallo("No se puede publicar un curso sin actividades.", 409);
+    }
+  }
+
+  /**
+   * Publica o despublica un curso (HU-033).
+   *
+   * Despublicar no borra nada: el aprendiz deja de verlo y de poder rendirlo,
+   * pero su progreso y su XP siguen ahí para cuando se vuelva a abrir.
+   */
+  static async publicar(id, actor, publicado) {
+    if (typeof publicado !== "boolean") {
+      throw fallo("Indicá con `publicado: true` o `false` si el curso queda visible.", 400);
+    }
+    const curso = await CourseService._editable(id, actor);
+    const status = publicado ? "Abierto" : "Cerrado";
+
+    if (curso.status === status) {
+      return { message: publicado ? "El curso ya estaba publicado." : "El curso ya estaba despublicado.", status };
+    }
+    if (publicado) await CourseService._asegurarContenido(id);
+
+    const { error } = await supabase.from("courses").update({ status }).eq("id", id);
+    if (error) throw new Error(error.message);
+
+    return { message: publicado ? "Curso publicado." : "Curso despublicado.", status };
+  }
+
+  /**
    * Cambia la portada del curso. Solo se toca la base después de que Storage
    * confirmó la subida: al revés quedaría una URL apuntando a la nada.
    */
@@ -173,7 +330,13 @@ class CourseService {
     return { bannerUrl: url };
   }
 
-  static async getByUser(userId) {
+  /**
+   * Los cursos asignados a una persona por sus grupos.
+   *
+   * `soloPublicados` deja fuera los despublicados (HU-033): el aprendiz no ve
+   * un curso cerrado aunque su grupo lo tenga asignado.
+   */
+  static async getByUser(userId, { soloPublicados = false } = {}) {
     const { data: userGroups } = await supabase
       .from("users_groups")
       .select("id_group")
@@ -192,7 +355,9 @@ class CourseService {
 
     const courseIds = [...new Set(groupCourses.map((gc) => gc.id_course))];
 
-    const { data: courses } = await supabase.from("courses").select("*").in("id", courseIds);
+    let q = supabase.from("courses").select("*").in("id", courseIds);
+    if (soloPublicados) q = q.eq("status", "Abierto");
+    const { data: courses } = await q;
 
     return (courses || []).map(aObjeto);
   }
