@@ -60,7 +60,11 @@ class UserController {
     try {
       const { id } = req.params;
       const user = await UserService.getById(id);
-      if (!user) return res.status(404).json({ message: "Usuario no encontrado" });
+      // Sin este filtro cualquiera con sesión leía correo, teléfono y rol de
+      // usuarios de otras empresas solo con su id. Uno de otra empresa se
+      // responde igual que uno inexistente: distinguirlos ya revelaría que existe.
+      const ajeno = req.user.role !== "superadmin" && user?.tenantId !== req.user.tenantId;
+      if (!user || ajeno) return res.status(404).json({ message: "Usuario no encontrado" });
       return res.status(200).json(user);
     } catch (error) {
       return res.status(500).json({ message: "Error interno" });

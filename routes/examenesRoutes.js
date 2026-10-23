@@ -250,7 +250,11 @@ router.post("/activities/:id/examen/iniciar", verifyJWT, requireRole("student"),
  *                     opcionId:   { type: string }
  *     responses:
  *       200:
- *         description: Devuelve aprobado, puntaje, porcentaje, xpAcreditado, logrosDesbloqueados y detalle
+ *         description: >
+ *           Devuelve aprobado, puntaje, porcentaje, xpAcreditado,
+ *           logrosDesbloqueados y detalle. Si aprobó pero el XP no se pudo
+ *           acreditar en ese momento, `xpPendiente` viene en true: se completa
+ *           solo la próxima vez que consulte sus intentos o vuelva al examen.
  *       400:
  *         description: Respuestas mal formadas, o preguntas u opciones que no son de este examen
  *       409:

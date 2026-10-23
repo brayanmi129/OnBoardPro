@@ -68,12 +68,17 @@ class PendientesService {
 
     const pendientes = actividades.filter((a) => !hechas.has(a.id));
 
-    // Entregas calificadas: es lo que el aprendiz querría ver al entrar.
-    const { data: entregas } = await supabase
+    // Entregas ya revisadas: es lo que el aprendiz querría ver al entrar.
+    // Antes se buscaban columnas de un modelo con nota (`nota`,
+    // `calificado_at`, estado "calificada") que no existen: la consulta fallaba
+    // en silencio y esta lista salía siempre vacía. En onboarding no hay nota:
+    // la entrega queda aprobada o se pide rehacerla.
+    const { data: entregas, error: eEntregas } = await supabase
       .from("entregas")
-      .select("id, activity_id, estado, nota, feedback, calificado_at")
-      .eq("user_id", actor.id).eq("estado", "calificada")
-      .order("calificado_at", { ascending: false }).limit(10);
+      .select("id, activity_id, estado, feedback, revisado_at")
+      .eq("user_id", actor.id).in("estado", ["aprobada", "rehacer"])
+      .order("revisado_at", { ascending: false }).limit(10);
+    if (eEntregas) console.warn("[pendientes] no se leyeron las entregas revisadas:", eEntregas.message);
 
     // Los títulos de lo calificado se buscan aparte: una entrega puede ser de
     // un curso al que la persona ya no pertenece, y entonces no está en la
@@ -105,7 +110,7 @@ class PendientesService {
       calificacionesRecientes: (entregas || []).map((e) => ({
         entregaId: e.id,
         actividad: titulos.get(e.activity_id) ?? e.activity_id,
-        nota: e.nota, feedback: e.feedback, calificadaEl: e.calificado_at,
+        estado: e.estado, feedback: e.feedback, calificadaEl: e.revisado_at,
       })),
     };
   }
@@ -169,22 +174,42 @@ class PendientesService {
     const porEmpresa = (q) => (esSuper ? q : q.eq("tenant_id", actor.tenantId));
 
     const [{ data: usuarios }, { data: grupos }, { data: cursos }] = await Promise.all([
-      porEmpresa(supabase.from("users").select("id, role")),
+      porEmpresa(supabase.from("users").select("id, role, email, status")),
       porEmpresa(supabase.from("groups").select("id, name")),
       porEmpresa(supabase.from("courses").select("id, name, instructor")),
     ]);
 
-    const { data: ug } = await supabase.from("users_groups").select("id_user");
-    const { data: gc } = await supabase.from("groups_courses").select("id_group");
+    // Solo las relaciones de esta empresa. Antes se leían las tablas enteras,
+    // de todas las organizaciones: lento, y con más de mil filas PostgREST
+    // corta la respuesta y los conteos de abajo salían mal.
+    const idsUsuarios = (usuarios || []).map((u) => u.id);
+    const idsGrupos = (grupos || []).map((g) => g.id);
+    const [{ data: ug }, { data: gc }] = await Promise.all([
+      idsUsuarios.length
+        ? supabase.from("users_groups").select("id_user").in("id_user", idsUsuarios)
+        : { data: [] },
+      idsGrupos.length
+        ? supabase.from("groups_courses").select("id_group").in("id_group", idsGrupos)
+        : { data: [] },
+    ]);
     const conEquipo = new Set((ug || []).map((x) => x.id_user));
     const conCursos = new Set((gc || []).map((x) => x.id_group));
 
     // Estas tres cosas dejan a alguien sin poder trabajar, por eso son las que
     // se muestran: un aprendiz sin equipo no llega a ningún curso, un equipo
     // sin cursos no sirve de nada, y un curso sin instructor no se corrige.
+    // "Sin instructor" incluye al que tiene un correo de alguien que no existe,
+    // está desactivado o no puede dictar: en la práctica, tampoco tiene quién lo corrija.
+    const puedenDictar = new Set(
+      (usuarios || [])
+        .filter((u) => ["instructor", "admin"].includes(u.role) && u.status !== "Inactive")
+        .map((u) => u.email)
+    );
     const sinEquipo = (usuarios || []).filter((u) => u.role === "student" && !conEquipo.has(u.id));
     const equiposSinCursos = (grupos || []).filter((g) => !conCursos.has(g.id));
-    const cursosSinInstructor = (cursos || []).filter((c) => !c.instructor);
+    const cursosSinInstructor = (cursos || []).filter(
+      (c) => !c.instructor || (!esSuper && !puedenDictar.has(c.instructor))
+    );
 
     return {
       rol: actor.role,

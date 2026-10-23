@@ -67,8 +67,9 @@ router.get("/get/id/:id", verifyJWT, GroupController.getById);
  *                 example: Grupo de bienvenida
  *               userIds:
  *                 description: >
- *                   Ids de las personas que quedan en el equipo. No es una
- *                   columna de la tabla: se guarda en la relación users_groups.
+ *                   Ids de las personas que quedan en el equipo. Todas tienen
+ *                   que ser de la organización del grupo; si alguna no lo es,
+ *                   responde 400 y el grupo no se crea.
  *                 type: array
  *                 items:
  *                   type: string
@@ -77,7 +78,7 @@ router.get("/get/id/:id", verifyJWT, GroupController.getById);
  *       201:
  *         description: Grupo creado correctamente
  *       400:
- *         description: Error en los datos
+ *         description: Datos inválidos, o algún integrante no pertenece a la organización
  */
 router.post("/create", verifyJWT, requireRole("admin", "superadmin", "instructor"), GroupController.create);
 

@@ -145,12 +145,16 @@ router.post("/activities/:id/completar", verifyJWT, gamificationController.compl
  *       Pensado para llamarlo al iniciar sesión. La respuesta cambia según el rol:
  *
  *       **Aprendiz**: actividades de sus cursos que todavía no completó, cuánto XP
- *       hay en juego, su nivel y las entregas que le calificaron últimamente.
+ *       hay en juego, su nivel y sus entregas revisadas últimamente
+ *       (`calificacionesRecientes`, cada una con `estado` aprobada o rehacer,
+ *       `feedback` y `calificadaEl`).
  *
  *       **Instructor**: entregas esperando corrección y secciones vacías de sus cursos.
  *
  *       **Admin / superadmin**: aprendices sin equipo, equipos sin cursos y cursos
  *       sin instructor, que son las tres cosas que dejan a alguien sin poder trabajar.
+ *       "Sin instructor" incluye cursos cuyo instructor no existe, está
+ *       desactivado o no tiene un rol que pueda dictar.
  *
  *       Todo se calcula al momento: no hay tabla de pendientes. Una lista guardada
  *       se desincroniza; una calculada no puede mentir.

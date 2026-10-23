@@ -100,7 +100,10 @@ router.get(
  *       200:
  *         description: Usuario encontrado
  *       404:
- *         description: Usuario no encontrado
+ *         description: >
+ *           El usuario no existe o es de otra organización (las dos respuestas
+ *           son iguales a propósito). Solo el superadmin ve usuarios de
+ *           cualquier organización.
  */
 router.get("/get/id/:id", verifyJWT, UserController.getById);
 

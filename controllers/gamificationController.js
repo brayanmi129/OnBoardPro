@@ -8,8 +8,8 @@ class GamificationController {
       const ranking = await gamificationService.getRanking(tenantId);
       res.status(200).json(ranking);
     } catch (error) {
-      console.error("Error al obtener los grupos:", error);
-      res.status(500).send("Error al obtener los grupos");
+      console.error("Error al obtener el ranking:", error);
+      res.status(500).send("Error al obtener el ranking");
     }
   }
 

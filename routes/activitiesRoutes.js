@@ -140,8 +140,12 @@ router.get("/:id/adjunto", verifyJWT, ActivitiesController.adjunto);
  *     tags: [Actividades]
  *     description: >
  *       Acepta JSON o multipart. Si se envía un `archivo`, reemplaza al
- *       anterior y el viejo se borra del bucket. La empresa, la sección y el
- *       orden no se editan por acá.
+ *       anterior: el viejo se borra del bucket y el material de la actividad
+ *       pasa a apuntar al nuevo. La empresa, la sección y el orden no se
+ *       editan por acá.
+ *
+ *       El `type` no se puede cambiar si la actividad ya tiene preguntas,
+ *       intentos de examen o entregas (409): crear una nueva del otro tipo.
  *       Un **instructor** solo puede modificar actividades de los cursos que
  *       dicta; un admin o un superadmin, cualquiera dentro de su alcance.
  *     security:
@@ -183,6 +187,8 @@ router.get("/:id/adjunto", verifyJWT, ActivitiesController.adjunto);
  *         description: La actividad no pertenece a un curso que dicte el instructor
  *       404:
  *         description: No existe o es de otra organización
+ *       409:
+ *         description: Se intentó cambiar el tipo de una actividad que ya tiene preguntas, intentos o entregas
  */
 router.put(
   "/:id",
@@ -199,8 +205,11 @@ router.put(
  *     summary: Elimina una actividad y su archivo
  *     tags: [Actividades]
  *     description: >
- *       Borra la actividad de la sección en la que esté y elimina su adjunto del
- *       bucket. No se puede deshacer. Solo actividades de la propia empresa.
+ *       Borra la actividad de la sección en la que esté junto con todo lo que
+ *       cuelga de ella: material de apoyo, entregas, preguntas e intentos de
+ *       examen, incluidos sus archivos en el bucket. No se puede deshacer.
+ *       El XP que la gente ya ganó con ella se conserva. Solo actividades de la
+ *       propia empresa.
  *     security:
  *       - bearerAuth: []
  *     parameters:

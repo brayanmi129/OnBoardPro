@@ -98,8 +98,21 @@ class AuthService {
 
   async OAuthMicrosoft(profile) {
     try {
-      const email = profile._json.mail || profile._json.userPrincipalName;
-      if (!email) throw new Error("No se encontró el email en el perfil de Microsoft.");
+      // Solo el userPrincipalName, nunca `mail`. El campo `mail` lo escribe a
+      // mano el administrador de cualquier directorio de Microsoft, sin que
+      // nadie verifique que el correo sea suyo: alguien con su propio
+      // directorio podía poner mail=admin@empresa.com, entrar con Microsoft y
+      // quedarse con esa cuenta, porque acá se unifica por correo (el ataque
+      // se conoce como nOAuth). El UPN, en cambio, solo puede usar un dominio
+      // que ese directorio haya verificado por DNS, así que nadie puede usar
+      // el dominio de otra empresa.
+      //
+      // Los invitados tienen un UPN del estilo "x_gmail.com#EXT#@otro.onmicrosoft.com",
+      // cuyo dominio no es el de ninguna empresa registrada: quedan afuera abajo.
+      const email = String(profile?._json?.userPrincipalName || "").trim().toLowerCase();
+      if (!email || !email.includes("@") || email.includes("#ext#")) {
+        return { error: "Tu cuenta de Microsoft no tiene un correo de una organización registrada." };
+      }
 
       const domain = email.split("@")[1];
       const tenant = await TenantService.getByDomain(domain);

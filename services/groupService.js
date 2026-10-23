@@ -39,15 +39,53 @@ class GroupService {
     }
 
     const group = validation.data;
+
+    // Antes de crear nada: sin esta comprobación se podía crear un grupo con
+    // personas de otra empresa, y después leer sus nombres y correos en el
+    // detalle del grupo. Es la misma regla que al agregar integrantes.
+    const integrantes = Array.isArray(userIds) && userIds.length
+      ? await GroupService._integrantesValidos(userIds, group.tenantId ?? null)
+      : [];
+
     const { error } = await supabase.from("groups").insert(aFila(group));
     if (error) throw new Error(error.message);
 
-    if (Array.isArray(userIds) && userIds.length > 0) {
-      const records = userIds.map((userId) => ({ id_user: userId, id_group: group.id }));
-      await supabase.from("users_groups").insert(records);
+    if (integrantes.length) {
+      const records = integrantes.map((userId) => ({ id_user: userId, id_group: group.id }));
+      const { error: e2 } = await supabase.from("users_groups").insert(records);
+      if (e2) {
+        // Un grupo creado sin las personas que se pidieron confunde más que
+        // un error: se deshace.
+        await supabase.from("groups").delete().eq("id", group.id);
+        throw new Error(e2.message);
+      }
     }
 
     return group;
+  }
+
+  /**
+   * Los ids que pueden entrar a un grupo de esta empresa, o 400 si alguno no.
+   *
+   * Un grupo es de una sola empresa y sus integrantes también. No distingue
+   * "no existe" de "es de otra empresa": ambas respuestas son la misma para
+   * quien pregunta, y sumadas delatarían quién hay en las otras organizaciones.
+   */
+  static async _integrantesValidos(userIds, tenantId) {
+    let q = supabase.from("users").select("id").in("id", userIds);
+    q = tenantId ? q.eq("tenant_id", tenantId) : q.is("tenant_id", null);
+    const { data: validos } = await q;
+
+    const permitidos = new Set((validos || []).map((u) => u.id));
+    const rechazados = [...new Set(userIds)].filter((id) => !permitidos.has(id));
+    if (rechazados.length) {
+      const err = new Error(
+        `Estos usuarios no pertenecen a la organización del grupo: ${rechazados.join(", ")}`
+      );
+      err.status = 400;
+      throw err;
+    }
+    return [...permitidos];
   }
 
   static async getAll(tenantId = null) {
@@ -136,30 +174,12 @@ class GroupService {
       throw err;
     }
 
-    // Un grupo es de una sola empresa: sus integrantes también. La empresa se
-    // toma del GRUPO y no de quien llama, para que la regla siga valiendo
-    // cuando opera un superadmin, que no tiene empresa propia.
-    const { data: validos } = await supabase
-      .from("users")
-      .select("id")
-      .in("id", userIds)
-      .eq("tenant_id", grupo.tenant_id);
-
-    const permitidos = new Set((validos || []).map((u) => u.id));
-    const rechazados = [...new Set(userIds)].filter((id) => !permitidos.has(id));
-    if (rechazados.length) {
-      // No distingue "no existe" de "es de otra empresa": ambas respuestas son
-      // la misma para quien pregunta, y sumadas delatarían quién hay en las
-      // otras organizaciones.
-      const err = new Error(
-        `Estos usuarios no pertenecen a la organización del grupo: ${rechazados.join(", ")}`
-      );
-      err.status = 400;
-      throw err;
-    }
+    // La empresa se toma del GRUPO y no de quien llama, para que la regla siga
+    // valiendo cuando opera un superadmin, que no tiene empresa propia.
+    const permitidos = await GroupService._integrantesValidos(userIds, grupo.tenant_id);
 
     // upsert con onConflict: agregar a alguien que ya está no duplica ni falla.
-    const records = [...permitidos].map((userId) => ({ id_user: userId, id_group: groupId }));
+    const records = permitidos.map((userId) => ({ id_user: userId, id_group: groupId }));
     const { error } = await supabase
       .from("users_groups")
       .upsert(records, { onConflict: "id_user,id_group" });
@@ -297,7 +317,11 @@ class GroupService {
       supabase.from("groups").select("id").eq("id", id),
       tenantId
     ).maybeSingle();
-    if (!existing) throw new Error("Grupo no encontrado");
+    if (!existing) {
+      const err = new Error("Grupo no encontrado");
+      err.status = 404;
+      throw err;
+    }
 
     // ON DELETE CASCADE elimina users_groups y groups_courses automáticamente
     const { error } = await supabase.from("groups").delete().eq("id", id);

@@ -162,7 +162,7 @@
         "tags": [
           "Actividades"
         ],
-        "description": "Acepta JSON o multipart. Si se envía un `archivo`, reemplaza al anterior y el viejo se borra del bucket. La empresa, la sección y el orden no se editan por acá. Un **instructor** solo puede modificar actividades de los cursos que dicta; un admin o un superadmin, cualquiera dentro de su alcance.\n",
+        "description": "Acepta JSON o multipart. Si se envía un `archivo`, reemplaza al anterior: el viejo se borra del bucket y el material de la actividad pasa a apuntar al nuevo. La empresa, la sección y el orden no se editan por acá.\nEl `type` no se puede cambiar si la actividad ya tiene preguntas, intentos de examen o entregas (409): crear una nueva del otro tipo. Un **instructor** solo puede modificar actividades de los cursos que dicta; un admin o un superadmin, cualquiera dentro de su alcance.\n",
         "security": [
           {
             "bearerAuth": []
@@ -245,6 +245,9 @@
           },
           "404": {
             "description": "No existe o es de otra organización"
+          },
+          "409": {
+            "description": "Se intentó cambiar el tipo de una actividad que ya tiene preguntas, intentos o entregas"
           }
         }
       },
@@ -253,7 +256,7 @@
         "tags": [
           "Actividades"
         ],
-        "description": "Borra la actividad de la sección en la que esté y elimina su adjunto del bucket. No se puede deshacer. Solo actividades de la propia empresa.\n",
+        "description": "Borra la actividad de la sección en la que esté junto con todo lo que cuelga de ella: material de apoyo, entregas, preguntas e intentos de examen, incluidos sus archivos en el bucket. No se puede deshacer. El XP que la gente ya ganó con ella se conserva. Solo actividades de la propia empresa.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1114,7 +1117,7 @@
         "tags": [
           "Entregas"
         ],
-        "description": "Solo funciona en actividades con `deliverable: true`; el resto responde 409. Se envía como multipart/form-data con el archivo en el campo `archivo` (máximo 50 MB: imagen, PDF o video) y, opcionalmente, un `comentario`. Hay **una sola entrega por persona y actividad**: volver a enviar reemplaza la anterior y borra el archivo viejo. Una vez calificada ya no se puede reemplazar, porque la nota dejaría de corresponder al trabajo corregido.\n",
+        "description": "Solo funciona en actividades con `deliverable: true`; el resto responde 409. Se envía como multipart/form-data con el archivo en el campo `archivo` (máximo 50 MB: imagen, PDF o video) y, opcionalmente, un `comentario`. Hay **una sola entrega por persona y actividad**: volver a enviar reemplaza la anterior y borra el archivo viejo. Una vez aprobada ya no se puede reemplazar: la aprobación dejaría de corresponder al trabajo revisado. Esto también vale si el instructor la aprueba mientras se está subiendo el reemplazo.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1161,7 +1164,7 @@
             "description": "La actividad no existe o es de otra organización"
           },
           "409": {
-            "description": "La actividad no admite entregas, o la entrega ya fue calificada"
+            "description": "La actividad no admite entregas, la entrega ya fue aprobada, o hay otra entrega tuya registrándose en ese momento\n"
           }
         }
       }
@@ -1189,7 +1192,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Devuelve la entrega con su estado, nota y retroalimentación"
+            "description": "Devuelve la entrega con su estado (entregado, aprobada o rehacer) y la retroalimentación"
           },
           "404": {
             "description": "Todavía no entregaste esta actividad"
@@ -1235,7 +1238,7 @@
         "tags": [
           "Entregas"
         ],
-        "description": "**No hay nota.** Esto es onboarding, no un curso: quien revisa decide si el trabajo está completo (`aprobada: true`) o si hay que rehacerlo (`aprobada: false`), y explica por qué.\nEl comentario es opcional al dar por completada la entrega y obligatorio al pedir cambios: \"rehacelo\" sin decir qué corregir no se puede cumplir.\nAl aprobar se acredita el XP de la actividad —nunca al subir el archivo— y una actividad paga una sola vez, así que volver a aprobar no duplica puntos. Si se piden cambios, la entrega pasa a `rehacer` y el aprendiz puede reemplazarla.\nUn instructor solo revisa entregas de los cursos que dicta.\n",
+        "description": "**No hay nota.** Esto es onboarding, no un curso: quien revisa decide si el trabajo está completo (`aprobada: true`) o si hay que rehacerlo (`aprobada: false`), y explica por qué.\nEl comentario es opcional al dar por completada la entrega y obligatorio al pedir cambios: \"rehacelo\" sin decir qué corregir no se puede cumplir.\nAl aprobar se acredita el XP de la actividad —nunca al subir el archivo— y una actividad paga una sola vez. Si se piden cambios, la entrega pasa a `rehacer` y el aprendiz puede reemplazarla.\nUna entrega **aprobada ya no se puede pasar a rehacer** (409). Volver a aprobarla responde 200 con \"La entrega ya estaba aprobada.\" y no duplica puntos; si la primera vez el XP no llegó a acreditarse, lo completa.\nUn instructor solo revisa entregas de los cursos que dicta.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1277,7 +1280,7 @@
         },
         "responses": {
           "200": {
-            "description": "Devuelve estado, xpAcreditado y nivel"
+            "description": "Devuelve message, estado, xpAcreditado, nivel y logrosDesbloqueados"
           },
           "400": {
             "description": "Falta indicar si queda aprobada, o se piden cambios sin comentario"
@@ -1287,6 +1290,9 @@
           },
           "404": {
             "description": "La entrega no existe o es de otra organización"
+          },
+          "409": {
+            "description": "Se intentó pedir cambios sobre una entrega ya aprobada"
           }
         }
       }
@@ -1569,7 +1575,7 @@
         },
         "responses": {
           "200": {
-            "description": "Devuelve aprobado, puntaje, porcentaje, xpAcreditado, logrosDesbloqueados y detalle"
+            "description": "Devuelve aprobado, puntaje, porcentaje, xpAcreditado, logrosDesbloqueados y detalle. Si aprobó pero el XP no se pudo acreditar en ese momento, `xpPendiente` viene en true: se completa solo la próxima vez que consulte sus intentos o vuelva al examen.\n"
           },
           "400": {
             "description": "Respuestas mal formadas, o preguntas u opciones que no son de este examen"
@@ -1904,7 +1910,7 @@
         "tags": [
           "Gamificación"
         ],
-        "description": "Pensado para llamarlo al iniciar sesión. La respuesta cambia según el rol:\n**Aprendiz**: actividades de sus cursos que todavía no completó, cuánto XP hay en juego, su nivel y las entregas que le calificaron últimamente.\n**Instructor**: entregas esperando corrección y secciones vacías de sus cursos.\n**Admin / superadmin**: aprendices sin equipo, equipos sin cursos y cursos sin instructor, que son las tres cosas que dejan a alguien sin poder trabajar.\nTodo se calcula al momento: no hay tabla de pendientes. Una lista guardada se desincroniza; una calculada no puede mentir.\n",
+        "description": "Pensado para llamarlo al iniciar sesión. La respuesta cambia según el rol:\n**Aprendiz**: actividades de sus cursos que todavía no completó, cuánto XP hay en juego, su nivel y sus entregas revisadas últimamente (`calificacionesRecientes`, cada una con `estado` aprobada o rehacer, `feedback` y `calificadaEl`).\n**Instructor**: entregas esperando corrección y secciones vacías de sus cursos.\n**Admin / superadmin**: aprendices sin equipo, equipos sin cursos y cursos sin instructor, que son las tres cosas que dejan a alguien sin poder trabajar. \"Sin instructor\" incluye cursos cuyo instructor no existe, está desactivado o no tiene un rol que pueda dictar.\nTodo se calcula al momento: no hay tabla de pendientes. Una lista guardada se desincroniza; una calculada no puede mentir.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1985,7 +1991,7 @@
                     "example": "Grupo de bienvenida"
                   },
                   "userIds": {
-                    "description": "Ids de las personas que quedan en el equipo. No es una columna de la tabla: se guarda en la relación users_groups.\n",
+                    "description": "Ids de las personas que quedan en el equipo. Todas tienen que ser de la organización del grupo; si alguna no lo es, responde 400 y el grupo no se crea.\n",
                     "type": "array",
                     "items": {
                       "type": "string"
@@ -2005,7 +2011,7 @@
             "description": "Grupo creado correctamente"
           },
           "400": {
-            "description": "Error en los datos"
+            "description": "Datos inválidos, o algún integrante no pertenece a la organización"
           }
         }
       }
@@ -3224,7 +3230,7 @@
             "description": "Usuario encontrado"
           },
           "404": {
-            "description": "Usuario no encontrado"
+            "description": "El usuario no existe o es de otra organización (las dos respuestas son iguales a propósito). Solo el superadmin ve usuarios de cualquier organización.\n"
           }
         }
       }
@@ -3475,7 +3481,7 @@
     },
     {
       "name": "Entregas",
-      "description": "Trabajos que suben los aprendices en las actividades marcadas como entregables, y su calificación.\n"
+      "description": "Trabajos que suben los aprendices en las actividades marcadas como entregables, y su revisión: aprobada o a rehacer.\n"
     },
     {
       "name": "Exámenes",

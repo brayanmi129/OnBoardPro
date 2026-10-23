@@ -59,7 +59,7 @@ class GroupController {
       res.status(200).json(result);
     } catch (error) {
       console.error("Error al agregar usuarios al grupo:", error.message);
-      res.status(error.status || 400).json({ error: error.message });
+      res.status(error.status || 500).json({ error: error.message });
     }
   }
 
@@ -75,7 +75,7 @@ class GroupController {
       res.status(200).json(result);
     } catch (error) {
       console.error("Error al eliminar usuarios del grupo:", error.message);
-      res.status(error.status || 400).json({ error: error.message });
+      res.status(error.status || 500).json({ error: error.message });
     }
   }
 
@@ -88,7 +88,7 @@ class GroupController {
       res.status(200).json(r);
     } catch (error) {
       console.error("Error al asignar cursos al equipo:", error.message);
-      res.status(error.status || 400).json({ error: error.message });
+      res.status(error.status || 500).json({ error: error.message });
     }
   }
 
@@ -100,7 +100,7 @@ class GroupController {
       res.status(200).json(r);
     } catch (error) {
       console.error("Error al retirar cursos del equipo:", error.message);
-      res.status(error.status || 400).json({ error: error.message });
+      res.status(error.status || 500).json({ error: error.message });
     }
   }
 
@@ -133,7 +133,8 @@ class GroupController {
       res.status(200).send(`Grupo eliminado ${id} correctamente`);
     } catch (error) {
       console.error("Error al eliminar el grupo:", error);
-      res.status(500).send("Error al eliminar el grupo");
+      // Un grupo inexistente o de otra empresa es 404, no un fallo del servidor.
+      res.status(error.status || 500).send(error.status ? error.message : "Error al eliminar el grupo");
     }
   }
 

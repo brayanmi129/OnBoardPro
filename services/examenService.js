@@ -168,15 +168,9 @@ class ExamenService {
     }
   }
 
-  /** Reemplaza las opciones de una pregunta. Enteras: así siempre queda una sola correcta. */
-  static async _escribirOpciones(preguntaId, opciones) {
-    await supabase.from("opciones").delete().eq("pregunta_id", preguntaId);
-    const { error } = await supabase.from("opciones").insert(
-      opciones.map((o, i) => ({
-        id: id(), pregunta_id: preguntaId, texto: o.texto, es_correcta: o.esCorrecta, orden: i,
-      }))
-    );
-    if (error) throw new Error(error.message);
+  /** Opciones listas para la base, con su id ya generado. */
+  static _opcionesConId(opciones) {
+    return opciones.map((o) => ({ id: id(), texto: o.texto, esCorrecta: o.esCorrecta }));
   }
 
   /**
@@ -219,35 +213,27 @@ class ExamenService {
       if (ajena) throw fallo(`La pregunta ${ajena} no es de este examen.`, 400);
 
       await ExamenService._asegurarSinIntentos(actividadId);
-
-      // Primero se borra lo que ya no viene; las opciones se van por CASCADE.
-      const quitar = [...existentes].filter((pid) => !conId.includes(pid));
-      if (quitar.length) {
-        const { error } = await supabase.from("preguntas").delete().in("id", quitar);
-        if (error) throw new Error(error.message);
-      }
     }
 
-    if (Object.keys(config).length) {
-      const { error } = await supabase.from("activities").update(config).eq("id", actividadId);
-      if (error) throw new Error(error.message);
-    }
-
-    for (const [orden, p] of (nuevas || []).entries()) {
-      const fila = { enunciado: p.enunciado, puntaje: p.puntaje, orden };
-      let preguntaId = p.id;
-      if (preguntaId) {
-        const { error } = await supabase.from("preguntas").update(fila).eq("id", preguntaId);
-        if (error) throw new Error(error.message);
-      } else {
-        preguntaId = id();
-        const { error } = await supabase.from("preguntas").insert({
-          id: preguntaId, activity_id: actividadId, tenant_id: actividad.tenant_id, ...fila,
-        });
-        if (error) throw new Error(error.message);
-      }
-      await ExamenService._escribirOpciones(preguntaId, p.opciones);
-    }
+    // Todo lo que sigue lo escribe una sola función de la base
+    // (guardar_examen), en una transacción: o se guarda el examen entero o no
+    // cambia nada. Hecho paso a paso desde acá, un fallo a mitad de camino
+    // dejaba preguntas borradas o sin opciones.
+    const { error } = await supabase.rpc("guardar_examen", {
+      p_activity: actividadId,
+      p_tenant: actividad.tenant_id,
+      p_config: config,
+      p_preguntas: nuevas
+        ? nuevas.map((p) => ({
+            id: p.id,
+            nuevoId: p.id ? null : id(),
+            enunciado: p.enunciado,
+            puntaje: p.puntaje,
+            opciones: ExamenService._opcionesConId(p.opciones),
+          }))
+        : null,
+    });
+    if (error) throw new Error(error.message);
 
     return {
       message: "Examen guardado",
@@ -332,11 +318,15 @@ class ExamenService {
     if (!Object.keys(cambios).length && !opciones) throw fallo("No enviaste nada que cambiar.", 400);
     await ExamenService._asegurarSinIntentos(actividadId);
 
-    if (Object.keys(cambios).length) {
-      const { error } = await supabase.from("preguntas").update(cambios).eq("id", preguntaId);
-      if (error) throw new Error(error.message);
-    }
-    if (opciones) await ExamenService._escribirOpciones(preguntaId, opciones);
+    // En una sola transacción (editar_pregunta): reemplazar las opciones es
+    // borrar e insertar, y si el insert fallaba la pregunta quedaba sin opciones.
+    const { error } = await supabase.rpc("editar_pregunta", {
+      p_pregunta: preguntaId,
+      p_enunciado: cambios.enunciado ?? null,
+      p_puntaje: cambios.puntaje ?? null,
+      p_opciones: opciones ? ExamenService._opcionesConId(opciones) : null,
+    });
+    if (error) throw new Error(error.message);
 
     return { message: "Pregunta actualizada" };
   }
@@ -350,6 +340,24 @@ class ExamenService {
     if (error) throw new Error(error.message);
 
     return { message: "Pregunta eliminada" };
+  }
+
+  /**
+   * Si el examen está aprobado pero su XP no entró (falló la acreditación al
+   * enviarlo), lo acredita ahora. Nunca rompe la consulta que lo llama.
+   */
+  static async _repararXp(actividad, userId) {
+    try {
+      await GamificationService.asegurarAcreditado({
+        userId,
+        actividadId: actividad.id,
+        tenantId: actividad.tenant_id,
+        puntos: actividad.xp ?? 0,
+        motivo: "examen_aprobado",
+      });
+    } catch (err) {
+      console.error("[examen] no se pudo reparar el XP:", err.message);
+    }
   }
 
   /** Los intentos de una persona en un examen, del primero al último. */
@@ -390,7 +398,10 @@ class ExamenService {
     if (!examen.preguntas.length) throw fallo("Este examen todavía no tiene preguntas.", 409);
 
     const intentos = await ExamenService._intentosDe(actividadId, actor.id);
-    if (intentos.some((i) => i.aprobado)) throw fallo("Ya aprobaste este examen.", 409);
+    if (intentos.some((i) => i.aprobado)) {
+      await ExamenService._repararXp(actividad, actor.id);
+      throw fallo("Ya aprobaste este examen.", 409);
+    }
 
     const permitidos = actividad.intentos_permitidos ?? 1;
     const abierto = intentos.find((i) => i.estado === "en_curso");
@@ -522,6 +533,7 @@ class ExamenService {
     // Aprobar es lo que completa el examen. Se acredita aunque valga 0 XP: el
     // movimiento es lo que marca la actividad como hecha y dispara los logros.
     let xp = null;
+    let xpPendiente = false;
     if (aprobado) {
       try {
         xp = await GamificationService.acreditar({
@@ -533,7 +545,13 @@ class ExamenService {
           siRepite: "Este examen ya había otorgado su XP.",
         });
       } catch (err) {
-        console.warn("[examen] no se acreditó XP:", err.message);
+        // El intento ya quedó aprobado. Si el XP no entró (y no es porque ya
+        // estaba), se completa la próxima vez que la persona consulte sus
+        // intentos o vuelva al examen: ver _repararXp.
+        if (err.status !== 409) {
+          xpPendiente = true;
+          console.error("[examen] no se acreditó XP, queda pendiente:", err.message);
+        }
       }
     }
 
@@ -551,6 +569,7 @@ class ExamenService {
       porcentajeAprobacion: minimo,
       intentosRestantes: aprobado ? 0 : restantes,
       xpAcreditado: xp?.xpGanado ?? 0,
+      xpPendiente,
       nivel: xp?.nivel,
       subioDeNivel: xp?.subioDeNivel ?? false,
       logrosDesbloqueados: xp?.logrosDesbloqueados ?? [],
@@ -564,6 +583,7 @@ class ExamenService {
     const intentos = await ExamenService._intentosDe(actividadId, actor.id);
     const permitidos = actividad.intentos_permitidos ?? 1;
     const finalizados = intentos.filter((i) => i.estado === "finalizado");
+    if (intentos.some((i) => i.aprobado)) await ExamenService._repararXp(actividad, actor.id);
 
     return {
       intentosPermitidos: permitidos,

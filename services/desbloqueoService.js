@@ -203,33 +203,20 @@ async function unaVuelta(usuario) {
   for (const l of pendientes) {
     if (!medidas.get(l.id)?.cumple) continue;
 
-    const { error } = await supabase.from("logros_usuario").insert({
-      id: nuevoId(),
-      logro_id: l.id,
-      user_id: usuario.id,
-      tenant_id: usuario.tenant_id,
-      xp_otorgado: l.xp_recompensa || 0,
+    // El logro y su premio de XP se escriben juntos en la base (otorgar_logro):
+    // o quedan los dos o ninguno. Como dos inserts sueltos, si fallaba el
+    // segundo el logro quedaba ganado sin su XP y nunca se reintentaba.
+    // Devuelve false si otra evaluación simultánea ya lo había otorgado.
+    const { data: otorgado, error } = await supabase.rpc("otorgar_logro", {
+      p_logro: l.id,
+      p_user: usuario.id,
+      p_tenant: usuario.tenant_id,
+      p_xp: l.xp_recompensa || 0,
+      p_id_logro_usuario: nuevoId(),
+      p_id_movimiento: nuevoId(),
     });
-    if (error) {
-      // 23505: otra evaluación simultánea ya lo registró. No es un error.
-      if (error.code === "23505" || /duplicate|unique/i.test(error.message)) continue;
-      throw new Error(error.message);
-    }
-
-    // El premio entra al libro de XP como cualquier movimiento, pero atado al
-    // logro y no a una actividad.
-    if (l.xp_recompensa > 0) {
-      const { error: e2 } = await supabase.from("xp_movimientos").insert({
-        id: nuevoId(),
-        user_id: usuario.id,
-        tenant_id: usuario.tenant_id,
-        activity_id: null,
-        logro_id: l.id,
-        xp: l.xp_recompensa,
-        motivo: "logro_desbloqueado",
-      });
-      if (e2) console.warn("[logros] no se acreditó el XP del logro:", e2.message);
-    }
+    if (error) throw new Error(error.message);
+    if (!otorgado) continue;
 
     nuevos.push(presentar(l, { desbloqueadoAt: new Date().toISOString() }));
   }

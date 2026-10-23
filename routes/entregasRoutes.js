@@ -13,7 +13,7 @@ const puedeCorregir = requireRole("admin", "superadmin", "instructor");
  *   name: Entregas
  *   description: >
  *     Trabajos que suben los aprendices en las actividades marcadas como
- *     entregables, y su calificación.
+ *     entregables, y su revisión: aprobada o a rehacer.
  */
 
 /**
@@ -28,9 +28,10 @@ const puedeCorregir = requireRole("admin", "superadmin", "instructor");
  *       `archivo` (máximo 50 MB: imagen, PDF o video) y, opcionalmente, un
  *       `comentario`.
  *       Hay **una sola entrega por persona y actividad**: volver a enviar
- *       reemplaza la anterior y borra el archivo viejo. Una vez calificada ya
- *       no se puede reemplazar, porque la nota dejaría de corresponder al
- *       trabajo corregido.
+ *       reemplaza la anterior y borra el archivo viejo. Una vez aprobada ya
+ *       no se puede reemplazar: la aprobación dejaría de corresponder al
+ *       trabajo revisado. Esto también vale si el instructor la aprueba
+ *       mientras se está subiendo el reemplazo.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -56,7 +57,9 @@ const puedeCorregir = requireRole("admin", "superadmin", "instructor");
  *       404:
  *         description: La actividad no existe o es de otra organización
  *       409:
- *         description: La actividad no admite entregas, o la entrega ya fue calificada
+ *         description: >
+ *           La actividad no admite entregas, la entrega ya fue aprobada, o hay
+ *           otra entrega tuya registrándose en ese momento
  */
 router.post("/activities/:id/entrega", verifyJWT, subida.material, EntregaController.entregar);
 
@@ -75,7 +78,7 @@ router.post("/activities/:id/entrega", verifyJWT, subida.material, EntregaContro
  *         schema: { type: string }
  *     responses:
  *       200:
- *         description: Devuelve la entrega con su estado, nota y retroalimentación
+ *         description: Devuelve la entrega con su estado (entregado, aprobada o rehacer) y la retroalimentación
  *       404:
  *         description: Todavía no entregaste esta actividad
  */
@@ -121,9 +124,13 @@ router.get("/activities/:id/entregas", verifyJWT, puedeCorregir, EntregaControll
  *       puede cumplir.
  *
  *       Al aprobar se acredita el XP de la actividad —nunca al subir el
- *       archivo— y una actividad paga una sola vez, así que volver a aprobar
- *       no duplica puntos. Si se piden cambios, la entrega pasa a `rehacer` y
- *       el aprendiz puede reemplazarla.
+ *       archivo— y una actividad paga una sola vez. Si se piden cambios, la
+ *       entrega pasa a `rehacer` y el aprendiz puede reemplazarla.
+ *
+ *       Una entrega **aprobada ya no se puede pasar a rehacer** (409). Volver a
+ *       aprobarla responde 200 con "La entrega ya estaba aprobada." y no
+ *       duplica puntos; si la primera vez el XP no llegó a acreditarse, lo
+ *       completa.
  *
  *       Un instructor solo revisa entregas de los cursos que dicta.
  *     security:
@@ -150,13 +157,15 @@ router.get("/activities/:id/entregas", verifyJWT, puedeCorregir, EntregaControll
  *                 example: Cubriste los tres puntos. Agregá el procedimiento de escalamiento.
  *     responses:
  *       200:
- *         description: Devuelve estado, xpAcreditado y nivel
+ *         description: Devuelve message, estado, xpAcreditado, nivel y logrosDesbloqueados
  *       400:
  *         description: Falta indicar si queda aprobada, o se piden cambios sin comentario
  *       403:
  *         description: La entrega no pertenece a un curso que dicte el instructor
  *       404:
  *         description: La entrega no existe o es de otra organización
+ *       409:
+ *         description: Se intentó pedir cambios sobre una entrega ya aprobada
  */
 router.put("/entregas/:id/revisar", verifyJWT, puedeCorregir, EntregaController.revisar);
 

@@ -43,7 +43,9 @@ class ActivitiesController {
       return res.status(201).json(actividad);
     } catch (error) {
       console.error("Error al crear la actividad:", error.message);
-      return res.status(error.status || 400).json({ message: error.message });
+      // Los errores de validación ya traen su 400; uno sin status es un fallo
+      // de la base y no es culpa de quien llama.
+      return res.status(error.status || 500).json({ message: error.message });
     }
   }
 

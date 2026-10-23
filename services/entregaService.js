@@ -88,14 +88,25 @@ class EntregaService {
     };
 
     let error;
+    let reemplazada = true;
     if (previa) {
-      ({ error } = await supabase.from("entregas").update(fila).eq("id", previa.id));
+      // Solo si sigue sin aprobar: si el instructor la aprobó mientras tanto,
+      // reemplazarla la devolvía a "entregado" con el XP ya acreditado.
+      let filas;
+      ({ data: filas, error } = await supabase.from("entregas").update(fila)
+        .eq("id", previa.id).neq("estado", "aprobada").select("id"));
+      reemplazada = Boolean(filas?.length);
     } else {
       ({ error } = await supabase
         .from("entregas").insert({ id: crypto.randomBytes(8).toString("hex"), ...fila }));
     }
-    if (error) {
+    if (error || !reemplazada) {
       if (rutaNueva) await borrar(MATERIALES, rutaNueva);
+      // 23505: dos primeras entregas a la vez; una choca con el UNIQUE.
+      if (error && (error.code === "23505" || /duplicate|unique/i.test(error.message))) {
+        throw fallo("Ya hay una entrega tuya registrándose. Volvé a cargar la actividad.", 409);
+      }
+      if (!reemplazada) throw fallo("Tu entrega ya fue aprobada: no hace falta reemplazarla.", 409);
       throw new Error(error.message);
     }
 
@@ -252,14 +263,40 @@ class EntregaService {
       throw fallo("Explicá qué hay que corregir.", 400);
     }
 
+    // Una entrega aprobada ya no se toca: pasarla a "rehacer" dejaba el XP
+    // acreditado sobre un trabajo que figuraba como no aprobado.
+    if (entrega.estado === "aprobada") {
+      if (aprobada !== true) {
+        throw fallo("Esta entrega ya está aprobada y no se puede volver a revisar.", 409);
+      }
+      // Volver a aprobarla es inofensivo, y sirve para completar el XP si la
+      // primera vez falló al acreditarlo.
+      const xp = await GamificationService.asegurarAcreditado({
+        userId: entrega.user_id,
+        actividadId: entrega.activity_id,
+        tenantId: entrega.tenant_id,
+        puntos: actividad?.xp ?? 0,
+        motivo: "entrega_aprobada",
+      });
+      return {
+        message: "La entrega ya estaba aprobada.",
+        estado: "aprobada",
+        xpAcreditado: xp?.xpGanado ?? 0,
+        nivel: xp?.nivel,
+        logrosDesbloqueados: xp?.logrosDesbloqueados ?? [],
+      };
+    }
+
     const estado = aprobada ? "aprobada" : "rehacer";
-    const { error } = await supabase.from("entregas").update({
+    const { data: revisada, error } = await supabase.from("entregas").update({
       estado,
       feedback: feedback ? String(feedback).trim() : null,
       revisado_por: actor.id,
       revisado_at: new Date().toISOString(),
-    }).eq("id", entregaId);
+    }).eq("id", entregaId).neq("estado", "aprobada").select("id");
     if (error) throw new Error(error.message);
+    // Dos revisiones a la vez: la otra ya la aprobó.
+    if (!revisada?.length) throw fallo("Esta entrega ya está aprobada y no se puede volver a revisar.", 409);
 
     // Solo al aprobar. Pedir cambios no paga. Se acredita aunque valga 0 XP:
     // el movimiento es lo que marca la actividad como hecha y dispara los logros.

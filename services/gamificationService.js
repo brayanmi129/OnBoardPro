@@ -46,24 +46,14 @@ class GamificationService {
     const { data: curso } = await q.maybeSingle();
     if (!curso) throw fallo("Curso no encontrado", 404);
 
-    const { data: secciones } = await supabase
-      .from("sections").select("id").eq("course_id", courseId);
-    if (!secciones?.length) return [];
+    // La suma la hace la base (ranking_curso). Traer los movimientos para
+    // sumarlos acá chocaba con el tope de 1000 filas de PostgREST: con 50
+    // personas y 25 actividades el ranking ya salía incompleto sin avisar.
+    const { data: sumas, error } = await supabase.rpc("ranking_curso", { p_course: courseId });
+    if (error) throw new Error(error.message);
+    if (!sumas?.length) return [];
 
-    const { data: actividades } = await supabase
-      .from("activities").select("id")
-      .in("section_id", secciones.map((s) => s.id));
-    if (!actividades?.length) return [];
-
-    const { data: movimientos } = await supabase
-      .from("xp_movimientos").select("user_id, xp")
-      .in("activity_id", actividades.map((a) => a.id));
-    if (!movimientos?.length) return [];
-
-    const porPersona = new Map();
-    for (const m of movimientos) {
-      porPersona.set(m.user_id, (porPersona.get(m.user_id) || 0) + (m.xp || 0));
-    }
+    const porPersona = new Map(sumas.map((s) => [s.user_id, Number(s.xp) || 0]));
 
     const { data: personas } = await supabase
       .from("users").select("id, firstname, lastname, level, role")
@@ -136,6 +126,25 @@ class GamificationService {
    * UNIQUE (user_id, activity_id) garantiza que una actividad pague una sola
    * vez, sin importar por cuál de los dos caminos llegue.
    */
+  /**
+   * Acredita una actividad solo si todavía no pagó. Para reparar: si una
+   * acreditación falló a mitad de camino (la entrega o el examen quedaron
+   * aprobados pero el XP no entró), volver a pasar por acá lo completa.
+   * Devuelve null si ya estaba acreditada.
+   */
+  static async asegurarAcreditado(datos) {
+    const { count } = await supabase
+      .from("xp_movimientos").select("id", { count: "exact", head: true })
+      .eq("user_id", datos.userId).eq("activity_id", datos.actividadId);
+    if (count) return null;
+    try {
+      return await GamificationService.acreditar(datos);
+    } catch (err) {
+      if (err.status === 409) return null; // otra petición lo acreditó recién
+      throw err;
+    }
+  }
+
   static async acreditar({ userId, actividadId, tenantId, puntos, motivo, siRepite }) {
     const { error } = await supabase.from("xp_movimientos").insert({
       id: crypto.randomBytes(8).toString("hex"),
@@ -226,28 +235,26 @@ class GamificationService {
    * queda a la deriva respecto de su historial.
    */
   static async recalcular(userId) {
-    const { data: movimientos, error } = await supabase
-      .from("xp_movimientos")
-      .select("xp")
-      .eq("user_id", userId);
+    // La suma y la escritura van juntas en la base (función recalcular_xp),
+    // con la fila del usuario bloqueada. Hechas desde acá, dos acreditaciones
+    // simultáneas podían pisarse y dejar un total viejo.
+    const { data: xp, error } = await supabase.rpc("recalcular_xp", { p_user: userId });
     if (error) throw new Error(error.message);
-
-    const xp = (movimientos || []).reduce((a, m) => a + (m.xp || 0), 0);
-
-    const { data: antes } = await supabase
-      .from("users").select("level").eq("id", userId).maybeSingle();
 
     // El nivel nunca baja, aunque el XP se corrija hacia abajo: quitarle un
     // nivel a alguien que ya lo vio es peor que dejarlo un escalón arriba.
-    const nivelCalculado = nivelPara(xp);
-    const nivel = Math.max(nivelCalculado, antes?.level ?? 0);
-
-    await supabase.from("users").update({ xp, level: nivel }).eq("id", userId);
+    // subir_nivel aplica ese máximo en la base, también sin carreras.
+    const { data: filas, error: e2 } = await supabase.rpc("subir_nivel", {
+      p_user: userId,
+      p_nivel: nivelPara(xp ?? 0),
+    });
+    if (e2) throw new Error(e2.message);
+    const { antes = 0, despues = 0 } = filas?.[0] ?? {};
 
     return {
-      ...progreso(xp),
-      nivel,
-      subioDeNivel: nivel > (antes?.level ?? 0),
+      ...progreso(xp ?? 0),
+      nivel: despues,
+      subioDeNivel: despues > antes,
     };
   }
 

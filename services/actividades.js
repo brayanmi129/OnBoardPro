@@ -279,10 +279,39 @@ class ActivitiesService {
       throw new Error(error.message);
     }
 
-    // Recién ahora: si la escritura hubiera fallado, el archivo viejo sigue
-    // siendo el bueno.
-    if (rutaNueva && actual.adjunto && actual.adjunto !== rutaNueva) {
-      await borrar(MATERIALES, actual.adjunto);
+    // El archivo principal también es una fila de `materiales`: se creó junto
+    // con la actividad o al agregar material. Antes acá solo se borraba el
+    // archivo viejo de Storage, y esa fila quedaba apuntando a algo que ya no
+    // existía mientras el archivo nuevo no figuraba en ningún lado. Ahora la
+    // fila del archivo anterior pasa a apuntar al nuevo, o se crea si no había.
+    if (rutaNueva) {
+      const fila = {
+        nombre: file.originalname,
+        ruta: rutaNueva,
+        mime: file.mimetype,
+        tamano: file.size ?? null,
+      };
+      const { data: previo } = actual.adjunto
+        ? await supabase.from("materiales").select("id")
+            .eq("activity_id", id).eq("ruta", actual.adjunto).maybeSingle()
+        : { data: null };
+
+      const { error: e2 } = previo
+        ? await supabase.from("materiales").update(fila).eq("id", previo.id)
+        : await supabase.from("materiales").insert({
+            id: crypto.randomBytes(8).toString("hex"),
+            activity_id: id,
+            tenant_id: actual.tenant_id,
+            orden: 0,
+            subido_por: actor?.id ?? null,
+            ...fila,
+          });
+      if (e2) console.warn("[actividad] no se registró el material nuevo:", e2.message);
+
+      // Recién ahora: si algo hubiera fallado, el archivo viejo sigue siendo el bueno.
+      if (actual.adjunto && actual.adjunto !== rutaNueva) {
+        await borrar(MATERIALES, actual.adjunto);
+      }
     }
 
     return { message: "Actividad actualizada", cambios: validation.data };
