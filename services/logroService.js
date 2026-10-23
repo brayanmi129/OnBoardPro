@@ -87,6 +87,7 @@ function presentar(l) {
     cursoId: l.course_id || null,
     // Sin empresa es genérico: lo creó el superadmin y vale para todas.
     generico: !l.tenant_id,
+    tenantId: l.tenant_id || null,
     xpRecompensa: l.xp_recompensa,
     activo: l.activo !== false,
     creadoPor: l.creado_por || null,
@@ -231,10 +232,15 @@ class LogroService {
    * El catálogo que le corresponde a quien pregunta: los de su organización
    * más los genéricos, que valen para todas. El superadmin ve todo.
    */
-  static async listar(actor, { categoria, activo, cursoId } = {}) {
+  static async listar(actor, { categoria, activo, cursoId, tenantId } = {}) {
     let q = supabase.from("logros").select(CAMPOS);
-    if (actor.role !== "superadmin") {
-      q = q.or(`tenant_id.eq.${actor.tenantId},tenant_id.is.null`);
+    // El superadmin puede pararse en una organización y ver lo que vería
+    // ella: sus logros más los genéricos. Para el resto la organización es
+    // siempre la del token, mande lo que mande.
+    const empresa = actor.role === "superadmin" ? tenantId : actor.tenantId;
+    if (empresa) {
+      if (!/^[\w-]+$/.test(String(empresa))) throw fallo("tenantId inválido.", 400);
+      q = q.or(`tenant_id.eq.${empresa},tenant_id.is.null`);
     }
     if (categoria) q = q.eq("categoria", categoria);
     // `cursoId=general` trae los que no pertenecen a ningún curso.

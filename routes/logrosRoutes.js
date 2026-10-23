@@ -152,6 +152,13 @@ router.post("/logros", verifyJWT, puedeAdministrar, async (req, res) => {
  *       - bearerAuth: []
  *     parameters:
  *       - in: query
+ *         name: tenantId
+ *         description: >
+ *           Solo para el superadmin: muestra los logros de esa organización más
+ *           los genéricos, como los vería ella. Para cualquier otro rol se usa
+ *           siempre la organización del token.
+ *         schema: { type: string }
+ *       - in: query
  *         name: categoria
  *         schema: { type: string }
  *       - in: query

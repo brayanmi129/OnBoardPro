@@ -32,7 +32,9 @@ class PendientesService {
     if (!gc?.length) return [];
 
     const ids = [...new Set(gc.map((x) => x.id_course))];
-    const { data } = await supabase.from("courses").select("id, name").in("id", ids);
+    // Un curso despublicado no le muestra nada al aprendiz: tampoco pendientes.
+    const { data } = await supabase.from("courses").select("id, name")
+      .in("id", ids).eq("status", "Abierto").eq("archivado", false);
     return data || [];
   }
 
@@ -43,19 +45,25 @@ class PendientesService {
     let actividades = [];
     if (cursos.length) {
       const { data: secciones } = await supabase
-        .from("sections").select("id, name, course_id")
+        .from("sections").select("id, name, course_id, orden")
         .in("course_id", cursos.map((c) => c.id));
 
       if (secciones?.length) {
         const { data } = await supabase
           .from("activities")
-          .select("id, title, type, xp, deliverable, section_id")
+          .select("id, title, description, type, xp, deliverable, section_id, orden")
           .in("section_id", secciones.map((s) => s.id));
         const porSeccion = new Map(secciones.map((s) => [s.id, s]));
         const porCurso = new Map(cursos.map((c) => [c.id, c.name]));
         actividades = (data || []).map((a) => {
           const sec = porSeccion.get(a.section_id);
-          return { ...a, seccion: sec?.name ?? null, curso: sec ? porCurso.get(sec.course_id) : null };
+          return {
+            ...a,
+            seccion: sec?.name ?? null,
+            curso: sec ? porCurso.get(sec.course_id) : null,
+            courseId: sec?.course_id ?? null,
+            ordenSeccion: sec?.orden ?? 0,
+          };
         });
       }
     }
@@ -66,7 +74,14 @@ class PendientesService {
       .from("xp_movimientos").select("activity_id").eq("user_id", actor.id);
     const hechas = new Set((movimientos || []).map((m) => m.activity_id));
 
-    const pendientes = actividades.filter((a) => !hechas.has(a.id));
+    // En el orden en que el curso las presenta: sección y después actividad.
+    // Así lo primero de la lista es lo siguiente que le toca hacer.
+    const pendientes = actividades
+      .filter((a) => !hechas.has(a.id))
+      .sort((a, b) =>
+        String(a.curso).localeCompare(String(b.curso)) ||
+        a.ordenSeccion - b.ordenSeccion ||
+        (a.orden ?? 0) - (b.orden ?? 0));
 
     // Entregas ya revisadas: es lo que el aprendiz querría ver al entrar.
     // Antes se buscaban columnas de un modelo con nota (`nota`,
@@ -104,8 +119,8 @@ class PendientesService {
         nivel: Math.max(usuario?.level || 0, nivelPara(usuario?.xp || 0)),
       },
       actividadesPendientes: pendientes.slice(0, 20).map((a) => ({
-        id: a.id, titulo: a.title, tipo: a.type, xp: a.xp,
-        esEntregable: a.deliverable, curso: a.curso, seccion: a.seccion,
+        id: a.id, titulo: a.title, descripcion: a.description ?? null, tipo: a.type, xp: a.xp,
+        esEntregable: a.deliverable, curso: a.curso, courseId: a.courseId, seccion: a.seccion,
       })),
       calificacionesRecientes: (entregas || []).map((e) => ({
         entregaId: e.id,

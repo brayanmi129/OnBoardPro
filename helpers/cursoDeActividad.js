@@ -23,7 +23,7 @@ async function cursoDeActividad(actividadId) {
   if (!seccion?.course_id) return null;
 
   const { data: curso } = await supabase
-    .from("courses").select("id, name, instructor, status, tenant_id")
+    .from("courses").select("id, name, instructor, status, archivado, tenant_id")
     .eq("id", seccion.course_id).maybeSingle();
   return curso || null;
 }
@@ -41,6 +41,7 @@ async function asegurarPublicado(actividadId, actor) {
   if (curso && curso.status === "Cerrado") {
     throw fallo("Este curso no está publicado.", 409);
   }
+  if (curso?.archivado) throw fallo("Este curso fue archivado.", 409);
 }
 
 module.exports = { cursoDeActividad, asegurarPublicado };

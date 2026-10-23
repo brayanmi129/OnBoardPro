@@ -30,7 +30,7 @@ class SectionService {
   /** El curso existe y es de la empresa que pregunta; si no, 404. */
   static async _curso(courseId, tenantId) {
     const { data } = await delTenant(
-      supabase.from("courses").select("id, tenant_id, status").eq("id", courseId),
+      supabase.from("courses").select("id, tenant_id, status, archivado").eq("id", courseId),
       tenantId
     ).maybeSingle();
     if (!data) throw fallo("Curso no encontrado", 404);
@@ -53,10 +53,12 @@ class SectionService {
    * muestra un título que no lleva a ninguna parte (criterio 4 de HU-032).
    * Quien edita el curso sí las ve, porque acaba de crearlas.
    */
-  static async listar(courseId, tenantId = null, { soloConContenido = false } = {}) {
+  static async listar(courseId, tenantId = null, { soloConContenido = false, aprendizId = null } = {}) {
     const curso = await SectionService._curso(courseId, tenantId);
     // Quien solo consume el curso (el aprendiz) no ve uno despublicado (HU-033).
-    if (soloConContenido && curso.status === "Cerrado") throw fallo("Curso no encontrado", 404);
+    if (soloConContenido && (curso.status === "Cerrado" || curso.archivado)) {
+      throw fallo("Curso no encontrado", 404);
+    }
 
     const { data: secciones, error } = await supabase
       .from("sections")
@@ -71,18 +73,50 @@ class SectionService {
       // adjunto va incluido: sin él el cliente no puede saber si hay material
       // que abrir. Es la ruta interna del bucket privado, no una URL: no
       // sirve para descargar nada sin pedir antes una firma.
-      .select("id, name, title, type, description, deliverable, adjunto, mime, orden, section_id")
+      .select("id, name, title, type, description, deliverable, adjunto, mime, xp, orden, section_id")
       .in("section_id", secciones.map((s) => s.id))
       .order("orden", { ascending: true });
+
+    // Para el aprendiz, cada actividad dice además si ya la terminó y, si es
+    // entregable, cómo va su entrega. Sin esto el front no tenía forma de
+    // marcar lo hecho: "completada" vivía solo en la pantalla y se perdía al
+    // recargar.
+    const estado = aprendizId
+      ? await SectionService._estadoDe(aprendizId, (actividades || []).map((a) => a.id))
+      : null;
 
     const armadas = secciones.map((s) => ({
       ...aObjeto(s),
       // El adjunto no se firma acá: son N archivos y casi nunca se abren todos.
       // Se pide por actividad con GET /api/activities/{id}/adjunto.
-      actividades: (actividades || []).filter((a) => a.section_id === s.id),
+      actividades: (actividades || [])
+        .filter((a) => a.section_id === s.id)
+        .map((a) => (estado
+          ? { ...a, completada: estado.hechas.has(a.id), entrega: estado.entregas.get(a.id) ?? null }
+          : a)),
     }));
 
     return soloConContenido ? armadas.filter((s) => s.actividades.length > 0) : armadas;
+  }
+
+  /**
+   * Qué actividades terminó una persona y cómo van sus entregas.
+   *
+   * Terminada = ya cobró su XP: completar un recurso, que le aprueben la
+   * entrega o aprobar el examen dejan un movimiento, aunque valga 0 XP.
+   */
+  static async _estadoDe(userId, actividadIds) {
+    if (!actividadIds.length) return { hechas: new Set(), entregas: new Map() };
+    const [{ data: movs }, { data: entregas }] = await Promise.all([
+      supabase.from("xp_movimientos").select("activity_id")
+        .eq("user_id", userId).in("activity_id", actividadIds),
+      supabase.from("entregas").select("activity_id, estado")
+        .eq("user_id", userId).in("activity_id", actividadIds),
+    ]);
+    return {
+      hechas: new Set((movs || []).map((m) => m.activity_id)),
+      entregas: new Map((entregas || []).map((e) => [e.activity_id, e.estado])),
+    };
   }
 
   static async crear(courseId, tenantId, datos) {

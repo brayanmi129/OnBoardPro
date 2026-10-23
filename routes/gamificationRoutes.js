@@ -144,8 +144,11 @@ router.post("/activities/:id/completar", verifyJWT, gamificationController.compl
  *     description: >
  *       Pensado para llamarlo al iniciar sesión. La respuesta cambia según el rol:
  *
- *       **Aprendiz**: actividades de sus cursos que todavía no completó, cuánto XP
- *       hay en juego, su nivel y sus entregas revisadas últimamente
+ *       **Aprendiz**: actividades de sus cursos publicados que todavía no
+ *       completó (`actividadesPendientes`, hasta 20, en el orden del curso; cada
+ *       una con `id`, `titulo`, `descripcion`, `tipo`, `xp`, `esEntregable`,
+ *       `curso`, `courseId` y `seccion`), cuánto XP hay en juego, su nivel y sus
+ *       entregas revisadas últimamente
  *       (`calificacionesRecientes`, cada una con `estado` aprobada o rehacer,
  *       `feedback` y `calificadaEl`).
  *

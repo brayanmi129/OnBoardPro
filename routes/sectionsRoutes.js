@@ -22,9 +22,17 @@ const puedeEditar = requireRole("admin", "superadmin", "instructor");
  *     tags: [Secciones]
  *     description: >
  *       Devuelve las secciones ordenadas, cada una con sus actividades ya
- *       ordenadas dentro. A un aprendiz no se le devuelven las secciones
- *       vacías. El campo `adjunto` de cada actividad es una ruta interna:
- *       para abrirlo hay que pedir GET /api/activities/{id}/adjunto.
+ *       ordenadas dentro, con su `xp`. El campo `adjunto` de cada actividad es
+ *       una ruta interna: para abrirlo hay que pedir GET /api/activities/{id}/adjunto.
+ *
+ *       **Para un aprendiz** no vienen las secciones vacías, un curso
+ *       despublicado responde 404, y cada actividad trae además:
+ *
+ *       - `completada`: si ya la terminó (completó el recurso, le aprobaron la
+ *         entrega o aprobó el examen).
+ *
+ *       - `entrega`: el estado de su entrega (`entregado`, `aprobada`,
+ *         `rehacer`) o null si todavía no entregó.
  *     security:
  *       - bearerAuth: []
  *     parameters:

@@ -702,6 +702,18 @@
           },
           {
             "in": "query",
+            "name": "archivados",
+            "description": "Por defecto no vienen los cursos archivados. `incluir` los suma y `solo` trae únicamente los archivados. Un aprendiz nunca los ve.\n",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "incluir",
+                "solo"
+              ]
+            }
+          },
+          {
+            "in": "query",
             "name": "pagina",
             "schema": {
               "type": "integer",
@@ -942,6 +954,132 @@
           },
           "400": {
             "description": "Falta el instructor, no existe en la organización, no puede dictar o está desactivado"
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          },
+          "404": {
+            "description": "El curso no existe o es de otra organización"
+          }
+        }
+      }
+    },
+    "/api/courses/{id}/impacto": {
+      "get": {
+        "summary": "Qué se pierde si se borra el curso",
+        "tags": [
+          "Cursos"
+        ],
+        "description": "Para mostrar en la confirmación antes de archivar o borrar: cuántos aprendices lo tienen asignado (por sus grupos), cuántas secciones, actividades, entregas e intentos de examen tiene, y cuántas actividades ya completó la gente.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve curso, aprendices, grupos, secciones, actividades, entregas, intentosDeExamen y actividadesCompletadas\n"
+          },
+          "403": {
+            "description": "El instructor no dicta este curso"
+          },
+          "404": {
+            "description": "El curso no existe o es de otra organización"
+          }
+        }
+      }
+    },
+    "/api/courses/{id}/archivar": {
+      "put": {
+        "summary": "Archiva o desarchiva un curso",
+        "tags": [
+          "Cursos"
+        ],
+        "description": "Es la opción recomendada antes que borrar. Un curso archivado desaparece para los aprendices (de \"mis cursos\", de sus pendientes, no se puede abrir ni rendir) y sale del listado de cursos, pero conserva todo: secciones, entregas, intentos y el XP ganado. Se puede desarchivar.\nPara ver los archivados: GET /api/courses/get/all?archivados=solo.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "archivado"
+                ],
+                "properties": {
+                  "archivado": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Devuelve message y archivado"
+          },
+          "400": {
+            "description": "Falta `archivado` o no es booleano"
+          },
+          "403": {
+            "description": "El instructor no dicta este curso"
+          },
+          "404": {
+            "description": "El curso no existe o es de otra organización"
+          }
+        }
+      }
+    },
+    "/api/courses/delete/{id}": {
+      "delete": {
+        "summary": "Elimina un curso para siempre, con todo su contenido",
+        "tags": [
+          "Cursos"
+        ],
+        "description": "Solo administradores. Borra el curso, sus secciones, sus actividades y todo lo que cuelga de ellas (material, entregas, preguntas, intentos), incluidos los archivos guardados: la portada, el material de apoyo y los archivos entregados. No se puede deshacer.\nEl XP que la gente ya ganó con el curso se conserva.\nSi el curso ya no se dicta pero se quiere conservar el histórico, conviene archivarlo (PUT /api/courses/{id}/archivar).\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve message, actividades borradas y archivosBorrados"
           },
           "403": {
             "description": "Quien llama no es administrador"
@@ -1910,7 +2048,7 @@
         "tags": [
           "Gamificación"
         ],
-        "description": "Pensado para llamarlo al iniciar sesión. La respuesta cambia según el rol:\n**Aprendiz**: actividades de sus cursos que todavía no completó, cuánto XP hay en juego, su nivel y sus entregas revisadas últimamente (`calificacionesRecientes`, cada una con `estado` aprobada o rehacer, `feedback` y `calificadaEl`).\n**Instructor**: entregas esperando corrección y secciones vacías de sus cursos.\n**Admin / superadmin**: aprendices sin equipo, equipos sin cursos y cursos sin instructor, que son las tres cosas que dejan a alguien sin poder trabajar. \"Sin instructor\" incluye cursos cuyo instructor no existe, está desactivado o no tiene un rol que pueda dictar.\nTodo se calcula al momento: no hay tabla de pendientes. Una lista guardada se desincroniza; una calculada no puede mentir.\n",
+        "description": "Pensado para llamarlo al iniciar sesión. La respuesta cambia según el rol:\n**Aprendiz**: actividades de sus cursos publicados que todavía no completó (`actividadesPendientes`, hasta 20, en el orden del curso; cada una con `id`, `titulo`, `descripcion`, `tipo`, `xp`, `esEntregable`, `curso`, `courseId` y `seccion`), cuánto XP hay en juego, su nivel y sus entregas revisadas últimamente (`calificacionesRecientes`, cada una con `estado` aprobada o rehacer, `feedback` y `calificadaEl`).\n**Instructor**: entregas esperando corrección y secciones vacías de sus cursos.\n**Admin / superadmin**: aprendices sin equipo, equipos sin cursos y cursos sin instructor, que son las tres cosas que dejan a alguien sin poder trabajar. \"Sin instructor\" incluye cursos cuyo instructor no existe, está desactivado o no tiene un rol que pueda dictar.\nTodo se calcula al momento: no hay tabla de pendientes. Una lista guardada se desincroniza; una calculada no puede mentir.\n",
         "security": [
           {
             "bearerAuth": []
@@ -2463,6 +2601,14 @@
         "parameters": [
           {
             "in": "query",
+            "name": "tenantId",
+            "description": "Solo para el superadmin: muestra los logros de esa organización más los genéricos, como los vería ella. Para cualquier otro rol se usa siempre la organización del token.\n",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "categoria",
             "schema": {
               "type": "string"
@@ -2775,7 +2921,7 @@
         "tags": [
           "Secciones"
         ],
-        "description": "Devuelve las secciones ordenadas, cada una con sus actividades ya ordenadas dentro. A un aprendiz no se le devuelven las secciones vacías. El campo `adjunto` de cada actividad es una ruta interna: para abrirlo hay que pedir GET /api/activities/{id}/adjunto.\n",
+        "description": "Devuelve las secciones ordenadas, cada una con sus actividades ya ordenadas dentro, con su `xp`. El campo `adjunto` de cada actividad es una ruta interna: para abrirlo hay que pedir GET /api/activities/{id}/adjunto.\n**Para un aprendiz** no vienen las secciones vacías, un curso despublicado responde 404, y cada actividad trae además:\n- `completada`: si ya la terminó (completó el recurso, le aprobaron la\n  entrega o aprobó el examen).\n\n- `entrega`: el estado de su entrega (`entregado`, `aprobada`,\n  `rehacer`) o null si todavía no entregó.\n",
         "security": [
           {
             "bearerAuth": []

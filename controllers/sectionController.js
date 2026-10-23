@@ -21,6 +21,8 @@ class SectionController {
       const soloConContenido = req.user.role === "student";
       const secciones = await SectionService.listar(req.params.id, tenantDe(req), {
         soloConContenido,
+        // Al aprendiz se le marca qué ya terminó y cómo van sus entregas.
+        aprendizId: req.user.role === "student" ? req.user.id : null,
       });
       return res.status(200).json(secciones);
     } catch (error) {

@@ -37,12 +37,14 @@ class CourseController {
   static async getAll(req, res) {
     try {
       const { buscar, estado, pagina, porPagina } = req.query;
+      // El aprendiz nunca ve archivados, pida lo que pida.
+      const archivados = req.user.role === "student" ? undefined : req.query.archivados;
       // Un instructor ve únicamente lo que tiene asignado. No es un filtro que
       // pueda pedir o quitar: se le impone acá según su rol.
       const instructor = req.user.role === "instructor" ? req.user.email : undefined;
 
       const r = await CourseService.getAll(tenantDe(req), {
-        buscar, estado, pagina, porPagina, instructor,
+        buscar, estado, pagina, porPagina, instructor, archivados,
       });
 
       res.set({
@@ -64,7 +66,7 @@ class CourseController {
       const { id } = req.params;
       const course = await CourseService.getById(id, tenantDe(req));
       // Para el aprendiz un curso despublicado no existe (HU-033).
-      if (!course || (req.user.role === "student" && course.status === "Cerrado")) {
+      if (!course || (req.user.role === "student" && (course.status === "Cerrado" || course.archivado))) {
         return res.status(404).send("Curso no encontrado");
       }
       res.status(200).json(course);
@@ -105,6 +107,37 @@ class CourseController {
       return res.status(200).json(r);
     } catch (error) {
       console.error("Error al publicar el curso:", error.message);
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+
+  // Qué se pierde al borrar (HU-029)
+  static async impacto(req, res) {
+    try {
+      return res.status(200).json(await CourseService.impacto(req.params.id, actorDe(req)));
+    } catch (error) {
+      console.error("Error al calcular el impacto del borrado:", error.message);
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+
+  // Archivar o desarchivar (HU-029)
+  static async archivar(req, res) {
+    try {
+      const r = await CourseService.archivar(req.params.id, actorDe(req), req.body?.archivado);
+      return res.status(200).json(r);
+    } catch (error) {
+      console.error("Error al archivar el curso:", error.message);
+      return res.status(error.status || 500).json({ error: error.message });
+    }
+  }
+
+  // Eliminar para siempre (HU-029)
+  static async eliminar(req, res) {
+    try {
+      return res.status(200).json(await CourseService.eliminar(req.params.id, actorDe(req)));
+    } catch (error) {
+      console.error("Error al eliminar el curso:", error.message);
       return res.status(error.status || 500).json({ error: error.message });
     }
   }

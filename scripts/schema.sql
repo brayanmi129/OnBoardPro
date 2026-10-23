@@ -676,3 +676,17 @@ CREATE INDEX IF NOT EXISTS idx_entregas_user_estado ON entregas(user_id, estado)
 -- esto es la segunda barrera, en el libro de XP mismo.
 CREATE UNIQUE INDEX IF NOT EXISTS xp_una_vez_por_logro
   ON xp_movimientos(user_id, logro_id) WHERE logro_id IS NOT NULL;
+
+
+-- ---------------------------------------------------------------- Archivar cursos (HU-029)
+-- Archivar un curso (HU-029)
+--
+-- Archivar no es despublicar. Despublicar es transitorio ("todavía no está
+-- listo", "lo estoy corrigiendo"); archivar es retirarlo del catálogo porque
+-- ya no se dicta. Un curso archivado desaparece para los aprendices y de las
+-- listas de administración, pero conserva todo: secciones, entregas, intentos y
+-- el XP que la gente ganó. Se puede desarchivar.
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS archivado BOOLEAN NOT NULL DEFAULT FALSE;
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS archivado_at TIMESTAMPTZ;
+
+CREATE INDEX IF NOT EXISTS idx_cursos_archivado ON courses(tenant_id, archivado);

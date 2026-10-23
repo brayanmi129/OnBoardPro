@@ -29,6 +29,12 @@ const subida = require("../middlewares/subida.js");
  *         name: estado
  *         schema: { type: string, enum: [Abierto, Cerrado] }
  *       - in: query
+ *         name: archivados
+ *         description: >
+ *           Por defecto no vienen los cursos archivados. `incluir` los suma y
+ *           `solo` trae únicamente los archivados. Un aprendiz nunca los ve.
+ *         schema: { type: string, enum: [incluir, solo] }
+ *       - in: query
  *         name: pagina
  *         schema: { type: integer, default: 1 }
  *       - in: query
@@ -211,6 +217,110 @@ router.put("/update/:id", verifyToken, requireRole("admin", "superadmin", "instr
  *         description: El curso no existe o es de otra organización
  */
 router.put("/:id/instructor", verifyToken, requireRole("admin", "superadmin"), CourseController.asignarInstructor);
+
+/**
+ * @swagger
+ * /api/courses/{id}/impacto:
+ *   get:
+ *     summary: Qué se pierde si se borra el curso
+ *     tags: [Cursos]
+ *     description: >
+ *       Para mostrar en la confirmación antes de archivar o borrar: cuántos
+ *       aprendices lo tienen asignado (por sus grupos), cuántas secciones,
+ *       actividades, entregas e intentos de examen tiene, y cuántas
+ *       actividades ya completó la gente.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: >
+ *           Devuelve curso, aprendices, grupos, secciones, actividades,
+ *           entregas, intentosDeExamen y actividadesCompletadas
+ *       403:
+ *         description: El instructor no dicta este curso
+ *       404:
+ *         description: El curso no existe o es de otra organización
+ */
+router.get("/:id/impacto", verifyToken, requireRole("admin", "superadmin", "instructor"), CourseController.impacto);
+
+/**
+ * @swagger
+ * /api/courses/{id}/archivar:
+ *   put:
+ *     summary: Archiva o desarchiva un curso
+ *     tags: [Cursos]
+ *     description: >
+ *       Es la opción recomendada antes que borrar. Un curso archivado desaparece
+ *       para los aprendices (de "mis cursos", de sus pendientes, no se puede
+ *       abrir ni rendir) y sale del listado de cursos, pero conserva todo:
+ *       secciones, entregas, intentos y el XP ganado. Se puede desarchivar.
+ *
+ *       Para ver los archivados: GET /api/courses/get/all?archivados=solo.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [archivado]
+ *             properties:
+ *               archivado: { type: boolean }
+ *     responses:
+ *       200:
+ *         description: Devuelve message y archivado
+ *       400:
+ *         description: Falta `archivado` o no es booleano
+ *       403:
+ *         description: El instructor no dicta este curso
+ *       404:
+ *         description: El curso no existe o es de otra organización
+ */
+router.put("/:id/archivar", verifyToken, requireRole("admin", "superadmin", "instructor"), CourseController.archivar);
+
+/**
+ * @swagger
+ * /api/courses/delete/{id}:
+ *   delete:
+ *     summary: Elimina un curso para siempre, con todo su contenido
+ *     tags: [Cursos]
+ *     description: >
+ *       Solo administradores. Borra el curso, sus secciones, sus actividades y
+ *       todo lo que cuelga de ellas (material, entregas, preguntas, intentos),
+ *       incluidos los archivos guardados: la portada, el material de apoyo y
+ *       los archivos entregados. No se puede deshacer.
+ *
+ *       El XP que la gente ya ganó con el curso se conserva.
+ *
+ *       Si el curso ya no se dicta pero se quiere conservar el histórico,
+ *       conviene archivarlo (PUT /api/courses/{id}/archivar).
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: Devuelve message, actividades borradas y archivosBorrados
+ *       403:
+ *         description: Quien llama no es administrador
+ *       404:
+ *         description: El curso no existe o es de otra organización
+ */
+router.delete("/delete/:id", verifyToken, requireRole("admin", "superadmin"), CourseController.eliminar);
 
 /**
  * @swagger

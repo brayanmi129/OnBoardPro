@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacion.js");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const CourseSchema = require("../schemas/courseSchemas.js");
-const { subirBanner, borrar, BANNERS } = require("../helpers/storage.js");
+const { subirBanner, borrar, BANNERS, MATERIALES } = require("../helpers/storage.js");
 const AvisoService = require("./avisoService.js");
 
 
@@ -14,8 +14,14 @@ function aFila(d) {
 }
 function aObjeto(r) {
   if (!r) return null;
-  const { tenant_id, banner_url, ...resto } = r;
-  return { ...resto, tenantId: tenant_id ?? null, bannerUrl: banner_url ?? null };
+  const { tenant_id, banner_url, archivado, archivado_at, ...resto } = r;
+  return {
+    ...resto,
+    tenantId: tenant_id ?? null,
+    bannerUrl: banner_url ?? null,
+    archivado: Boolean(archivado),
+    archivadoAt: archivado_at ?? null,
+  };
 }
 
 function fallo(message, status) {
@@ -80,7 +86,7 @@ class CourseService {
    * cuando quien pregunta es un instructor, para que vea solo lo suyo.
    */
   static async getAll(tenantId = null, opciones = {}) {
-    const { buscar, estado, instructor } = opciones;
+    const { buscar, estado, instructor, archivados } = opciones;
     const porPagina = Math.min(Number(opciones.porPagina) || CourseService.PAGINA, 200);
     const pagina = Math.max(Number(opciones.pagina) || 1, 1);
     const desde = (pagina - 1) * porPagina;
@@ -89,6 +95,10 @@ class CourseService {
     if (tenantId) query = query.eq("tenant_id", tenantId);
     if (instructor) query = query.eq("instructor", instructor);
     if (estado) query = query.eq("status", estado);
+    // Los archivados salen del catálogo; se piden aparte para poder
+    // desarchivarlos. `incluir` trae todo y `solo` únicamente los archivados.
+    if (archivados === "solo") query = query.eq("archivado", true);
+    else if (archivados !== "incluir") query = query.eq("archivado", false);
     if (buscar) query = query.ilike("name", `%${String(buscar).trim()}%`);
 
     const { data, error, count } = await query
@@ -296,6 +306,149 @@ class CourseService {
     return { message: publicado ? "Curso publicado." : "Curso despublicado.", status };
   }
 
+  /** Las actividades del curso, recorriendo sus secciones. */
+  static async _actividadesDe(courseId) {
+    const { data: secciones } = await supabase
+      .from("sections").select("id").eq("course_id", courseId);
+    if (!secciones?.length) return [];
+    const { data: actividades } = await supabase
+      .from("activities").select("id, adjunto")
+      .in("section_id", secciones.map((s) => s.id));
+    return actividades || [];
+  }
+
+  /**
+   * Qué se pierde si se borra el curso (criterio 1 de HU-029): se muestra en
+   * la confirmación, antes de borrar. Lo más importante es cuántos aprendices
+   * lo tienen asignado: borrarle el curso a gente que lo está haciendo no es lo
+   * mismo que borrar uno que nadie empezó.
+   */
+  static async impacto(id, actor) {
+    const curso = await CourseService._editable(id, actor);
+
+    const [{ data: grupos }, { count: secciones }, actividades] = await Promise.all([
+      supabase.from("groups_courses").select("id_group").eq("id_course", id),
+      supabase.from("sections").select("id", { count: "exact", head: true }).eq("course_id", id),
+      CourseService._actividadesDe(id),
+    ]);
+
+    let aprendices = 0;
+    if (grupos?.length) {
+      const { data: integrantes } = await supabase
+        .from("users_groups").select("id_user").in("id_group", grupos.map((g) => g.id_group));
+      const ids = [...new Set((integrantes || []).map((i) => i.id_user))];
+      if (ids.length) {
+        const { count } = await supabase.from("users").select("id", { count: "exact", head: true })
+          .in("id", ids).eq("role", "student");
+        aprendices = count ?? 0;
+      }
+    }
+
+    const actIds = actividades.map((a) => a.id);
+    const [{ count: entregas }, { count: intentos }, { count: completadas }] = actIds.length
+      ? await Promise.all([
+          supabase.from("entregas").select("id", { count: "exact", head: true }).in("activity_id", actIds),
+          supabase.from("intentos_examen").select("id", { count: "exact", head: true }).in("activity_id", actIds),
+          supabase.from("xp_movimientos").select("id", { count: "exact", head: true }).in("activity_id", actIds),
+        ])
+      : [{ count: 0 }, { count: 0 }, { count: 0 }];
+
+    return {
+      curso: { id: curso.id, nombre: curso.name, archivado: Boolean(curso.archivado) },
+      aprendices,
+      grupos: grupos?.length ?? 0,
+      secciones: secciones ?? 0,
+      actividades: actIds.length,
+      entregas: entregas ?? 0,
+      intentosDeExamen: intentos ?? 0,
+      actividadesCompletadas: completadas ?? 0,
+    };
+  }
+
+  /**
+   * Archiva o desarchiva un curso (HU-029).
+   *
+   * Es lo que se recomienda antes que borrar (criterio 2): el curso deja de
+   * verse para los aprendices y sale del catálogo, pero se conserva el
+   * histórico de progreso, las entregas y el XP. Se puede deshacer.
+   */
+  static async archivar(id, actor, archivado) {
+    if (typeof archivado !== "boolean") {
+      throw fallo("Indicá con `archivado: true` o `false` si el curso queda archivado.", 400);
+    }
+    const curso = await CourseService._editable(id, actor);
+    if (Boolean(curso.archivado) === archivado) {
+      return { message: archivado ? "El curso ya estaba archivado." : "El curso no estaba archivado.", archivado };
+    }
+
+    const { error } = await supabase.from("courses").update({
+      archivado,
+      archivado_at: archivado ? new Date().toISOString() : null,
+    }).eq("id", id);
+    if (error) throw new Error(error.message);
+
+    return { message: archivado ? "Curso archivado." : "Curso desarchivado.", archivado };
+  }
+
+  /**
+   * Borra el curso para siempre, con todo su contenido y sus archivos.
+   *
+   * Las secciones se van solas con el curso (CASCADE), pero las actividades
+   * no: su sección pasa a NULL y quedarían huérfanas, con sus entregas y sus
+   * archivos. Por eso se borran a mano, y con ellas en cascada sus entregas,
+   * preguntas, intentos y material. Los archivos de Storage no los borra la
+   * base: se juntan antes, porque después ya no hay de dónde sacar las rutas.
+   *
+   * El XP que la gente ganó se conserva: el movimiento pierde la referencia a
+   * la actividad (SET NULL) pero sigue sumando.
+   */
+  static async eliminar(id, actor) {
+    const curso = await CourseService._editable(id, actor);
+    const actividades = await CourseService._actividadesDe(id);
+    const actIds = actividades.map((a) => a.id);
+
+    const [{ data: materiales }, { data: entregas }] = actIds.length
+      ? await Promise.all([
+          supabase.from("materiales").select("ruta").in("activity_id", actIds),
+          supabase.from("entregas").select("archivo").in("activity_id", actIds),
+        ])
+      : [{ data: [] }, { data: [] }];
+
+    const archivos = [...new Set([
+      ...actividades.map((a) => a.adjunto),
+      ...(materiales || []).map((m) => m.ruta),
+      ...(entregas || []).map((e) => e.archivo),
+    ].filter((r) => r && !/^https?:\/\//i.test(r)))];
+
+    if (actIds.length) {
+      const { error } = await supabase.from("activities").delete().in("id", actIds);
+      if (error) throw new Error(error.message);
+    }
+    const { error } = await supabase.from("courses").delete().eq("id", id);
+    if (error) throw new Error(error.message);
+
+    // Recién con la base limpia: si algo de arriba fallaba, los archivos
+    // seguían siendo de alguien. Storage acepta varios por llamada.
+    let archivosBorrados = 0;
+    for (let i = 0; i < archivos.length; i += 100) {
+      const lote = archivos.slice(i, i + 100);
+      const { error: e } = await supabase.storage.from(MATERIALES).remove(lote);
+      if (e) console.warn("[curso] no se borraron archivos del material:", e.message);
+      else archivosBorrados += lote.length;
+    }
+    const portada = curso.banner_url?.split("/banners/")[1];
+    if (portada) {
+      await borrar(BANNERS, portada);
+      archivosBorrados += 1;
+    }
+
+    return {
+      message: "Curso eliminado.",
+      actividades: actIds.length,
+      archivosBorrados,
+    };
+  }
+
   /**
    * Cambia la portada del curso. Solo se toca la base después de que Storage
    * confirmó la subida: al revés quedaría una URL apuntando a la nada.
@@ -356,6 +509,8 @@ class CourseService {
     const courseIds = [...new Set(groupCourses.map((gc) => gc.id_course))];
 
     let q = supabase.from("courses").select("*").in("id", courseIds);
+    // Un curso archivado ya no se dicta: no aparece en "mis cursos" de nadie.
+    q = q.eq("archivado", false);
     if (soloPublicados) q = q.eq("status", "Abierto");
     const { data: courses } = await q;
 
