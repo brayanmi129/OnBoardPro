@@ -486,3 +486,193 @@ ALTER TABLE logros ADD CONSTRAINT logros_generico_sin_curso
 -- El logro "Test" se puede borrar si ya no sirve. Quien lo ganó conserva el XP:
 -- el movimiento pierde la referencia al logro pero sigue sumando.
 -- DELETE FROM logros WHERE tenant_id IS NULL AND nombre = 'Test';
+
+
+-- ---------------------------------------------------------------- Operaciones atómicas e índices
+-- Se puede ejecutar más de una vez: todo es CREATE OR REPLACE / IF NOT EXISTS.
+--
+-- IMPORTANTE: aplicarlo ANTES de desplegar el backend que lo usa. El código
+-- llama a estas funciones con supabase.rpc(); sin ellas, acreditar XP, guardar
+-- un examen y el ranking por curso fallan.
+--
+-- Por qué funciones en la base: supabase-js no tiene transacciones. Cada
+-- función de Postgres corre entera en una sola transacción, así que lo que
+-- hace es todo o nada, y los FOR UPDATE ordenan las escrituras que compiten.
+
+
+-- 1) XP total de una persona, sin carreras
+--
+-- Antes: leer la suma, calcular en Node y escribir. Dos acreditaciones a la
+-- vez podían pisarse y la última en escribir dejaba un total viejo. Acá se
+-- bloquea la fila del usuario mientras se suma y se escribe.
+CREATE OR REPLACE FUNCTION recalcular_xp(p_user VARCHAR)
+RETURNS INTEGER
+LANGUAGE plpgsql AS $$
+DECLARE
+  total INTEGER;
+BEGIN
+  PERFORM 1 FROM users WHERE id = p_user FOR UPDATE;
+  SELECT COALESCE(SUM(xp), 0) INTO total FROM xp_movimientos WHERE user_id = p_user;
+  UPDATE users SET xp = total WHERE id = p_user;
+  RETURN total;
+END $$;
+
+-- El nivel nunca baja. La curva vive en Node (helpers/niveles.js); acá solo se
+-- garantiza que dos escrituras simultáneas no lo hagan retroceder.
+CREATE OR REPLACE FUNCTION subir_nivel(p_user VARCHAR, p_nivel INTEGER)
+RETURNS TABLE (antes INTEGER, despues INTEGER)
+LANGUAGE plpgsql AS $$
+DECLARE
+  previo INTEGER;
+BEGIN
+  SELECT COALESCE(level, 0) INTO previo FROM users WHERE id = p_user FOR UPDATE;
+  UPDATE users SET level = GREATEST(previo, p_nivel) WHERE id = p_user;
+  RETURN QUERY SELECT previo, GREATEST(previo, p_nivel);
+END $$;
+
+
+-- 2) Otorgar un logro y su XP juntos
+--
+-- Antes eran dos inserts sueltos: si fallaba el segundo, el logro quedaba
+-- ganado sin su XP y nunca se reintentaba. Devuelve true si lo otorgó ahora,
+-- false si ya lo tenía.
+CREATE OR REPLACE FUNCTION otorgar_logro(
+  p_logro VARCHAR, p_user VARCHAR, p_tenant VARCHAR, p_xp INTEGER,
+  p_id_logro_usuario VARCHAR, p_id_movimiento VARCHAR
+)
+RETURNS BOOLEAN
+LANGUAGE plpgsql AS $$
+BEGIN
+  INSERT INTO logros_usuario (id, logro_id, user_id, tenant_id, xp_otorgado)
+  VALUES (p_id_logro_usuario, p_logro, p_user, p_tenant, COALESCE(p_xp, 0))
+  ON CONFLICT (logro_id, user_id) DO NOTHING;
+
+  IF NOT FOUND THEN
+    RETURN FALSE;
+  END IF;
+
+  IF COALESCE(p_xp, 0) > 0 THEN
+    INSERT INTO xp_movimientos (id, user_id, tenant_id, activity_id, logro_id, xp, motivo)
+    VALUES (p_id_movimiento, p_user, p_tenant, NULL, p_logro, p_xp, 'logro_desbloqueado');
+  END IF;
+  RETURN TRUE;
+END $$;
+
+
+-- 3) Ranking de un curso sumado en la base
+--
+-- Antes se traían todos los movimientos del curso a Node para sumarlos.
+-- PostgREST corta en 1000 filas: con 50 personas y 25 actividades el ranking
+-- ya salía incompleto sin avisar, y con él los logros de ranking.
+CREATE OR REPLACE FUNCTION ranking_curso(p_course VARCHAR)
+RETURNS TABLE (user_id VARCHAR, xp BIGINT)
+LANGUAGE sql STABLE AS $$
+  SELECT m.user_id, SUM(m.xp) AS xp
+  FROM xp_movimientos m
+  JOIN activities a ON a.id = m.activity_id
+  JOIN sections s ON s.id = a.section_id
+  WHERE s.course_id = p_course
+  GROUP BY m.user_id;
+$$;
+
+
+-- 4) Guardar el examen completo, todo o nada
+--
+-- p_config: { tiempo_limite?, intentos_permitidos?, porcentaje_aprobacion? }.
+-- Solo cambia las claves que vienen.
+-- p_preguntas: lista ya validada en Node, o NULL para no tocar las preguntas.
+--   Cada una: { id?, nuevoId, enunciado, puntaje, opciones: [{ id, texto, esCorrecta }] }.
+--   Con id se edita, sin id se crea con nuevoId, y la que no viene se borra.
+-- Si cualquier paso falla no queda nada a medias: ni preguntas sin opciones
+-- ni un examen con la mitad de los cambios.
+CREATE OR REPLACE FUNCTION guardar_examen(
+  p_activity VARCHAR, p_tenant VARCHAR, p_config JSONB, p_preguntas JSONB
+)
+RETURNS VOID
+LANGUAGE plpgsql AS $$
+DECLARE
+  p JSONB;
+  o JSONB;
+  pid VARCHAR;
+  i INTEGER := 0;
+  j INTEGER;
+BEGIN
+  IF p_config ? 'tiempo_limite' THEN
+    UPDATE activities SET tiempo_limite = (p_config->>'tiempo_limite')::INTEGER WHERE id = p_activity;
+  END IF;
+  IF p_config ? 'intentos_permitidos' THEN
+    UPDATE activities SET intentos_permitidos = (p_config->>'intentos_permitidos')::INTEGER WHERE id = p_activity;
+  END IF;
+  IF p_config ? 'porcentaje_aprobacion' THEN
+    UPDATE activities SET porcentaje_aprobacion = (p_config->>'porcentaje_aprobacion')::INTEGER WHERE id = p_activity;
+  END IF;
+
+  IF p_preguntas IS NULL THEN
+    RETURN;
+  END IF;
+
+  DELETE FROM preguntas
+  WHERE activity_id = p_activity
+    AND id NOT IN (
+      SELECT x->>'id' FROM jsonb_array_elements(p_preguntas) x WHERE x->>'id' IS NOT NULL
+    );
+
+  FOR p IN SELECT * FROM jsonb_array_elements(p_preguntas) LOOP
+    pid := p->>'id';
+    IF pid IS NULL THEN
+      pid := p->>'nuevoId';
+      INSERT INTO preguntas (id, activity_id, tenant_id, enunciado, puntaje, orden)
+      VALUES (pid, p_activity, p_tenant, p->>'enunciado', (p->>'puntaje')::INTEGER, i);
+    ELSE
+      UPDATE preguntas
+      SET enunciado = p->>'enunciado', puntaje = (p->>'puntaje')::INTEGER, orden = i
+      WHERE id = pid AND activity_id = p_activity;
+    END IF;
+
+    DELETE FROM opciones WHERE pregunta_id = pid;
+    j := 0;
+    FOR o IN SELECT * FROM jsonb_array_elements(p->'opciones') LOOP
+      INSERT INTO opciones (id, pregunta_id, texto, es_correcta, orden)
+      VALUES (o->>'id', pid, o->>'texto', (o->>'esCorrecta')::BOOLEAN, j);
+      j := j + 1;
+    END LOOP;
+
+    i := i + 1;
+  END LOOP;
+END $$;
+
+-- Editar una sola pregunta, también todo o nada. NULL en un campo = no se toca.
+CREATE OR REPLACE FUNCTION editar_pregunta(
+  p_pregunta VARCHAR, p_enunciado TEXT, p_puntaje INTEGER, p_opciones JSONB
+)
+RETURNS VOID
+LANGUAGE plpgsql AS $$
+DECLARE
+  o JSONB;
+  j INTEGER := 0;
+BEGIN
+  UPDATE preguntas
+  SET enunciado = COALESCE(p_enunciado, enunciado),
+      puntaje   = COALESCE(p_puntaje, puntaje)
+  WHERE id = p_pregunta;
+
+  IF p_opciones IS NOT NULL THEN
+    DELETE FROM opciones WHERE pregunta_id = p_pregunta;
+    FOR o IN SELECT * FROM jsonb_array_elements(p_opciones) LOOP
+      INSERT INTO opciones (id, pregunta_id, texto, es_correcta, orden)
+      VALUES (o->>'id', p_pregunta, o->>'texto', (o->>'esCorrecta')::BOOLEAN, j);
+      j := j + 1;
+    END LOOP;
+  END IF;
+END $$;
+
+
+-- 5) Índices para las consultas más frecuentes
+CREATE INDEX IF NOT EXISTS idx_xp_actividad ON xp_movimientos(activity_id);
+CREATE INDEX IF NOT EXISTS idx_cursos_instructor ON courses(instructor);
+CREATE INDEX IF NOT EXISTS idx_entregas_user_estado ON entregas(user_id, estado);
+
+-- Un logro paga su XP una sola vez por persona. Hoy lo cuida logros_usuario;
+-- esto es la segunda barrera, en el libro de XP mismo.
+CREATE UNIQUE INDEX IF NOT EXISTS xp_una_vez_por_logro
+  ON xp_movimientos(user_id, logro_id) WHERE logro_id IS NOT NULL;
