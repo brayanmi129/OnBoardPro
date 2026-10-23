@@ -20,12 +20,61 @@ const umbral = (nivel) => (nivel <= 0 ? 0 : 25 * nivel * (nivel + 3));
 // Tope de seguridad: sin él, un XP corrupto haría girar el bucle sin fin.
 const NIVEL_MAXIMO = 100;
 
+// ── Tabla propia de una organización (HU-053) ────────────────────────────
+//
+// Todas las funciones de abajo reciben `tabla` opcional: la de la empresa,
+// como [{ numero, xp_minimo, nombre }] ordenada por número y sin saltos
+// (1, 2, 3...). Sin tabla se usa la curva por defecto de arriba, así una
+// empresa que nunca configuró nada sigue funcionando igual que antes.
+
+/** XP que pide un nivel. Null si la tabla no llega a ese nivel. */
+function umbralDe(nivel, tabla = null) {
+  if (nivel <= 0) return 0;
+  if (!tabla) return nivel > NIVEL_MAXIMO ? null : umbral(nivel);
+  return tabla[nivel - 1]?.xp_minimo ?? null;
+}
+
+/** El nivel más alto que se puede alcanzar. */
+const maximoDe = (tabla = null) => (tabla ? tabla.length : NIVEL_MAXIMO);
+
+/** El nombre de un nivel, si la empresa le puso uno. */
+const nombreDe = (nivel, tabla = null) => (tabla && nivel > 0 ? tabla[nivel - 1]?.nombre ?? null : null);
+
 /** Nivel que corresponde a una cantidad de XP. */
-function nivelPara(xp) {
+function nivelPara(xp, tabla = null) {
   const puntos = Math.max(Number(xp) || 0, 0);
+  const maximo = maximoDe(tabla);
   let nivel = 0;
-  while (nivel < NIVEL_MAXIMO && puntos >= umbral(nivel + 1)) nivel += 1;
+  while (nivel < maximo && puntos >= umbralDe(nivel + 1, tabla)) nivel += 1;
   return nivel;
+}
+
+/**
+ * La barra hacia el siguiente nivel, partiendo de `nivel`.
+ *
+ * Normalmente `nivel` es el que da el XP, pero puede ser más alto: el nivel
+ * nunca baja con el uso, y entonces la barra se arma desde el que se muestra
+ * para que el número y el "te faltan" no se contradigan.
+ */
+function progresoEn(nivel, xp, tabla = null) {
+  const puntos = Math.max(Number(xp) || 0, 0);
+  const base = umbralDe(nivel, tabla) ?? 0;
+  const siguiente = nivel >= maximoDe(tabla) ? null : umbralDe(nivel + 1, tabla);
+  const nombres = { nombreNivel: nombreDe(nivel, tabla), nombreSiguiente: siguiente === null ? null : nombreDe(nivel + 1, tabla) };
+
+  if (siguiente === null) {
+    return { xp: puntos, nivel, xpNivelActual: base, xpSiguienteNivel: null, porcentaje: 100, faltan: 0, ...nombres };
+  }
+
+  return {
+    xp: puntos,
+    nivel,
+    xpNivelActual: base,
+    xpSiguienteNivel: siguiente,
+    porcentaje: Math.min(Math.max(Math.round(((puntos - base) / (siguiente - base)) * 100), 0), 100),
+    faltan: Math.max(siguiente - puntos, 0),
+    ...nombres,
+  };
 }
 
 /**
@@ -33,26 +82,8 @@ function nivelPara(xp) {
  * en el cliente: así el panel, la app y cualquier otro consumidor muestran
  * exactamente lo mismo.
  */
-function progreso(xp) {
-  const puntos = Math.max(Number(xp) || 0, 0);
-  const nivel = nivelPara(puntos);
-  const base = umbral(nivel);
-  const siguiente = nivel >= NIVEL_MAXIMO ? null : umbral(nivel + 1);
-
-  if (siguiente === null) {
-    return { xp: puntos, nivel, xpNivelActual: base, xpSiguienteNivel: null, porcentaje: 100, faltan: 0 };
-  }
-
-  const ganado = puntos - base;
-  const necesario = siguiente - base;
-  return {
-    xp: puntos,
-    nivel,
-    xpNivelActual: base,
-    xpSiguienteNivel: siguiente,
-    porcentaje: Math.min(Math.round((ganado / necesario) * 100), 100),
-    faltan: Math.max(siguiente - puntos, 0),
-  };
+function progreso(xp, tabla = null) {
+  return progresoEn(nivelPara(xp, tabla), xp, tabla);
 }
 
 
@@ -77,4 +108,7 @@ function xpDeActividad({ xp, type }) {
   return XP_POR_TIPO[type] ?? XP_POR_TIPO.Recurso;
 }
 
-module.exports = { umbral, nivelPara, progreso, NIVEL_MAXIMO, XP_POR_TIPO, xpDeActividad };
+module.exports = {
+  umbral, umbralDe, maximoDe, nombreDe, nivelPara, progreso, progresoEn,
+  NIVEL_MAXIMO, XP_POR_TIPO, xpDeActividad,
+};

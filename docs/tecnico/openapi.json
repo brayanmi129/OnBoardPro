@@ -2915,6 +2915,133 @@
         }
       }
     },
+    "/api/gamification/niveles": {
+      "get": {
+        "summary": "La tabla de niveles de la organización",
+        "tags": [
+          "Niveles"
+        ],
+        "description": "`personalizada` dice si la organización definió la suya. Si no, se devuelven los primeros 10 niveles de la curva por defecto. El superadmin indica la organización con `?tenantId=`.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenantId",
+            "description": "Solo para el superadmin.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve personalizada y niveles (numero, xpMinimo, nombre)"
+          },
+          "400": {
+            "description": "El superadmin no indicó la organización"
+          }
+        }
+      },
+      "put": {
+        "summary": "Define la tabla de niveles de la organización",
+        "tags": [
+          "Niveles"
+        ],
+        "description": "Recibe la tabla entera, en orden: el primero es el nivel 1, el segundo el 2, etc. Cada nivel tiene que pedir más XP que el anterior.\nAl guardar **se recalcula el nivel de todas las personas de la organización**, y puede bajar: si se suben los umbrales, alguien en nivel 4 puede quedar en 3. En el uso normal (ganar XP) el nivel nunca baja. Todo se aplica junto: si algo falla, no cambia nada.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "niveles"
+                ],
+                "properties": {
+                  "tenantId": {
+                    "type": "string",
+                    "description": "Solo para el superadmin."
+                  },
+                  "niveles": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 50,
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "xpMinimo"
+                      ],
+                      "properties": {
+                        "xpMinimo": {
+                          "type": "integer",
+                          "minimum": 1,
+                          "example": 100
+                        },
+                        "nombre": {
+                          "type": "string",
+                          "maxLength": 40,
+                          "example": "Nuevo ingreso"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Devuelve message, personasConNivelNuevo y la tabla guardada"
+          },
+          "400": {
+            "description": "Tabla vacía, más de 50 niveles, XP que no sube, o nombre demasiado largo (el mensaje dice qué nivel)"
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Vuelve a la tabla de niveles por defecto",
+        "tags": [
+          "Niveles"
+        ],
+        "description": "Borra la tabla propia de la organización y recalcula el nivel de todas sus personas con la curva por defecto.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenantId",
+            "description": "Solo para el superadmin.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve message, personasConNivelNuevo y la tabla por defecto"
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          }
+        }
+      }
+    },
     "/api/courses/{id}/sections": {
       "get": {
         "summary": "Lista las secciones de un curso con sus actividades",
@@ -3644,6 +3771,10 @@
     {
       "name": "Material de apoyo",
       "description": "Archivos de una actividad. Una actividad puede tener varios: subir uno nuevo no reemplaza a los anteriores. Viven en un bucket privado, así que cada consulta devuelve enlaces firmados que vencen en una hora.\n"
+    },
+    {
+      "name": "Niveles",
+      "description": "La tabla de niveles de cada organización: cuánto XP pide cada nivel y cómo se llama. Si una organización no define la suya, se usa la curva por defecto (100, 250, 450, 700, 1000... XP).\n"
     },
     {
       "name": "Secciones",

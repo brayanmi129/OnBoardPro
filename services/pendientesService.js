@@ -1,5 +1,6 @@
 const { supabase } = require("../helpers/supabaseHelper.js");
-const { progreso, nivelPara } = require("../helpers/niveles.js");
+const { progresoEn, nivelPara } = require("../helpers/niveles.js");
+const NivelesService = require("./nivelesService.js");
 
 /**
  * Qué tiene pendiente cada persona al entrar.
@@ -105,7 +106,9 @@ class PendientesService {
     const titulos = new Map((actCalificadas || []).map((a) => [a.id, a.title]));
 
     const { data: usuario } = await supabase
-      .from("users").select("xp, level").eq("id", actor.id).maybeSingle();
+      .from("users").select("xp, level, tenant_id").eq("id", actor.id).maybeSingle();
+    const tabla = await NivelesService.tablaDe(usuario?.tenant_id);
+    const nivel = Math.max(usuario?.level || 0, nivelPara(usuario?.xp || 0, tabla));
 
     return {
       rol: "student",
@@ -114,10 +117,7 @@ class PendientesService {
         actividadesPendientes: pendientes.length,
         xpPorGanar: pendientes.reduce((a, x) => a + (x.xp || 0), 0),
       },
-      progreso: {
-        ...progreso(usuario?.xp || 0),
-        nivel: Math.max(usuario?.level || 0, nivelPara(usuario?.xp || 0)),
-      },
+      progreso: progresoEn(nivel, usuario?.xp || 0, tabla),
       actividadesPendientes: pendientes.slice(0, 20).map((a) => ({
         id: a.id, titulo: a.title, descripcion: a.description ?? null, tipo: a.type, xp: a.xp,
         esEntregable: a.deliverable, curso: a.curso, courseId: a.courseId, seccion: a.seccion,

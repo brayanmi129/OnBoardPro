@@ -1,6 +1,7 @@
 const crypto = require("crypto");
 const { supabase } = require("../helpers/supabaseHelper.js");
-const { nivelPara, progreso } = require("../helpers/niveles.js");
+const { nivelPara, progreso, progresoEn } = require("../helpers/niveles.js");
+const NivelesService = require("./nivelesService.js");
 const { siguienteRacha } = require("../helpers/racha.js");
 const { asegurarPublicado } = require("../helpers/cursoDeActividad.js");
 
@@ -241,19 +242,23 @@ class GamificationService {
     const { data: xp, error } = await supabase.rpc("recalcular_xp", { p_user: userId });
     if (error) throw new Error(error.message);
 
+    // Cada organización puede tener su propia tabla de niveles (HU-053).
+    const { data: dueño } = await supabase
+      .from("users").select("tenant_id").eq("id", userId).maybeSingle();
+    const tabla = await NivelesService.tablaDe(dueño?.tenant_id);
+
     // El nivel nunca baja, aunque el XP se corrija hacia abajo: quitarle un
     // nivel a alguien que ya lo vio es peor que dejarlo un escalón arriba.
     // subir_nivel aplica ese máximo en la base, también sin carreras.
     const { data: filas, error: e2 } = await supabase.rpc("subir_nivel", {
       p_user: userId,
-      p_nivel: nivelPara(xp ?? 0),
+      p_nivel: nivelPara(xp ?? 0, tabla),
     });
     if (e2) throw new Error(e2.message);
     const { antes = 0, despues = 0 } = filas?.[0] ?? {};
 
     return {
-      ...progreso(xp ?? 0),
-      nivel: despues,
+      ...progresoEn(despues, xp ?? 0, tabla),
       subioDeNivel: despues > antes,
     };
   }
@@ -262,10 +267,11 @@ class GamificationService {
   static async miProgreso(userId) {
     const { data: usuario } = await supabase
       .from("users")
-      .select("xp, level, streak, racha_maxima, ultima_actividad")
+      .select("xp, level, streak, racha_maxima, ultima_actividad, tenant_id")
       .eq("id", userId)
       .maybeSingle();
     if (!usuario) throw fallo("Usuario no encontrado", 404);
+    const tabla = await NivelesService.tablaDe(usuario.tenant_id);
 
     // Los premios de logros también son movimientos, pero no son actividades.
     const { count } = await supabase
@@ -283,9 +289,15 @@ class GamificationService {
       rachaMaxima: usuario.racha_maxima,
     });
 
+    // El nivel guardado puede estar por encima del que da el XP (nunca baja,
+    // y hay datos cargados a mano). La barra se arma sobre el nivel que se
+    // muestra: antes salía "nivel 3" con el avance y el "te faltan" del nivel
+    // 1, y las dos cifras se contradecían.
+    const xp = usuario.xp || 0;
+    const nivel = Math.max(usuario.level || 0, nivelPara(xp, tabla));
+
     return {
-      ...progreso(usuario.xp || 0),
-      nivel: Math.max(usuario.level || 0, nivelPara(usuario.xp || 0)),
+      ...progresoEn(nivel, xp, tabla),
       actividadesCompletadas: count ?? 0,
       racha: {
         // Si al registrar hoy la racha arrancaría de nuevo en 1, es que se
