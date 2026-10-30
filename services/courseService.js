@@ -513,8 +513,46 @@ class CourseService {
     q = q.eq("archivado", false);
     if (soloPublicados) q = q.eq("status", "Abierto");
     const { data: courses } = await q;
+    if (!courses?.length) return [];
 
-    return (courses || []).map(aObjeto);
+    const progreso = await CourseService._progresoDe(userId, courses.map((c) => c.id));
+    return courses.map((c) => ({ ...aObjeto(c), progreso: progreso.get(c.id) }));
+  }
+
+  /**
+   * Cuánto lleva una persona en cada curso (HU-031): actividades hechas sobre
+   * el total. Hecha es la que ya tiene su movimiento en el libro de XP, que
+   * es lo mismo que marca "completada" en la pantalla del curso.
+   */
+  static async _progresoDe(userId, courseIds) {
+    const vacio = () => ({ hechas: 0, total: 0, porcentaje: 0 });
+    const resultado = new Map(courseIds.map((id) => [id, vacio()]));
+
+    const { data: secciones } = await supabase
+      .from("sections").select("id, course_id").in("course_id", courseIds);
+    if (!secciones?.length) return resultado;
+
+    const { data: actividades } = await supabase
+      .from("activities").select("id, section_id")
+      .in("section_id", secciones.map((s) => s.id));
+    if (!actividades?.length) return resultado;
+
+    const { data: hechas } = await supabase
+      .from("xp_movimientos").select("activity_id")
+      .eq("user_id", userId).in("activity_id", actividades.map((a) => a.id));
+    const completadas = new Set((hechas || []).map((m) => m.activity_id));
+
+    const cursoDeSeccion = new Map(secciones.map((s) => [s.id, s.course_id]));
+    for (const a of actividades) {
+      const p = resultado.get(cursoDeSeccion.get(a.section_id));
+      if (!p) continue;
+      p.total += 1;
+      if (completadas.has(a.id)) p.hechas += 1;
+    }
+    for (const p of resultado.values()) {
+      p.porcentaje = p.total ? Math.round((p.hechas * 100) / p.total) : 0;
+    }
+    return resultado;
   }
 }
 

@@ -81,7 +81,8 @@
                     "enum": [
                       "Tarea",
                       "Recurso",
-                      "Examen"
+                      "Examen",
+                      "Concurso"
                     ],
                     "default": "Recurso"
                   },
@@ -198,7 +199,8 @@
                     "enum": [
                       "Tarea",
                       "Recurso",
-                      "Examen"
+                      "Examen",
+                      "Concurso"
                     ]
                   },
                   "description": {
@@ -1152,6 +1154,7 @@
         "tags": [
           "Cursos"
         ],
+        "description": "Los cursos asignados a cualquiera de los grupos de la persona, sin duplicados y sin los archivados. Un aprendiz solo ve los publicados. Cada curso trae `progreso`: cuántas actividades completó la persona sobre el total y el porcentaje.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1182,6 +1185,23 @@
                       "image": {
                         "type": "string",
                         "example": "https://example.com/course-image.jpg"
+                      },
+                      "progreso": {
+                        "type": "object",
+                        "properties": {
+                          "hechas": {
+                            "type": "integer",
+                            "example": 2
+                          },
+                          "total": {
+                            "type": "integer",
+                            "example": 4
+                          },
+                          "porcentaje": {
+                            "type": "integer",
+                            "example": 50
+                          }
+                        }
                       }
                     }
                   }
@@ -1500,13 +1520,13 @@
         ],
         "responses": {
           "200": {
-            "description": "Devuelve titulo, tiempoLimite, intentosPermitidos, puntajeTotal, preguntas y listoParaPublicar"
+            "description": "Devuelve tipo (Examen o Concurso), titulo, xp, tiempoLimite, intentosPermitidos (null en un concurso: sin límite), porcentajeAprobacion, mostrarRespuestas, puntajeTotal, preguntas (cada una con su dificultad) y listoParaPublicar. Un concurso trae además tiempoPorPregunta, preguntasPorPartida y dificultadCreciente.\n"
           },
           "404": {
             "description": "La actividad no existe o es de otra organización"
           },
           "409": {
-            "description": "La actividad no es de tipo Examen"
+            "description": "La actividad no es un examen ni un concurso"
           }
         }
       },
@@ -1515,7 +1535,7 @@
         "tags": [
           "Exámenes"
         ],
-        "description": "Es lo que manda el editor al pulsar \"Guardar\". Lo que no se envía no se toca: mandar solo la configuración no borra las preguntas.\n`preguntas` es la lista **entera y en orden**. Una pregunta con `id` se edita, una sin `id` se crea, y la que no viene en la lista se borra.\nCada pregunta necesita al menos dos opciones y **exactamente una** correcta. Se valida todo antes de escribir: si una pregunta está mal no se guarda nada, y el error dice cuál.\nSi alguien ya rindió el examen, las preguntas no se pueden cambiar (409); la configuración sí.\nEl puntaje total no se envía: sale de sumar las preguntas.\n",
+        "description": "Es lo que manda el editor al pulsar \"Guardar\". Lo que no se envía no se toca: mandar solo la configuración no borra las preguntas.\n`preguntas` es la lista **entera y en orden**. Una pregunta con `id` se edita, una sin `id` se crea, y la que no viene en la lista se borra.\nCada pregunta necesita al menos dos opciones y **exactamente una** correcta. Se valida todo antes de escribir: si una pregunta está mal no se guarda nada, y el error dice cuál.\nSi alguien ya rindió el examen, las preguntas no se pueden cambiar (409); la configuración sí.\nEl puntaje total no se envía: sale de sumar las preguntas.\n`tiempoLimite` e `intentosPermitidos` son solo de un examen; `tiempoPorPregunta`, `preguntasPorPartida` y `dificultadCreciente`, solo de un concurso. Mandar uno en el tipo equivocado responde 400.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1557,6 +1577,29 @@
                     "maximum": 100,
                     "default": 70
                   },
+                  "mostrarRespuestas": {
+                    "type": "boolean",
+                    "default": true,
+                    "description": "Si el aprendiz ve qué acertó y qué falló al enviar. Con false solo ve su nota.\n"
+                  },
+                  "tiempoPorPregunta": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 5,
+                    "maximum": 300,
+                    "description": "Solo concurso. Segundos por pregunta, o null para no limitar."
+                  },
+                  "preguntasPorPartida": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 100,
+                    "description": "Solo concurso. Cuántas se sortean por partida, o null para usar todas."
+                  },
+                  "dificultadCreciente": {
+                    "type": "boolean",
+                    "description": "Solo concurso. Si las preguntas salen de la más fácil a la más difícil."
+                  },
                   "preguntas": {
                     "type": "array",
                     "items": {
@@ -1577,6 +1620,16 @@
                         "puntaje": {
                           "type": "integer",
                           "default": 1
+                        },
+                        "dificultad": {
+                          "type": "integer",
+                          "enum": [
+                            1,
+                            2,
+                            3
+                          ],
+                          "default": 1,
+                          "description": "1 fácil, 2 media, 3 difícil. La usa el concurso para ordenar."
                         },
                         "opciones": {
                           "type": "array",
@@ -1627,7 +1680,7 @@
         "tags": [
           "Exámenes"
         ],
-        "description": "Solo para aprendices. El intento se registra al abrirlo y no al enviarlo, porque el tiempo límite corre desde acá: `intento.venceAt` dice hasta cuándo se puede enviar.\nSi ya había un intento abierto y sigue en tiempo, **se retoma** en vez de gastar otro. El examen viene sin las respuestas correctas.\n",
+        "description": "Solo para aprendices. El intento se registra al abrirlo y no al enviarlo, porque el tiempo límite corre desde acá: `intento.venceAt` dice hasta cuándo se puede enviar.\nSi ya había un intento abierto y sigue en tiempo, **se retoma** en vez de gastar otro. El examen viene sin las respuestas correctas.\nEn un concurso cada intento es una partida: trae solo las preguntas sorteadas, en orden, y `venceAt` sale del tiempo por pregunta. No hay límite de partidas (`intentosRestantes` es null) y se puede volver a jugar después de aprobar, aunque ya no suma XP.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1651,7 +1704,7 @@
             "description": "Quien llama no es aprendiz"
           },
           "409": {
-            "description": "El examen no tiene preguntas, ya está aprobado, no quedan intentos o el curso no está publicado\n"
+            "description": "No tiene preguntas, el examen ya está aprobado, no quedan intentos o el curso no está publicado\n"
           }
         }
       }
@@ -1662,7 +1715,7 @@
         "tags": [
           "Exámenes"
         ],
-        "description": "La corrección es automática y sale de la base. Una pregunta sin responder cuenta como incorrecta. Si el porcentaje alcanza el `porcentajeAprobacion` del examen, se acredita su XP y se evalúan los logros: la respuesta trae `logrosDesbloqueados`.\nLa opción correcta de cada pregunta (`detalle[].opcionCorrecta`) solo viene si aprobó o si ya no le quedan intentos.\n",
+        "description": "La corrección es automática y sale de la base. Una pregunta sin responder cuenta como incorrecta. Si el porcentaje alcanza el `porcentajeAprobacion` del examen, se acredita su XP y se evalúan los logros: la respuesta trae `logrosDesbloqueados`.\n**XP:** proporcional a la nota, y la mitad si se aprobó en un reintento. `xpBase` es lo que correspondía y `xpAcreditado` lo que se sumó de verdad. Si no coinciden, o si el concurso ya había pagado, `avisoXp` explica por qué (reintento, ya ganado o tope diario de XP).\n`detalle` (qué acertó y qué falló) viene en null si quien armó el examen desactivó `mostrarRespuestas`. La opción correcta de cada pregunta (`detalle[].opcionCorrecta`) solo viene si aprobó o si ya no le quedan intentos.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1713,7 +1766,7 @@
         },
         "responses": {
           "200": {
-            "description": "Devuelve aprobado, puntaje, porcentaje, xpAcreditado, logrosDesbloqueados y detalle. Si aprobó pero el XP no se pudo acreditar en ese momento, `xpPendiente` viene en true: se completa solo la próxima vez que consulte sus intentos o vuelva al examen.\n"
+            "description": "Devuelve aprobado, puntaje, porcentaje, xpAcreditado, xpBase, avisoXp, logrosDesbloqueados, mostrarRespuestas y detalle. Si aprobó pero el XP no se pudo acreditar en ese momento, `xpPendiente` viene en true: se completa solo la próxima vez que consulte sus intentos o vuelva al examen.\n"
           },
           "400": {
             "description": "Respuestas mal formadas, o preguntas u opciones que no son de este examen"
@@ -1730,7 +1783,7 @@
         "tags": [
           "Exámenes"
         ],
-        "description": "Cuántos intentos usé, cuántos me quedan, mi mejor porcentaje y si ya aprobé.",
+        "description": "Cuántos intentos usé, cuántos me quedan, mi mejor porcentaje y si ya aprobé. En un concurso `intentosPermitidos` e `intentosRestantes` son null: las partidas no tienen límite.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1749,6 +1802,42 @@
         "responses": {
           "200": {
             "description": "Resumen e historial de intentos"
+          }
+        }
+      }
+    },
+    "/api/activities/{id}/concurso/vista-previa": {
+      "get": {
+        "summary": "Sortea una partida de muestra del concurso",
+        "tags": [
+          "Exámenes"
+        ],
+        "description": "Para quien arma el concurso, antes de publicarlo. Devuelve una partida como la que le tocaría a un aprendiz (preguntas sorteadas y en orden de dificultad si así se configuró), pero con las respuestas correctas. Cada llamada sortea una partida nueva: \"volver a generar\" es pedirla otra vez. No abre ningún intento.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "description": "Id de la actividad de tipo Concurso.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve el concurso con las preguntas de la partida, su puntajeTotal, tiempoTotalSegundos y preguntasDisponibles\n"
+          },
+          "403": {
+            "description": "El concurso no pertenece a un curso que dicte el instructor"
+          },
+          "409": {
+            "description": "La actividad no es un concurso, o todavía no tiene preguntas"
           }
         }
       }
@@ -1830,6 +1919,14 @@
                     "type": "integer",
                     "minimum": 1
                   },
+                  "dificultad": {
+                    "type": "integer",
+                    "enum": [
+                      1,
+                      2,
+                      3
+                    ]
+                  },
                   "opciones": {
                     "type": "array",
                     "items": {
@@ -1854,7 +1951,7 @@
             "description": "Pregunta actualizada"
           },
           "400": {
-            "description": "Enunciado vacío, puntaje inválido, o las opciones no tienen una sola correcta"
+            "description": "Enunciado vacío, puntaje o dificultad inválidos, o las opciones no tienen una sola correcta"
           },
           "404": {
             "description": "El examen no existe, o la pregunta no es de ese examen"
@@ -1951,7 +2048,7 @@
         "tags": [
           "Gamificación"
         ],
-        "description": "El cálculo del nivel lo hace el servidor, no el cliente: así el panel, la app y cualquier otro consumidor muestran el mismo número. La curva es 25 * n * (n + 3): 100 XP el nivel 1, 250 el 2, 450 el 3.\n",
+        "description": "El cálculo del nivel lo hace el servidor, no el cliente: así el panel, la app y cualquier otro consumidor muestran el mismo número. Usa la tabla de niveles de la organización, o la curva por defecto 25 * n * (n + 3): 100 XP el nivel 1, 250 el 2, 450 el 3.\nSi la organización tiene tope diario de XP, `topeDiario` dice el tope, cuánto ganó hoy y cuánto le queda; si no tiene, viene en null.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1959,7 +2056,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Devuelve xp, nivel, xpSiguienteNivel, porcentaje, faltan y actividadesCompletadas"
+            "description": "Devuelve xp, nivel, nombreNivel, xpSiguienteNivel, porcentaje, faltan, actividadesCompletadas, racha y topeDiario ({ tope, ganadoHoy, restante } o null)\n"
           }
         }
       }
@@ -1970,7 +2067,7 @@
         "tags": [
           "Gamificación"
         ],
-        "description": "Cada actividad se puede completar una sola vez por persona: el segundo intento devuelve 409 y no suma nada. El movimiento queda registrado con su origen para poder auditarlo. Si el XP cruza un umbral, el nivel sube en la misma operación y la respuesta lo indica con `subioDeNivel`.\n",
+        "description": "Cada actividad se puede completar una sola vez por persona: el segundo intento devuelve 409 y no suma nada. El movimiento queda registrado con su origen para poder auditarlo. Si el XP cruza un umbral, el nivel sube en la misma operación y la respuesta lo indica con `subioDeNivel`.\nSi la organización tiene tope diario y ya se alcanzó, la actividad queda completada pero `xpGanado` es menor que `xpBase` (o 0) y `avisoXp` lo explica.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1989,7 +2086,7 @@
         ],
         "responses": {
           "200": {
-            "description": "XP acreditado. Devuelve xpGanado, xp, nivel y subioDeNivel"
+            "description": "XP acreditado. Devuelve xpGanado, xpBase, avisoXp, xp, nivel y subioDeNivel"
           },
           "404": {
             "description": "La actividad no existe o es de otra organización"
@@ -2637,6 +2734,64 @@
         }
       }
     },
+    "/api/gamification/logros/vista-previa": {
+      "post": {
+        "summary": "Cuántas personas cumplirían hoy una condición",
+        "tags": [
+          "Logros"
+        ],
+        "description": "Para revisar un logro antes de activarlo: mide la condición sobre los aprendices de la organización, con la misma lógica que el desbloqueo real, y no guarda nada. Sirve para ver si la meta es demasiado fácil (la cumplen todos) o imposible (no la cumple nadie).\nRecibe lo mismo que la creación de un logro, sin nombre. Con más de 200 aprendices se mide una muestra y `estimado` viene en true.\nEl superadmin indica la organización con `tenantId`; sin ella mide un logro genérico sobre todas las organizaciones.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "tipoCondicion",
+                  "meta"
+                ],
+                "properties": {
+                  "tipoCondicion": {
+                    "type": "string",
+                    "example": "actividades_completadas"
+                  },
+                  "meta": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "example": 5
+                  },
+                  "cursoId": {
+                    "type": "string",
+                    "description": "Para medir solo lo de un curso."
+                  },
+                  "tenantId": {
+                    "type": "string",
+                    "description": "Solo para el superadmin."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Devuelve condicion, aprendices (cuántos hay), cumplirian, porcentaje, estimado y hasta 5 ejemplos de quiénes la cumplen\n"
+          },
+          "400": {
+            "description": "Tipo de condición inexistente o meta inválida"
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          }
+        }
+      }
+    },
     "/api/gamification/logros/mios": {
       "get": {
         "summary": "Mis logros, ganados y por ganar",
@@ -3035,6 +3190,87 @@
         "responses": {
           "200": {
             "description": "Devuelve message, personasConNivelNuevo y la tabla por defecto"
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          }
+        }
+      }
+    },
+    "/api/gamification/reglas-xp": {
+      "get": {
+        "summary": "Las reglas de XP de la organización",
+        "tags": [
+          "Reglas de XP"
+        ],
+        "description": "`topeDiario` es el máximo de XP de actividades que una persona puede ganar por día (en hora de Colombia), o null si no hay tope. Los premios de logros no cuentan para el tope. El superadmin indica la organización con `?tenantId=`.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenantId",
+            "description": "Solo para el superadmin.",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve tenantId, topeDiario y la descripción de las reglas fijas"
+          },
+          "400": {
+            "description": "El superadmin no indicó la organización"
+          }
+        }
+      },
+      "put": {
+        "summary": "Define el tope diario de XP de la organización",
+        "tags": [
+          "Reglas de XP"
+        ],
+        "description": "Con un número, nadie gana más de ese XP de actividades por día: lo que pase del tope se registra como completado pero sin XP, y la respuesta de la acreditación lo avisa en `avisoXp`. Con null se quita el tope. No cambia el XP ya ganado.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "topeDiario"
+                ],
+                "properties": {
+                  "topeDiario": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": 1,
+                    "maximum": 100000,
+                    "example": 150
+                  },
+                  "tenantId": {
+                    "type": "string",
+                    "description": "Solo para el superadmin."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Devuelve message y las reglas actualizadas"
+          },
+          "400": {
+            "description": "Falta topeDiario o no es un entero válido"
           },
           "403": {
             "description": "Quien llama no es administrador"
@@ -3758,7 +3994,7 @@
     },
     {
       "name": "Exámenes",
-      "description": "Preguntas y configuración de las actividades de tipo Examen. Un examen no es una entidad aparte: es una actividad con preguntas colgando, así que hereda sección, curso, empresa y XP.\n"
+      "description": "Preguntas y configuración de las actividades de tipo Examen y Concurso. Un examen no es una entidad aparte: es una actividad con preguntas colgando, así que hereda sección, curso, empresa y XP.\nEl concurso de preguntas usa los mismos endpoints y el mismo motor de corrección. Cambia la configuración: tiempo por pregunta, cuántas preguntas se sortean por partida y si salen de la más fácil a la más difícil. Se juega las veces que se quiera, pero el XP se gana una vez.\nEl XP de un intento aprobado es proporcional a la nota (70% de nota da el 70% del XP), y la mitad si se aprobó en un reintento.\n"
     },
     {
       "name": "Grupos",
@@ -3775,6 +4011,10 @@
     {
       "name": "Niveles",
       "description": "La tabla de niveles de cada organización: cuánto XP pide cada nivel y cómo se llama. Si una organización no define la suya, se usa la curva por defecto (100, 250, 450, 700, 1000... XP).\n"
+    },
+    {
+      "name": "Reglas de XP",
+      "description": "Límites para que el XP mida aprendizaje y no insistencia. Siempre valen: una actividad paga una sola vez, un examen aprobado en un reintento paga la mitad y un concurso se puede rejugar sin volver a pagar. Cada organización puede sumar un tope de XP por día.\n"
     },
     {
       "name": "Secciones",

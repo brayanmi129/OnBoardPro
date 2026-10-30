@@ -67,7 +67,7 @@ router.get("/get/all", verifyJWT, ActivitiesController.getAll);
  *                 example: Bienvenida a la empresa
  *               type:
  *                 type: string
- *                 enum: [Tarea, Recurso, Examen]
+ *                 enum: [Tarea, Recurso, Examen, Concurso]
  *                 default: Recurso
  *               description:
  *                 type: string
@@ -164,7 +164,7 @@ router.get("/:id/adjunto", verifyJWT, ActivitiesController.adjunto);
  *             properties:
  *               title:       { type: string, maxLength: 100 }
  *               name:        { type: string, maxLength: 50 }
- *               type:        { type: string, enum: [Tarea, Recurso, Examen] }
+ *               type:        { type: string, enum: [Tarea, Recurso, Examen, Concurso] }
  *               description: { type: string, maxLength: 400 }
  *               deliverable: { type: boolean }
  *               xp:

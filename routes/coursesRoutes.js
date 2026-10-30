@@ -369,6 +369,11 @@ router.put("/:id/publicar", verifyToken, requireRole("admin", "superadmin", "ins
  *   get:
  *     summary: Obtiene los cursos del usuario autenticado
  *     tags: [Cursos]
+ *     description: >
+ *       Los cursos asignados a cualquiera de los grupos de la persona, sin
+ *       duplicados y sin los archivados. Un aprendiz solo ve los publicados.
+ *       Cada curso trae `progreso`: cuántas actividades completó la persona
+ *       sobre el total y el porcentaje.
  *     security:
  *       - bearerAuth: []   # Requiere token JWT
  *     responses:
@@ -393,6 +398,12 @@ router.put("/:id/publicar", verifyToken, requireRole("admin", "superadmin", "ins
  *                   image:
  *                     type: string
  *                     example: "https://example.com/course-image.jpg"
+ *                   progreso:
+ *                     type: object
+ *                     properties:
+ *                       hechas:     { type: integer, example: 2 }
+ *                       total:      { type: integer, example: 4 }
+ *                       porcentaje: { type: integer, example: 50 }
  *       401:
  *         description: No autorizado. El token JWT es inválido o no fue enviado
  *       500:

@@ -4,7 +4,7 @@ class activitieSchema {
   static schema = zod.object({
     id: zod.string().min(1).max(50),
     name: zod.string().min(1).max(50),
-    type: zod.enum(["Tarea", "Recurso", "Examen"]).default("Recurso"),
+    type: zod.enum(["Tarea", "Recurso", "Examen", "Concurso"]).default("Recurso"),
     title: zod.string().min(1).max(100),
     description: zod.string().min(1).max(400).optional(),
     // Ya no es una URL: con Supabase Storage se guarda la ruta dentro del

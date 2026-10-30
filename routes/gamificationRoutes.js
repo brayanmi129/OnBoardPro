@@ -52,13 +52,20 @@ router.get("/ranking", verifyJWT, gamificationController.getRanking);
  *     tags: [Gamificación]
  *     description: >
  *       El cálculo del nivel lo hace el servidor, no el cliente: así el panel,
- *       la app y cualquier otro consumidor muestran el mismo número.
- *       La curva es 25 * n * (n + 3): 100 XP el nivel 1, 250 el 2, 450 el 3.
+ *       la app y cualquier otro consumidor muestran el mismo número. Usa la
+ *       tabla de niveles de la organización, o la curva por defecto
+ *       25 * n * (n + 3): 100 XP el nivel 1, 250 el 2, 450 el 3.
+ *
+ *       Si la organización tiene tope diario de XP, `topeDiario` dice el tope,
+ *       cuánto ganó hoy y cuánto le queda; si no tiene, viene en null.
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
- *         description: Devuelve xp, nivel, xpSiguienteNivel, porcentaje, faltan y actividadesCompletadas
+ *         description: >
+ *           Devuelve xp, nivel, nombreNivel, xpSiguienteNivel, porcentaje,
+ *           faltan, actividadesCompletadas, racha y topeDiario
+ *           ({ tope, ganadoHoy, restante } o null)
  */
 router.get("/me", verifyJWT, gamificationController.miProgreso);
 
@@ -73,6 +80,10 @@ router.get("/me", verifyJWT, gamificationController.miProgreso);
  *       intento devuelve 409 y no suma nada. El movimiento queda registrado con
  *       su origen para poder auditarlo. Si el XP cruza un umbral, el nivel sube
  *       en la misma operación y la respuesta lo indica con `subioDeNivel`.
+ *
+ *       Si la organización tiene tope diario y ya se alcanzó, la actividad
+ *       queda completada pero `xpGanado` es menor que `xpBase` (o 0) y
+ *       `avisoXp` lo explica.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -83,7 +94,7 @@ router.get("/me", verifyJWT, gamificationController.miProgreso);
  *         schema: { type: string }
  *     responses:
  *       200:
- *         description: XP acreditado. Devuelve xpGanado, xp, nivel y subioDeNivel
+ *         description: XP acreditado. Devuelve xpGanado, xpBase, avisoXp, xp, nivel y subioDeNivel
  *       404:
  *         description: La actividad no existe o es de otra organización
  *       409:

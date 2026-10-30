@@ -184,6 +184,64 @@ router.get("/logros", verifyJWT, async (req, res) => {
 
 /**
  * @swagger
+ * /api/gamification/logros/vista-previa:
+ *   post:
+ *     summary: Cuántas personas cumplirían hoy una condición
+ *     tags: [Logros]
+ *     description: >
+ *       Para revisar un logro antes de activarlo: mide la condición sobre los
+ *       aprendices de la organización, con la misma lógica que el desbloqueo
+ *       real, y no guarda nada. Sirve para ver si la meta es demasiado fácil
+ *       (la cumplen todos) o imposible (no la cumple nadie).
+ *
+ *       Recibe lo mismo que la creación de un logro, sin nombre. Con más de
+ *       200 aprendices se mide una muestra y `estimado` viene en true.
+ *
+ *       El superadmin indica la organización con `tenantId`; sin ella mide un
+ *       logro genérico sobre todas las organizaciones.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [tipoCondicion, meta]
+ *             properties:
+ *               tipoCondicion:
+ *                 type: string
+ *                 example: actividades_completadas
+ *               meta:
+ *                 type: integer
+ *                 minimum: 1
+ *                 example: 5
+ *               cursoId:
+ *                 type: string
+ *                 description: Para medir solo lo de un curso.
+ *               tenantId:
+ *                 type: string
+ *                 description: Solo para el superadmin.
+ *     responses:
+ *       200:
+ *         description: >
+ *           Devuelve condicion, aprendices (cuántos hay), cumplirian,
+ *           porcentaje, estimado y hasta 5 ejemplos de quiénes la cumplen
+ *       400:
+ *         description: Tipo de condición inexistente o meta inválida
+ *       403:
+ *         description: Quien llama no es administrador
+ */
+router.post("/logros/vista-previa", verifyJWT, puedeAdministrar, async (req, res) => {
+  try {
+    return res.status(200).json(await DesbloqueoService.vistaPrevia(actorDe(req), req.body || {}));
+  } catch (error) {
+    return responder(res, error, "Error al calcular la vista previa del logro");
+  }
+});
+
+/**
+ * @swagger
  * /api/gamification/logros/mios:
  *   get:
  *     summary: Mis logros, ganados y por ganar

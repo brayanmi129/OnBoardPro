@@ -100,12 +100,12 @@ class GamificationService {
     // rendirlo y una tarea sin entregar nada. Esas dos pagan por su propio
     // camino: la tarea al calificarse, el examen al resolverse.
     if (actividad.type !== "Recurso") {
-      throw fallo(
-        actividad.type === "Tarea"
-          ? "Las tareas se completan entregando el trabajo."
-          : "Los exámenes se completan resolviéndolos.",
-        409
-      );
+      const COMO = {
+        Tarea: "Las tareas se completan entregando el trabajo.",
+        Examen: "Los exámenes se completan resolviéndolos.",
+        Concurso: "Los concursos se completan jugándolos.",
+      };
+      throw fallo(COMO[actividad.type] || "Esta actividad no se marca a mano.", 409);
     }
 
     const resumen = await GamificationService.acreditar({
@@ -117,7 +117,7 @@ class GamificationService {
       siRepite: "Ya habías completado esta actividad.",
     });
 
-    return { message: `Actividad completada. +${actividad.xp ?? 0} XP`, ...resumen };
+    return { message: `Actividad completada. +${resumen.xpGanado} XP`, ...resumen };
   }
 
   /**
@@ -147,22 +147,13 @@ class GamificationService {
   }
 
   static async acreditar({ userId, actividadId, tenantId, puntos, motivo, siRepite }) {
-    const { error } = await supabase.from("xp_movimientos").insert({
-      id: crypto.randomBytes(8).toString("hex"),
-      user_id: userId,
-      tenant_id: tenantId ?? null,
-      activity_id: actividadId,
-      xp: puntos ?? 0,
-      motivo: motivo || "actividad_completada",
+    const base = Math.max(Math.round(puntos ?? 0), 0);
+    // El tope diario (HU-055) se aplica en la base, con la fila del usuario
+    // bloqueada: calculado acá, dos acreditaciones a la vez podían pasarse
+    // del tope entre las dos.
+    const otorgado = await GamificationService._insertarMovimiento({
+      userId, actividadId, tenantId, base, motivo, siRepite,
     });
-
-    if (error) {
-      // 23505 es la violación de UNIQUE: ya había cobrado esta actividad.
-      if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
-        throw fallo(siRepite || "Esta actividad ya otorgó su XP.", 409);
-      }
-      throw new Error(error.message);
-    }
 
     // La racha se mueve acá y no al iniciar sesión: entrar no es estar activo.
     // Cuenta el día en que se hizo algo que otorgó puntos.
@@ -183,7 +174,81 @@ class GamificationService {
       console.warn("[logros] no se pudieron evaluar:", err.message);
     }
 
-    return { xpGanado: puntos ?? 0, ...resumen, racha, logrosDesbloqueados };
+    return {
+      xpGanado: otorgado,
+      xpBase: base,
+      // Si el tope recortó algo, la persona tiene que saberlo (HU-055): si no,
+      // parece que la actividad pagó menos sin motivo.
+      avisoXp: otorgado < base
+        ? otorgado === 0
+          ? "Llegaste al tope de XP de hoy: la actividad quedó completada, pero no sumó XP."
+          : `Llegaste al tope de XP de hoy: sumaste ${otorgado} de ${base} XP.`
+        : null,
+      ...resumen,
+      racha,
+      logrosDesbloqueados,
+    };
+  }
+
+  /**
+   * Escribe el movimiento y devuelve cuánto XP se otorgó de verdad.
+   *
+   * Si la base todavía no tiene la función acreditar_xp (el backend se
+   * desplegó antes que el SQL), se inserta sin tope, como antes: dejar de
+   * acreditar sería peor que no aplicar el tope un rato.
+   */
+  static async _insertarMovimiento({ userId, actividadId, tenantId, base, motivo, siRepite }) {
+    const yaCobrada = (error) => {
+      // 23505 es la violación de UNIQUE: ya había cobrado esta actividad.
+      if (error.code === "23505" || /duplicate|unique/i.test(error.message)) {
+        throw fallo(siRepite || "Esta actividad ya otorgó su XP.", 409);
+      }
+      throw new Error(error.message);
+    };
+
+    const fila = {
+      id: crypto.randomBytes(8).toString("hex"),
+      user_id: userId,
+      tenant_id: tenantId ?? null,
+      activity_id: actividadId,
+      motivo: motivo || "actividad_completada",
+    };
+
+    const { data, error } = await supabase.rpc("acreditar_xp", {
+      p_id: fila.id,
+      p_user: userId,
+      p_tenant: fila.tenant_id,
+      p_activity: actividadId,
+      p_xp: base,
+      p_motivo: fila.motivo,
+    });
+    if (!error) return Number(data) || 0;
+    if (!(error.code === "PGRST202" || /could not find the function/i.test(error.message))) {
+      yaCobrada(error);
+    }
+
+    console.warn("[xp] falta la función acreditar_xp; se acredita sin tope diario.");
+    const { error: e2 } = await supabase.from("xp_movimientos").insert({ ...fila, xp: base });
+    if (e2) yaCobrada(e2);
+    return base;
+  }
+
+  /**
+   * Cuánto XP de actividades ganó hoy la persona y cuánto le queda antes del
+   * tope de su organización. Null si la organización no tiene tope.
+   */
+  static async topeDeHoy(userId, tenantId) {
+    const ReglasXpService = require("./reglasXpService.js");
+    const tope = await ReglasXpService.topeDe(tenantId);
+    if (!tope) return null;
+
+    const { inicio } = ReglasXpService.hoyEnColombia();
+    const { data } = await supabase
+      .from("xp_movimientos").select("xp")
+      .eq("user_id", userId).not("activity_id", "is", null)
+      .gte("created_at", inicio);
+    const ganadoHoy = (data || []).reduce((t, m) => t + (m.xp || 0), 0);
+    return { tope, ganadoHoy, restante: Math.max(tope - ganadoHoy, 0) };
   }
 
   /**
@@ -299,6 +364,8 @@ class GamificationService {
     return {
       ...progresoEn(nivel, xp, tabla),
       actividadesCompletadas: count ?? 0,
+      // Null si la organización no tiene tope diario.
+      topeDiario: await GamificationService.topeDeHoy(userId, usuario.tenant_id),
       racha: {
         // Si al registrar hoy la racha arrancaría de nuevo en 1, es que se
         // cortó: pasó más de un día sin actividad. Si solo subiría un escalón,

@@ -29,11 +29,21 @@ async function completadoPor(userId) {
   ]);
   const ids = (r) => new Set((r.data || []).map((x) => x.activity_id));
   const entregas = ids(ent);
-  const examenes = ids(exa);
+  const aprobados = ids(exa);
+
+  // Exámenes y concursos comparten la tabla de intentos: se separan por el
+  // tipo de la actividad. Un concurso es un juego, no un examen aprobado.
+  const { data: tipos } = aprobados.size
+    ? await supabase.from("activities").select("id, type").in("id", [...aprobados])
+    : { data: [] };
+  const deTipo = (t) => new Set((tipos || []).filter((a) => a.type === t).map((a) => a.id));
+  const examenes = deTipo("Examen");
+  const juegos = deTipo("Concurso");
+
   // Una entrega aprobada con 0 XP de una versión anterior puede no tener
   // movimiento: se unen los tres caminos para no perderla.
-  const todas = new Set([...ids(mov), ...entregas, ...examenes]);
-  return { todas, entregas, examenes };
+  const todas = new Set([...ids(mov), ...entregas, ...aprobados]);
+  return { todas, entregas, examenes, juegos };
 }
 
 /**
@@ -136,8 +146,8 @@ async function medir(usuario, logros) {
         cumple = actual !== null && actual <= l.meta;
         break;
       }
-      // Los juegos todavía no existen; el logro se puede crear pero nadie lo gana.
-      case "juegos_completados": actual = 0; break;
+      // Un concurso de preguntas aprobado cuenta como un juego completado.
+      case "juegos_completados": actual = contar(hecho.juegos, c); break;
       default: actual = 0;
     }
 
@@ -309,5 +319,83 @@ class DesbloqueoService {
     };
   }
 }
+
+// Con más de esta cantidad de personas la vista previa mide una muestra y
+// extrapola: medir de a una es varias consultas por persona.
+const MUESTRA_MAXIMA = 200;
+const EN_PARALELO = 10;
+
+/**
+ * Cuántas personas cumplirían hoy una condición de logro (HU-060).
+ *
+ * Es lo que ve quien arma el logro antes de activarlo: con la misma medición
+ * que el desbloqueo real, sobre los aprendices de la organización, sin
+ * escribir nada. Así se ve si la meta es demasiado fácil (la cumplen todos) o
+ * imposible (nadie) antes de que cuente.
+ */
+DesbloqueoService.vistaPrevia = async function vistaPrevia(actor, datos = {}) {
+  const LogroService = require("./logroService.js");
+  const limpio = LogroService._validar({ ...datos, nombre: datos.nombre || "vista previa" });
+
+  // La organización: la del token, salvo el superadmin, que la elige. Sin
+  // organización, el superadmin mide un logro genérico sobre todas.
+  const tenantId = actor.role === "superadmin" ? datos.tenantId || null : actor.tenantId;
+  if (actor.role !== "superadmin" && !tenantId) {
+    const err = new Error("No se pudo determinar la organización.");
+    err.status = 400;
+    throw err;
+  }
+  LogroService._asegurarAlcance(tenantId, limpio.course_id ?? null);
+
+  let q = supabase.from("users")
+    .select("id, firstname, lastname, tenant_id, role, level, streak, racha_maxima")
+    .eq("role", "student");
+  if (tenantId) q = q.eq("tenant_id", tenantId);
+  const { data: personas, error } = await q;
+  if (error) throw new Error(error.message);
+
+  const total = personas?.length || 0;
+  const logro = {
+    id: "vista-previa",
+    course_id: limpio.course_id ?? null,
+    tipo_condicion: limpio.tipo_condicion,
+    meta: limpio.meta,
+  };
+  const cond = CONDICIONES[logro.tipo_condicion];
+
+  const muestra = total > MUESTRA_MAXIMA
+    ? [...personas].sort(() => Math.random() - 0.5).slice(0, MUESTRA_MAXIMA)
+    : personas || [];
+
+  const cumplen = [];
+  for (let i = 0; i < muestra.length; i += EN_PARALELO) {
+    const tanda = muestra.slice(i, i + EN_PARALELO);
+    const medidas = await Promise.all(tanda.map((u) => medir(u, [logro])));
+    tanda.forEach((u, j) => {
+      if (medidas[j].get(logro.id)?.cumple) cumplen.push(u);
+    });
+  }
+
+  const extrapolado = muestra.length < total;
+  const cumplirian = extrapolado
+    ? Math.round((cumplen.length * total) / muestra.length)
+    : cumplen.length;
+
+  return {
+    condicion: {
+      tipo: logro.tipo_condicion,
+      meta: logro.meta,
+      descripcion: cond ? cond.texto(logro.meta) : null,
+    },
+    cursoId: logro.course_id,
+    tenantId,
+    aprendices: total,
+    cumplirian,
+    porcentaje: total ? Math.round((cumplirian * 100) / total) : 0,
+    // Si se midió una muestra, cumplirian es una estimación.
+    estimado: extrapolado,
+    ejemplos: cumplen.slice(0, 5).map((u) => ({ id: u.id, firstname: u.firstname, lastname: u.lastname })),
+  };
+};
 
 module.exports = DesbloqueoService;

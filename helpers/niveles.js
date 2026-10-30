@@ -100,6 +100,7 @@ const XP_POR_TIPO = {
   Recurso: 10, // leer un PDF, ver un video
   Tarea: 30,   // entregar un trabajo, que además alguien corrige
   Examen: 50,  // la evaluación del curso
+  Concurso: 30, // un juego de preguntas: se puede rejugar, pero paga una vez
 };
 
 /** XP que corresponde a una actividad: el suyo si lo tiene, el de su tipo si no. */
