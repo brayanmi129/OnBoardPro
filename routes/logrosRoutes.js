@@ -130,6 +130,8 @@ router.get("/logros/opciones", verifyJWT, (req, res) => {
  *           entero positivo, o se ató un logro genérico a un curso
  *       403:
  *         description: No es administrador, o pidió un logro genérico sin ser superadministrador
+ *       404:
+ *         description: El curso indicado no existe o es de otra organización
  *       409:
  *         description: Ya hay un logro con ese nombre en la organización
  */
@@ -336,7 +338,7 @@ router.get("/logros/:id", verifyJWT, async (req, res) => {
  *       400:
  *         description: No se envió nada que cambiar, o un valor es inválido
  *       404:
- *         description: No existe o es de otra organización
+ *         description: El logro, o el curso indicado, no existe o es de otra organización
  *       409:
  *         description: Ya hay un logro con ese nombre
  */

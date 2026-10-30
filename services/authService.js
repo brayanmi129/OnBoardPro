@@ -24,6 +24,24 @@ function generateToken(user) {
 }
 
 class AuthService {
+  /**
+   * Por qué una cuenta no puede entrar aunque la contraseña sea correcta, o
+   * null si puede. Una persona desactivada, o de una empresa desactivada, no
+   * recibe token.
+   */
+  static async motivoDeBloqueo(user) {
+    if (user.status === "Inactive") {
+      return "Tu cuenta está desactivada. Consultá con el administrador de tu organización.";
+    }
+    if (user.tenantId) {
+      const empresa = await TenantService.getById(user.tenantId);
+      if (empresa && empresa.active === false) {
+        return "Tu organización está desactivada. Consultá con su administrador.";
+      }
+    }
+    return null;
+  }
+
   async local(req, res) {
     const { email, password } = req.body;
 
@@ -49,6 +67,12 @@ class AuthService {
         console.log("Contraseña incorrecta para usuario:", email);
         return res.status(401).json({ message: "Usuario o contraseña incorrectos." });
       }
+
+      // Se mira después de la contraseña: antes le diría a cualquiera qué
+      // correos existen. Una cuenta o una empresa desactivada no entra, igual
+      // que ya pasaba con Google y Microsoft (HU-004).
+      const bloqueo = await AuthService.motivoDeBloqueo(userData);
+      if (bloqueo) return res.status(403).json({ message: bloqueo });
 
       const token = generateToken(userData);
       const { password: _, ...safeUser } = userData;

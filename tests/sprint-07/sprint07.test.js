@@ -343,7 +343,6 @@ describe("Crear logro", () => {
   });
 
   test("S7-22 · HU-059 · un admin no puede atar un logro a un curso de otra organización",
-    { todo: "posible bug: LogroService.crear no comprueba que cursoId sea de la organización del logro; _asegurarAlcance solo frena el caso genérico (services/logroService.js:205 y :261-265; igual en actualizar, :275)" },
     async () => {
       preparar({ tablas: base() });
       await assert.rejects(LogroService.crear(admin, { ...datos, cursoId: "c2" }), (e) => [400, 404].includes(e.status));

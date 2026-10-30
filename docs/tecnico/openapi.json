@@ -290,6 +290,7 @@
         "tags": [
           "Autenticación"
         ],
+        "description": "El correo no distingue mayúsculas. Una cuenta desactivada, o de una organización desactivada, no recibe token aunque la contraseña sea correcta (403).\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -350,6 +351,9 @@
           },
           "401": {
             "description": "Credenciales inválidas o usuario no encontrado"
+          },
+          "403": {
+            "description": "La cuenta o su organización están desactivadas"
           }
         }
       }
@@ -2680,6 +2684,9 @@
           "403": {
             "description": "No es administrador, o pidió un logro genérico sin ser superadministrador"
           },
+          "404": {
+            "description": "El curso indicado no existe o es de otra organización"
+          },
           "409": {
             "description": "Ya hay un logro con ese nombre en la organización"
           }
@@ -2908,7 +2915,7 @@
             "description": "No se envió nada que cambiar, o un valor es inválido"
           },
           "404": {
-            "description": "No existe o es de otra organización"
+            "description": "El logro, o el curso indicado, no existe o es de otra organización"
           },
           "409": {
             "description": "Ya hay un logro con ese nombre"
@@ -3885,6 +3892,7 @@
         "tags": [
           "Usuarios"
         ],
+        "description": "Un administrador solo elimina personas de su organización. A un superadmin solo lo elimina otro superadmin.\n",
         "security": [
           {
             "bearerAuth": []
@@ -3904,8 +3912,11 @@
           "200": {
             "description": "Usuario eliminado correctamente"
           },
+          "403": {
+            "description": "Un administrador intentó eliminar a un superadmin"
+          },
           "404": {
-            "description": "Usuario no encontrado"
+            "description": "Usuario no encontrado o de otra organización"
           }
         }
       }
@@ -3916,6 +3927,7 @@
         "tags": [
           "Usuarios"
         ],
+        "description": "Solo cambia lo que se envía. El id y la organización no se editan, el correo se guarda en minúsculas y la respuesta nunca incluye la contraseña.\n",
         "security": [
           {
             "bearerAuth": []
@@ -3966,10 +3978,16 @@
         },
         "responses": {
           "200": {
-            "description": "Usuario actualizado correctamente"
+            "description": "Usuario actualizado correctamente (updatedData sin contraseña)"
           },
           "400": {
-            "description": "Error de validación"
+            "description": "Error de validación, o se intentó cambiar el id"
+          },
+          "403": {
+            "description": "Un administrador intentó asignar el rol superadmin o modificar a un superadmin"
+          },
+          "404": {
+            "description": "Usuario no encontrado o de otra organización"
           }
         }
       }

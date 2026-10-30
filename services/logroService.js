@@ -204,6 +204,7 @@ class LogroService {
       if (!tenantId) throw fallo("No se pudo determinar la organización del logro.", 400);
     }
     LogroService._asegurarAlcance(tenantId, limpio.course_id);
+    await LogroService._asegurarCurso(tenantId, limpio.course_id);
 
     const id = crypto.randomBytes(8).toString("hex");
     const { error } = await supabase.from("logros").insert({
@@ -264,6 +265,18 @@ class LogroService {
     }
   }
 
+  /**
+   * El curso de un logro tiene que ser de la misma organización que el logro.
+   * La clave foránea solo dice que el curso existe: sin esto, un admin podía
+   * atar un logro suyo a un curso de otra empresa. Ajeno o inexistente, 404.
+   */
+  static async _asegurarCurso(tenantId, cursoId) {
+    if (!cursoId) return;
+    const { data } = await supabase
+      .from("courses").select("id").eq("id", cursoId).eq("tenant_id", tenantId).maybeSingle();
+    if (!data) throw fallo("Curso no encontrado en la organización del logro.", 404);
+  }
+
   static async obtener(id, actor) {
     return presentar(await LogroService._logro(id, actor, { soloLectura: true }));
   }
@@ -272,7 +285,10 @@ class LogroService {
     const actual = await LogroService._logro(id, actor);
 
     const limpio = LogroService._validar(datos, { parcial: true });
-    if (limpio.course_id !== undefined) LogroService._asegurarAlcance(actual.tenant_id, limpio.course_id);
+    if (limpio.course_id !== undefined) {
+      LogroService._asegurarAlcance(actual.tenant_id, limpio.course_id);
+      await LogroService._asegurarCurso(actual.tenant_id, limpio.course_id);
+    }
     if (!Object.keys(limpio).length) throw fallo("No enviaste nada que cambiar.", 400);
 
     const { error } = await supabase.from("logros").update(limpio).eq("id", id);

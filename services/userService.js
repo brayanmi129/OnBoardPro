@@ -47,7 +47,9 @@ async function conNombreDeEmpresa(usuarios) {
 
 class UserService {
   static async _getForAuth(email) {
-    const { data } = await supabase.from("users").select("*").eq("email", email).maybeSingle();
+    // Los correos se guardan en minúsculas: "Ana@Empresa.com" es la misma cuenta.
+    const { data } = await supabase.from("users").select("*")
+      .eq("email", String(email).trim().toLowerCase()).maybeSingle();
     return toUser(data);
   }
 
@@ -89,6 +91,10 @@ class UserService {
   static async create(userData) {
     const id = crypto.randomBytes(3).toString("hex");
     userData.id = id;
+    // En minúsculas, como lo buscan el login con contraseña y el de Microsoft:
+    // si no, "Sara@Empresa.com" no se encontraba al entrar con Microsoft y se
+    // le creaba una segunda cuenta como aprendiz.
+    if (typeof userData.email === "string") userData.email = userData.email.trim().toLowerCase();
 
     if (userData.password) {
       userData.password = await bcrypt.hash(userData.password, SALT_ROUNDS);
@@ -184,7 +190,18 @@ class UserService {
     });
   }
 
-  static async deleteUser(id, tenantId = null) {
+  static async deleteUser(id, tenantId = null, actor = null) {
+    // Un superadmin solo lo borra otro superadmin, igual que al editarlo. Sin
+    // esto, uno que tuviera empresa quedaba borrable por un admin de ella.
+    if (actor && actor.role !== "superadmin") {
+      const { data: objetivo } = await supabase.from("users").select("role").eq("id", id).maybeSingle();
+      if (objetivo?.role === "superadmin") {
+        const err = new Error("Solo un superadmin puede eliminar a otro superadmin.");
+        err.status = 403;
+        throw err;
+      }
+    }
+
     let consulta = supabase.from("users").delete().eq("id", id);
     if (tenantId) consulta = consulta.eq("tenant_id", tenantId);
     const { data } = await consulta.select("id").maybeSingle();
@@ -219,6 +236,12 @@ class UserService {
     // La empresa no se cambia por esta vía: permitirlo dejaría mover a una
     // persona de un cliente a otro con solo mandar un campo más.
     if (tenantId) delete updateData.tenantId;
+    // El id tampoco: es la clave a la que apuntan sus grupos, entregas y XP.
+    if ("id" in updateData && updateData.id !== id) {
+      return { error: "El id de un usuario no se puede cambiar.", status: 400 };
+    }
+    delete updateData.id;
+    if (typeof updateData.email === "string") updateData.email = updateData.email.trim().toLowerCase();
 
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, SALT_ROUNDS);
@@ -251,7 +274,9 @@ class UserService {
       else console.log(`[auditoria] ${actor?.email ?? "?"} cambió el rol de ${id}: ${existing.role} → ${rolNuevo}`);
     }
 
-    return { message: `Usuario ${id} actualizado correctamente`, updatedData: validation.data };
+    // El hash de la contraseña nunca sale del servidor.
+    const { password: _hash, ...updatedData } = validation.data;
+    return { message: `Usuario ${id} actualizado correctamente`, updatedData };
   }
 }
 

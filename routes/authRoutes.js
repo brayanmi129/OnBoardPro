@@ -46,6 +46,10 @@ const frenoCambio = frenarFallos({
  *   post:
  *     summary: Inicia sesión con correo y contraseña
  *     tags: [Autenticación]
+ *     description: >
+ *       El correo no distingue mayúsculas. Una cuenta desactivada, o de una
+ *       organización desactivada, no recibe token aunque la contraseña sea
+ *       correcta (403).
  *     requestBody:
  *       required: true
  *       content:
@@ -87,6 +91,8 @@ const frenoCambio = frenarFallos({
  *                       example: Aprendiz
  *       401:
  *         description: Credenciales inválidas o usuario no encontrado
+ *       403:
+ *         description: La cuenta o su organización están desactivadas
  */
 router.post("/localuser", frenoLogin, (req, res) => AuthController.login(req, res));
 

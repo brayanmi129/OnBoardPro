@@ -200,7 +200,6 @@ describe("Activar o desactivar organización", () => {
   });
 
   test("S6-14 · HU-004 · una persona de una organización desactivada no puede iniciar sesión con contraseña",
-    { todo: "posible bug: AuthService.local no mira tenants.active; solo el login con Google/Microsoft lo filtra vía getByDomain (services/authService.js:35-55)" },
     async () => {
       const tablas = base();
       tablas.tenants[0].active = false;

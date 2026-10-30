@@ -346,6 +346,7 @@ DesbloqueoService.vistaPrevia = async function vistaPrevia(actor, datos = {}) {
     throw err;
   }
   LogroService._asegurarAlcance(tenantId, limpio.course_id ?? null);
+  if (tenantId) await LogroService._asegurarCurso(tenantId, limpio.course_id ?? null);
 
   let q = supabase.from("users")
     .select("id, firstname, lastname, tenant_id, role, level, streak, racha_maxima")

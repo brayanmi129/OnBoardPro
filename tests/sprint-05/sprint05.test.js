@@ -79,7 +79,6 @@ describe("Editar usuario", () => {
 
   test(
     "S5-04 · HU-016 · el identificador de un usuario no se puede cambiar al editarlo",
-    { todo: "posible bug: services/userService.js:227 valida con UserSchema.schema.partial(), que acepta `id`; mandar { id } en el cuerpo reescribe la clave primaria (y deja colgadas sus filas en users_groups, xp_movimientos, etc.)" },
     async () => {
       preparar({ tablas: { users: usuarios() } });
       const res = await editar(adminAcme, "u1", { id: "otro-id" });
@@ -90,7 +89,6 @@ describe("Editar usuario", () => {
 
   test(
     "S5-05 · HU-016 · la respuesta de editar no expone el hash de la contraseña",
-    { todo: "posible bug: services/userService.js:254 devuelve `updatedData: validation.data`, que incluye el password ya cifrado; el controlador (controllers/userController.js:111) lo manda tal cual al cliente" },
     async () => {
       preparar({ tablas: { users: usuarios() } });
       const res = await editar(adminAcme, "u1", { password: "Nueva#2026" });
@@ -127,7 +125,6 @@ describe("Eliminar usuario", () => {
 
   test(
     "S5-08 · HU-017 · un admin no puede eliminar a un superadmin aunque comparta organización",
-    { todo: "posible bug: services/userService.js:187-196 (deleteUser) no tiene la protección explícita de superadmin que sí tiene updateUser (línea 215); un superadmin con tenant_id queda borrable por un admin de esa empresa" },
     async () => {
       preparar({ tablas: { users: [...usuarios(), { id: "sa2", tenant_id: "t1", email: "sa2@acme.com", role: "superadmin", status: "Active" }] } });
       const res = await borrar(adminAcme, "sa2");

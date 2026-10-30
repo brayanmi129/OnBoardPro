@@ -107,7 +107,6 @@ describe("Crear usuario", () => {
 
   test(
     "S2-15 · HU-014 · el correo se guarda en minúsculas para que el usuario creado pueda entrar luego con Microsoft",
-    { todo: "posible bug: services/userService.js:89 guarda el correo tal como llega, pero services/authService.js:112 busca con el UPN de Microsoft en minúsculas; un usuario creado como \"Sara@Empresa.com\" no se encuentra y se le crea una segunda cuenta como aprendiz" },
     async () => {
       preparar({ tablas: tablas() });
       const res = await crear(admin, { email: "Sara@Empresa.com", role: "instructor" });

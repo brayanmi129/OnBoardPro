@@ -207,6 +207,9 @@ router.post("/create", verifyJWT, requireRole("admin", "superadmin"), UserContro
  *   delete:
  *     summary: Elimina un usuario por su ID
  *     tags: [Usuarios]
+ *     description: >
+ *       Un administrador solo elimina personas de su organización. A un
+ *       superadmin solo lo elimina otro superadmin.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -218,8 +221,10 @@ router.post("/create", verifyJWT, requireRole("admin", "superadmin"), UserContro
  *     responses:
  *       200:
  *         description: Usuario eliminado correctamente
+ *       403:
+ *         description: Un administrador intentó eliminar a un superadmin
  *       404:
- *         description: Usuario no encontrado
+ *         description: Usuario no encontrado o de otra organización
  */
 router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), UserController.deleteUser);
 
@@ -229,6 +234,10 @@ router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), User
  *   put:
  *     summary: Actualiza los datos de un usuario
  *     tags: [Usuarios]
+ *     description: >
+ *       Solo cambia lo que se envía. El id y la organización no se editan, el
+ *       correo se guarda en minúsculas y la respuesta nunca incluye la
+ *       contraseña.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -256,9 +265,13 @@ router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), User
  *                 enum: [Active, Inactive]
  *     responses:
  *       200:
- *         description: Usuario actualizado correctamente
+ *         description: Usuario actualizado correctamente (updatedData sin contraseña)
  *       400:
- *         description: Error de validación
+ *         description: Error de validación, o se intentó cambiar el id
+ *       403:
+ *         description: Un administrador intentó asignar el rol superadmin o modificar a un superadmin
+ *       404:
+ *         description: Usuario no encontrado o de otra organización
  */
 router.put("/update/:id", verifyJWT, requireRole("admin", "superadmin"), UserController.updateUser);
 
