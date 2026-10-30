@@ -891,3 +891,5 @@ class ExamenService {
 }
 
 module.exports = ExamenService;
+// Las reglas puras del motor, expuestas solo para las pruebas unitarias.
+module.exports._reglas = { xpDelIntento, armarPartida, venceEn, soloDeLaPartida, FACTOR_REINTENTO };
