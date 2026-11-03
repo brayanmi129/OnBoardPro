@@ -110,6 +110,53 @@ router.get("/activities/:id/entregas", verifyJWT, puedeCorregir, EntregaControll
 
 /**
  * @swagger
+ * /api/entregas:
+ *   get:
+ *     summary: Mi bandeja de entregas por revisar
+ *     tags: [Entregas]
+ *     description: >
+ *       Las entregas de todos los cursos de quien corrige, juntas: un
+ *       instructor ve las de los cursos que dicta, un administrador las de su
+ *       organización. Por defecto trae las que esperan revisión, de la más
+ *       antigua a la más nueva, que es lo primero que hay que atender.
+ *
+ *       `contadores` trae siempre los totales por estado, con cualquier filtro:
+ *       sirve para mostrar cuántas hay por revisar.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: estado
+ *         schema: { type: string, enum: [entregado, rehacer, aprobada, todas], default: entregado }
+ *         description: entregado son las que esperan revisión.
+ *       - in: query
+ *         name: orden
+ *         schema: { type: string, enum: [antiguas, recientes], default: antiguas }
+ *         description: Por fecha de entrega.
+ *       - in: query
+ *         name: cursoId
+ *         schema: { type: string }
+ *         description: Para ver solo las de un curso.
+ *       - in: query
+ *         name: tenantId
+ *         schema: { type: string }
+ *         description: Solo para el superadmin.
+ *     responses:
+ *       200:
+ *         description: >
+ *           Devuelve contadores (porRevisar, rehacer, aprobadas, total) y
+ *           entregas, cada una con su actividad, su curso y el aprendiz
+ *       400:
+ *         description: estado u orden inválidos
+ *       403:
+ *         description: Quien llama es aprendiz
+ *       404:
+ *         description: El curso indicado no existe o no es de quien llama
+ */
+router.get("/entregas", verifyJWT, puedeCorregir, EntregaController.bandeja);
+
+/**
+ * @swagger
  * /api/entregas/{id}/revisar:
  *   put:
  *     summary: Revisa una entrega y decide si queda completa

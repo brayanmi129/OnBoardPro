@@ -30,7 +30,8 @@ function responder(res, error, contexto) {
  *     Catálogo de logros de la organización. Un logro es la definición de
  *     una meta —"completar 10 actividades", "llegar al nivel 5"—, no el hecho
  *     de haberla conseguido. El desbloqueo es automático: se evalúa cada vez
- *     que alguien gana XP, y cada persona ve los suyos en
+ *     que alguien gana XP, salvo las medallas de ranking, que se otorgan al
+ *     cierre del periodo. Cada persona ve los suyos en
  *     GET /api/gamification/logros/mios.
  */
 
@@ -244,6 +245,52 @@ router.post("/logros/vista-previa", verifyJWT, puedeAdministrar, async (req, res
 
 /**
  * @swagger
+ * /api/gamification/logros/cierre-ranking:
+ *   post:
+ *     summary: Cierra el periodo de ranking y otorga sus medallas
+ *     tags: [Logros]
+ *     description: >
+ *       Las medallas de ranking ("quedar en el puesto 3 o mejor") no se dan en
+ *       tiempo real: un puesto cambia cada vez que otro suma puntos. Se otorgan
+ *       al cerrar el periodo, a quien esté en el puesto pedido en ese momento.
+ *       Lo llama un administrador (o una tarea programada) al terminar cada
+ *       periodo, por ejemplo cada viernes.
+ *
+ *       Cada medalla se da una sola vez por persona y no se pierde: cerrar dos
+ *       veces no duplica nada. Si la medalla paga XP, se acredita y se
+ *       recalcula el nivel.
+ *
+ *       El resto de los logros se evalúa solo al completar un recurso, al
+ *       aprobar una entrega, un examen o un concurso.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               tenantId:
+ *                 type: string
+ *                 description: Solo para el superadmin.
+ *     responses:
+ *       200:
+ *         description: Devuelve message, medallasEvaluadas y otorgados (logro, persona y puesto)
+ *       400:
+ *         description: El superadmin no indicó la organización
+ *       403:
+ *         description: Quien llama no es administrador
+ */
+router.post("/logros/cierre-ranking", verifyJWT, puedeAdministrar, async (req, res) => {
+  try {
+    return res.status(200).json(await DesbloqueoService.cerrarPeriodoRanking(actorDe(req), req.body || {}));
+  } catch (error) {
+    return responder(res, error, "Error al cerrar el periodo de ranking");
+  }
+});
+
+/**
+ * @swagger
  * /api/gamification/logros/mios:
  *   get:
  *     summary: Mis logros, ganados y por ganar
@@ -253,9 +300,10 @@ router.post("/logros/vista-previa", verifyJWT, puedeAdministrar, async (req, res
  *       su organización y los genéricos), con `desbloqueado`, la fecha y el
  *       `progreso` de cada uno.
  *
- *       Antes de responder evalúa los pendientes: un logro de ranking
- *       que se ganó porque otros quedaron atrás aparece sin esperar a la
- *       próxima actividad. Los recién ganados vienen con `nuevo: true`.
+ *       Solo consulta: no otorga nada. Los logros se ganan al completar un
+ *       recurso, al aprobar una entrega, un examen o un concurso, y los de
+ *       ranking al cierre del periodo. Los ganados en las últimas 24 horas
+ *       vienen con `nuevo: true`.
  *
  *       Primero van los ganados, del más reciente al más viejo; después los
  *       que faltan, de los más avanzados a los menos.

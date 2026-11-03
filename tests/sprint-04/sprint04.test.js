@@ -144,6 +144,8 @@ describe("Organizar el curso en secciones", () => {
         ],
         xp_movimientos: [{ user_id: "u1", activity_id: "a1" }],
         entregas: [],
+        users_groups: [{ id_user: "u1", id_group: "g1" }],
+        groups_courses: [{ id_group: "g1", id_course: "c1" }],
       },
     });
     const editor = await SectionService.listar("c1", "t1");

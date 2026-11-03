@@ -92,7 +92,7 @@ class GamificationService {
 
     const { data: actividad } = await consulta.maybeSingle();
     if (!actividad) throw fallo("Actividad no encontrada", 404);
-    await asegurarPublicado(actividad.id, { role: "student" });
+    await asegurarPublicado(actividad.id, { role: "student", id: userId });
 
     // Criterio 1 de HU-040: marcarse algo como hecho solo vale para material
     // que se consume —un PDF, un video—. Sin esto el botón era una máquina de

@@ -357,6 +357,32 @@ router.get("/activities/:id/examen/intentos", verifyJWT, async (req, res) => {
 
 /**
  * @swagger
+ * /api/concursos/mios:
+ *   get:
+ *     summary: Mi historial de juegos
+ *     tags: [Exámenes]
+ *     description: >
+ *       Cada concurso que jugué, del más reciente al más viejo, con mi mejor
+ *       porcentaje, cuántas partidas llevo, si lo aprobé y el XP que me dio.
+ *       Los puntos dependen del desempeño y el XP completo se gana solo la
+ *       primera vez: `xpGanado` es lo que de verdad se acreditó y `xpPosible`
+ *       lo máximo que daba.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Devuelve juegos, juegosAprobados, xpGanado e historial
+ */
+router.get("/concursos/mios", verifyJWT, async (req, res) => {
+  try {
+    return res.status(200).json(await ExamenService.misJuegos(actorDe(req)));
+  } catch (error) {
+    return responder(res, error, "Error al obtener mis juegos");
+  }
+});
+
+/**
+ * @swagger
  * /api/activities/{id}/concurso/vista-previa:
  *   get:
  *     summary: Sortea una partida de muestra del concurso

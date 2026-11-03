@@ -217,6 +217,87 @@ class EntregaService {
   }
 
   /**
+   * La bandeja de entregas de quien corrige (HU-047): las de todos sus cursos
+   * juntas, para organizar el trabajo sin entrar actividad por actividad.
+   *
+   *   instructor  las de los cursos que dicta
+   *   admin       las de su organización
+   *   superadmin  las de la organización que indique (o todas)
+   *
+   * `estado`: entregado (por revisar, el valor por defecto), rehacer, aprobada
+   * o todas. `orden`: antiguas primero (lo que más espera, por defecto) o
+   * recientes. Los contadores salen siempre completos, con cualquier filtro.
+   */
+  static async bandeja(actor, { estado = "entregado", orden = "antiguas", cursoId = null, tenantId = null } = {}) {
+    const ESTADOS = ["entregado", "rehacer", "aprobada", "todas"];
+    if (!ESTADOS.includes(estado)) throw fallo(`estado tiene que ser uno de: ${ESTADOS.join(", ")}.`, 400);
+    if (!["antiguas", "recientes"].includes(orden)) throw fallo("orden tiene que ser antiguas o recientes.", 400);
+
+    let qc = supabase.from("courses").select("id, name, tenant_id");
+    if (actor.role === "instructor") qc = qc.eq("instructor", actor.email);
+    if (actor.role !== "superadmin") qc = qc.eq("tenant_id", actor.tenantId);
+    else if (tenantId) qc = qc.eq("tenant_id", tenantId);
+    if (cursoId) qc = qc.eq("id", cursoId);
+    const { data: cursos, error } = await qc;
+    if (error) throw new Error(error.message);
+
+    const vacia = { contadores: { porRevisar: 0, rehacer: 0, aprobadas: 0, total: 0 }, entregas: [] };
+    if (!cursos?.length) {
+      if (cursoId) throw fallo("Curso no encontrado", 404);
+      return vacia;
+    }
+
+    const { data: secciones } = await supabase
+      .from("sections").select("id, course_id").in("course_id", cursos.map((c) => c.id));
+    const { data: actividades } = secciones?.length
+      ? await supabase.from("activities").select("id, title, section_id")
+          .in("section_id", secciones.map((s) => s.id))
+      : { data: [] };
+    if (!actividades?.length) return vacia;
+
+    const { data: todas } = await supabase
+      .from("entregas").select("*")
+      .in("activity_id", actividades.map((a) => a.id));
+
+    const lista = todas || [];
+    const contadores = {
+      porRevisar: lista.filter((e) => e.estado === "entregado").length,
+      rehacer: lista.filter((e) => e.estado === "rehacer").length,
+      aprobadas: lista.filter((e) => e.estado === "aprobada").length,
+      total: lista.length,
+    };
+
+    const elegidas = (estado === "todas" ? lista : lista.filter((e) => e.estado === estado))
+      .sort((a, b) => {
+        const d = String(a.entregado_at).localeCompare(String(b.entregado_at));
+        return orden === "antiguas" ? d : -d;
+      });
+
+    const { data: personas } = elegidas.length
+      ? await supabase.from("users").select("id, firstname, lastname, email")
+          .in("id", [...new Set(elegidas.map((e) => e.user_id))])
+      : { data: [] };
+    const persona = new Map((personas || []).map((u) => [u.id, u]));
+    const actividad = new Map(actividades.map((a) => [a.id, a]));
+    const cursoDeSeccion = new Map((secciones || []).map((s) => [s.id, s.course_id]));
+    const curso = new Map(cursos.map((c) => [c.id, c]));
+
+    return {
+      contadores,
+      entregas: elegidas.map((e) => {
+        const a = actividad.get(e.activity_id);
+        const c = curso.get(cursoDeSeccion.get(a?.section_id));
+        return {
+          ...aObjeto(e),
+          actividad: a ? { id: a.id, titulo: a.title } : null,
+          curso: c ? { id: c.id, nombre: c.name } : null,
+          aprendiz: persona.get(e.user_id) ?? null,
+        };
+      }),
+    };
+  }
+
+  /**
    * Revisa una entrega (HU-048).
    *
    * No hay nota: esto es onboarding, no un curso. Quien revisa decide si el

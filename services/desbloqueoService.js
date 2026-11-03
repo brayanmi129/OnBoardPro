@@ -17,6 +17,21 @@ const nuevoId = () => crypto.randomBytes(8).toString("hex");
 // logro. Se repite hasta que no cambie nada, con tope para no girar sin fin.
 const VUELTAS_MAXIMAS = 3;
 
+// Cuándo se evalúan los logros (HU-061). Solo en estos cinco momentos, nunca
+// de forma continua ni al consultar:
+//
+//   1. completar un recurso            -> evaluar(), desde la acreditación de XP
+//   2. aprobar una entrega             -> idem
+//   3. aprobar un examen               -> idem
+//   4. aprobar un concurso             -> idem (subir de nivel ocurre en esa
+//                                         misma operación, y se evalúa ahí)
+//   5. el cierre del periodo de ranking -> cerrarPeriodoRanking()
+//
+// Las medallas de ranking quedan afuera de 1 a 4: un puesto cambia cada vez
+// que otro suma puntos, y darla en tiempo real premiaría a quien iba primero
+// a las 10 de la mañana. Se otorgan al cerrar el periodo.
+const RANKING = "posicion_ranking";
+
 /** Lo que completó la persona, separado por el camino por el que lo hizo. */
 async function completadoPor(userId) {
   const [mov, ent, exa] = await Promise.all([
@@ -198,7 +213,7 @@ function presentar(l, extra = {}) {
 
 /** Una pasada: mide lo pendiente y registra lo que ya se cumple. */
 async function unaVuelta(usuario) {
-  const logros = await logrosPara(usuario);
+  const logros = (await logrosPara(usuario)).filter((l) => l.tipo_condicion !== RANKING);
   if (!logros.length) return [];
 
   const { data: ganados } = await supabase
@@ -235,10 +250,11 @@ async function unaVuelta(usuario) {
 
 class DesbloqueoService {
   /**
-   * Revisa los logros de una persona y desbloquea los que ya cumple.
+   * Revisa los logros de una persona y desbloquea los que ya cumple, salvo
+   * los de ranking, que se dan al cierre del periodo.
    *
-   * Se llama cada vez que gana XP y al consultar sus logros. Devuelve los que
-   * se desbloquearon en esta llamada y, si alguno pagó XP, el nivel recalculado.
+   * Se llama cada vez que gana XP (momentos 1 a 4). Devuelve los que se
+   * desbloquearon en esta llamada y, si alguno pagó XP, el nivel recalculado.
    */
   static async evaluar(userId) {
     const usuario = await usuarioDe(userId);
@@ -262,11 +278,12 @@ class DesbloqueoService {
 
   /**
    * Todos los logros que le corresponden, ganados o no, con el progreso de
-   * cada uno (HU-062). Antes de responder evalúa: así un logro de ranking que
-   * se ganó porque otros bajaron aparece sin esperar a la próxima actividad.
+   * cada uno (HU-062). Solo consulta: no otorga nada, porque los logros se
+   * evalúan en los cinco momentos definidos y no al mirar la pantalla.
+   * `nuevo` marca los ganados en las últimas 24 horas.
    */
   static async mios(userId) {
-    const { logros: recien } = await DesbloqueoService.evaluar(userId);
+    const hace24h = Date.now() - 24 * 3600 * 1000;
 
     const usuario = await usuarioDe(userId);
     if (!usuario) return { ganados: 0, total: 0, logros: [] };
@@ -279,7 +296,6 @@ class DesbloqueoService {
 
     const pendientes = logros.filter((l) => !porLogro.has(l.id));
     const medidas = pendientes.length ? await medir(usuario, pendientes) : new Map();
-    const recienIds = new Set(recien.map((l) => l.id));
 
     const lista = logros.map((l) => {
       const g = porLogro.get(l.id);
@@ -288,7 +304,7 @@ class DesbloqueoService {
           desbloqueado: true,
           desbloqueadoAt: g.desbloqueado_at,
           xpOtorgado: g.xp_otorgado,
-          nuevo: recienIds.has(l.id),
+          nuevo: new Date(g.desbloqueado_at).getTime() >= hace24h,
           progreso: { actual: l.meta, meta: l.meta, porcentaje: 100 },
         });
       }
@@ -314,11 +330,69 @@ class DesbloqueoService {
     return {
       ganados: lista.filter((l) => l.desbloqueado).length,
       total: lista.length,
-      nuevos: recien.length,
+      nuevos: lista.filter((l) => l.nuevo).length,
       logros: lista,
     };
   }
 }
+
+/**
+ * Cierre del periodo de ranking (HU-061, momento 5): otorga las medallas de
+ * ranking a quienes estén en el puesto pedido en ese momento.
+ *
+ * Lo dispara un administrador (o una tarea programada) al terminar el periodo,
+ * por ejemplo cada viernes. Una medalla se da una sola vez y no se pierde, así
+ * que cerrar dos veces no duplica nada.
+ */
+DesbloqueoService.cerrarPeriodoRanking = async function cerrarPeriodoRanking(actor, { tenantId } = {}) {
+  const org = actor.role === "superadmin" ? tenantId : actor.tenantId;
+  if (!org) {
+    const err = new Error("Indicá la organización (tenantId).");
+    err.status = 400;
+    throw err;
+  }
+  const GamificationService = require("./gamificationService.js");
+
+  const { data: logros, error } = await supabase.from("logros")
+    .select("id, tenant_id, course_id, nombre, descripcion, categoria, tipo_condicion, meta, xp_recompensa, icono")
+    .eq("activo", true).eq("tipo_condicion", RANKING)
+    .or(`tenant_id.eq.${org},tenant_id.is.null`);
+  if (error) throw new Error(error.message);
+
+  const otorgados = [];
+  const conXp = new Set();
+  // Cada ranking (el de la organización o el de un curso) se calcula una vez.
+  const rankings = new Map();
+  for (const l of logros || []) {
+    const clave = l.course_id || "organizacion";
+    if (!rankings.has(clave)) {
+      rankings.set(clave, l.course_id
+        ? await GamificationService.rankingDeCurso(l.course_id, { role: "superadmin" }, { limite: 10000 })
+        : await GamificationService.getRanking(org));
+    }
+    // Con 0 XP todos empatan arriba: eso no es un logro.
+    const ganadores = rankings.get(clave).filter((r) => r.xp > 0 && r.posicion <= l.meta);
+    for (const g of ganadores) {
+      const { data: otorgado, error: e } = await supabase.rpc("otorgar_logro", {
+        p_logro: l.id, p_user: g.id, p_tenant: org, p_xp: l.xp_recompensa || 0,
+        p_id_logro_usuario: nuevoId(), p_id_movimiento: nuevoId(),
+      });
+      if (e) throw new Error(e.message);
+      if (!otorgado) continue;
+      if (l.xp_recompensa > 0) conXp.add(g.id);
+      otorgados.push({ logro: { id: l.id, nombre: l.nombre }, persona: { id: g.id, firstname: g.firstname, lastname: g.lastname }, posicion: g.posicion });
+    }
+  }
+  // El premio pudo subirles el nivel.
+  for (const id of conXp) await GamificationService.recalcular(id);
+
+  return {
+    message: otorgados.length ? `Se otorgaron ${otorgados.length} medallas de ranking.` : "Nadie ganó medallas nuevas en este cierre.",
+    tenantId: org,
+    medallasEvaluadas: (logros || []).length,
+    otorgados,
+  };
+};
 
 // Con más de esta cantidad de personas la vista previa mide una muestra y
 // extrapola: medir de a una es varias consultas por persona.

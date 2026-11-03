@@ -36,6 +36,9 @@ function escenario({ actividad = {}, curso = {}, intentos = [], n = 3 } = {}) {
       opciones: os,
       intentos_examen: intentos,
       xp_movimientos: [],
+      // El aprendiz tiene el curso asignado por su grupo.
+      users_groups: [{ id_user: "u-ap", id_group: "g1" }],
+      groups_courses: [{ id_group: "g1", id_course: "c1" }],
     },
   });
   return act;

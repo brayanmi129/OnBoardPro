@@ -25,13 +25,18 @@ const puedeEditar = requireRole("admin", "superadmin", "instructor");
  *       ordenadas dentro, con su `xp`. El campo `adjunto` de cada actividad es
  *       una ruta interna: para abrirlo hay que pedir GET /api/activities/{id}/adjunto.
  *
- *       **Para un aprendiz** no vienen las secciones vacías, un curso
- *       despublicado responde 404, y cada actividad trae además:
+ *       **Para un aprendiz** solo responde si tiene el curso asignado por
+ *       alguno de sus grupos (si no, 404, igual que un curso despublicado). No
+ *       vienen las secciones vacías y cada actividad trae además:
  *
- *       - `completada`: si ya la terminó (completó el recurso, le aprobaron la
- *         entrega o aprobó el examen).
+ *       - `estado`: `pendiente`, `entregada` (mandó la entrega y espera
+ *         revisión) o `completada` (completó el recurso, le aprobaron la
+ *         entrega o aprobó el examen o el concurso). Una entrega devuelta para
+ *         rehacer cuenta como pendiente.
  *
- *       - `entrega`: el estado de su entrega (`entregado`, `aprobada`,
+ *       - `completada`: lo mismo que `estado: completada`, como booleano.
+ *
+ *       - `entrega`: el estado crudo de su entrega (`entregado`, `aprobada`,
  *         `rehacer`) o null si todavía no entregó.
  *     security:
  *       - bearerAuth: []
@@ -45,7 +50,9 @@ const puedeEditar = requireRole("admin", "superadmin", "instructor");
  *       200:
  *         description: Lista de secciones
  *       404:
- *         description: El curso no existe o es de otra organización
+ *         description: >
+ *           El curso no existe, es de otra organización o, para un aprendiz,
+ *           no está publicado o no lo tiene asignado
  */
 router.get("/courses/:id/sections", verifyJWT, SectionController.listar);
 

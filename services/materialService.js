@@ -2,6 +2,7 @@ const crypto = require("node:crypto");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { subirMaterial, urlFirmada, borrar, MATERIALES } = require("../helpers/storage.js");
 const ActivitiesService = require("./actividades.js");
+const { asegurarPublicado } = require("../helpers/cursoDeActividad.js");
 
 function fallo(message, status) {
   const err = new Error(message);
@@ -11,12 +12,26 @@ function fallo(message, status) {
 
 const CAMPOS = "id, activity_id, tenant_id, nombre, ruta, mime, tamano, orden, subido_por, created_at";
 
+// Qué se puede mostrar dentro de la plataforma sin descargarlo (HU-038).
+function tipoDe(m) {
+  const mime = m.mime || "";
+  if (/^https?:\/\//i.test(m.ruta || "")) return "enlace";
+  if (mime === "application/pdf") return "pdf";
+  if (mime.startsWith("video/")) return "video";
+  if (mime.startsWith("image/")) return "imagen";
+  if (mime.startsWith("audio/")) return "audio";
+  return "archivo";
+}
+
 function presentar(m) {
+  const tipo = tipoDe(m);
   return {
     id: m.id,
     actividadId: m.activity_id,
     nombre: m.nombre,
     mime: m.mime || null,
+    tipo,
+    previsualizable: ["pdf", "video", "imagen", "audio"].includes(tipo),
     tamano: m.tamano ?? null,
     orden: m.orden,
     subidoPor: m.subido_por || null,
@@ -42,6 +57,8 @@ class MaterialService {
     if (actor.role !== "superadmin") q = q.eq("tenant_id", actor.tenantId);
     const { data: actividad } = await q.maybeSingle();
     if (!actividad) throw fallo("Actividad no encontrada", 404);
+    // El aprendiz solo ve material de cursos publicados y asignados a él.
+    await asegurarPublicado(actividadId, actor);
 
     const { data, error } = await supabase
       .from("materiales").select(CAMPOS).eq("activity_id", actividadId)

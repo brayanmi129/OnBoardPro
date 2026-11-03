@@ -22,6 +22,9 @@ const subida = require("../middlewares/subida.js");
  *       Devuelve solo las actividades de la empresa del token. El superadmin las
  *       ve todas. El campo `adjunto` es una ruta interna, no una URL abrible:
  *       para verlo hay que pedir GET /api/activities/{id}/adjunto.
+ *
+ *       Es el catálogo para quien arma cursos (admin, instructor). Un aprendiz
+ *       ve sus actividades por curso en GET /api/courses/{id}/sections.
  *     security:
  *       - bearerAuth: []
  *     responses:
@@ -29,8 +32,12 @@ const subida = require("../middlewares/subida.js");
  *         description: Lista de actividades
  *       401:
  *         description: Token ausente o inválido
+ *       403:
+ *         description: Quien llama es aprendiz
  */
-router.get("/get/all", verifyJWT, ActivitiesController.getAll);
+// El catálogo entero es para quien arma cursos; el aprendiz ve lo suyo por
+// /courses/{id}/sections.
+router.get("/get/all", verifyJWT, requireRole("admin", "superadmin", "instructor"), ActivitiesController.getAll);
 
 /**
  * @swagger
@@ -128,7 +135,11 @@ router.post(
  *       200:
  *         description: Devuelve { url }
  *       404:
- *         description: La actividad no existe, no tiene adjunto o es de otra empresa
+ *         description: >
+ *           La actividad no existe, no tiene adjunto, es de otra empresa o, para
+ *           un aprendiz, es de un curso que no tiene asignado
+ *       409:
+ *         description: Para un aprendiz, el curso no está publicado o fue archivado
  */
 router.get("/:id/adjunto", verifyJWT, ActivitiesController.adjunto);
 

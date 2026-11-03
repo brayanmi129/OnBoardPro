@@ -16,6 +16,7 @@ function consulta(nombre) {
   let operacion = "select";
   let valores = null;
   let unico = null; // "maybe" | "single"
+  const ordenes = []; // [columna, ascendente]
 
   const filas = () => {
     const todas = estado.tablas[nombre] || [];
@@ -42,6 +43,16 @@ function consulta(nombre) {
     }
     // Copias, como PostgREST: quien lee no ve cambios hechos después.
     const data = filas().map((f) => ({ ...f }));
+    // Como en Postgres: el orden pedido manda, los NULL van al final.
+    data.sort((a, b) => {
+      for (const [c, asc] of ordenes) {
+        if (a[c] === b[c]) continue;
+        if (a[c] == null) return 1;
+        if (b[c] == null) return -1;
+        return (a[c] < b[c] ? -1 : 1) * (asc ? 1 : -1);
+      }
+      return 0;
+    });
     if (unico === "single") return data.length === 1 ? { data: data[0], error: null } : { data: null, error: { message: "no rows" } };
     if (unico === "maybe") return { data: data[0] ?? null, error: null };
     return { data, error: null, count: data.length };
@@ -59,7 +70,7 @@ function consulta(nombre) {
     is: (c, v) => { filtros.push((f) => (f[c] ?? null) === v); return q; },
     not: (c, op, v) => { filtros.push((f) => !(op === "is" && (f[c] ?? null) === v)); return q; },
     or: () => q,
-    order: () => q,
+    order: (c, { ascending = true } = {}) => { ordenes.push([c, ascending]); return q; },
     limit: () => q,
     maybeSingle: () => { unico = "maybe"; return q; },
     single: () => { unico = "single"; return q; },

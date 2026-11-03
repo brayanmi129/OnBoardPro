@@ -1,4 +1,5 @@
 const ActivitiesService = require("../services/actividades.js");
+const { asegurarPublicado } = require("../helpers/cursoDeActividad.js");
 
 // Antes las rutas de actividades apuntaban directo al servicio, así que este
 // recibía (req, res) creyendo que eran (datos, archivo). El servicio trataba la
@@ -75,10 +76,13 @@ class ActivitiesController {
   // temporal cada vez que alguien con acceso la pide.
   static async adjunto(req, res) {
     try {
+      // Mismo control que el material: el aprendiz, solo de cursos asignados.
+      await asegurarPublicado(req.params.id, req.user);
       const url = await ActivitiesService.urlAdjunto(req.params.id, tenantDe(req));
       if (!url) return res.status(404).json({ message: "Actividad o adjunto no encontrado" });
       return res.status(200).json({ url });
     } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message });
       console.error("Error al firmar el adjunto:", error.message);
       return res.status(500).json({ message: "Error al obtener el adjunto" });
     }

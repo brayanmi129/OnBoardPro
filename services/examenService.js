@@ -797,6 +797,54 @@ class ExamenService {
     }
   }
 
+  /**
+   * Mi historial de juegos (HU-067): cada concurso que jugué, con mi mejor
+   * resultado, cuántas partidas llevo y el XP que me dio. El XP sale del
+   * libro de movimientos: es lo que de verdad se acreditó, con los recortes
+   * de reintento o tope diario ya aplicados.
+   */
+  static async misJuegos(actor) {
+    const { data: intentos, error } = await supabase
+      .from("intentos_examen")
+      .select("activity_id, numero, estado, porcentaje, aprobado, iniciado_at, finalizado_at")
+      .eq("user_id", actor.id);
+    if (error) throw new Error(error.message);
+    if (!intentos?.length) return { juegos: 0, juegosAprobados: 0, xpGanado: 0, historial: [] };
+
+    const { data: concursos } = await supabase
+      .from("activities").select("id, title, xp")
+      .in("id", [...new Set(intentos.map((i) => i.activity_id))])
+      .eq("type", "Concurso");
+    if (!concursos?.length) return { juegos: 0, juegosAprobados: 0, xpGanado: 0, historial: [] };
+
+    const { data: movimientos } = await supabase
+      .from("xp_movimientos").select("activity_id, xp")
+      .eq("user_id", actor.id).in("activity_id", concursos.map((c) => c.id));
+    const xpDe = new Map((movimientos || []).map((m) => [m.activity_id, m.xp]));
+
+    const historial = concursos.map((c) => {
+      const partidas = intentos.filter((i) => i.activity_id === c.id && i.estado === "finalizado");
+      const ultima = partidas.reduce((u, i) => (String(i.finalizado_at) > String(u?.finalizado_at ?? "") ? i : u), null);
+      return {
+        actividadId: c.id,
+        titulo: c.title,
+        partidas: partidas.length,
+        mejorPorcentaje: partidas.length ? Math.max(...partidas.map((i) => i.porcentaje ?? 0)) : null,
+        aprobado: partidas.some((i) => i.aprobado),
+        xpGanado: xpDe.get(c.id) ?? 0,
+        xpPosible: c.xp ?? 0,
+        ultimaPartidaAt: ultima?.finalizado_at ?? null,
+      };
+    }).sort((a, b) => String(b.ultimaPartidaAt).localeCompare(String(a.ultimaPartidaAt)));
+
+    return {
+      juegos: historial.length,
+      juegosAprobados: historial.filter((h) => h.aprobado).length,
+      xpGanado: historial.reduce((t, h) => t + h.xpGanado, 0),
+      historial,
+    };
+  }
+
   /** Mis intentos en un examen y cuántos me quedan. */
   static async misIntentos(actividadId, actor) {
     const actividad = await ExamenService._examen(actividadId, actor, { soloLectura: true });

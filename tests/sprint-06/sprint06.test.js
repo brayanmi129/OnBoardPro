@@ -49,6 +49,9 @@ const base = () => ({
   materiales: [],
   entregas: [],
   intentos_examen: [],
+  // El aprendiz u1 tiene asignado el curso c1 por su grupo.
+  users_groups: [{ id_user: "u1", id_group: "g1" }],
+  groups_courses: [{ id_group: "g1", id_course: "c1" }],
 });
 
 const opciones = [{ texto: "Sí", esCorrecta: true }, { texto: "No", esCorrecta: false }];

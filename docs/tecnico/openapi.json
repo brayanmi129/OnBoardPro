@@ -26,7 +26,7 @@
         "tags": [
           "Actividades"
         ],
-        "description": "Devuelve solo las actividades de la empresa del token. El superadmin las ve todas. El campo `adjunto` es una ruta interna, no una URL abrible: para verlo hay que pedir GET /api/activities/{id}/adjunto.\n",
+        "description": "Devuelve solo las actividades de la empresa del token. El superadmin las ve todas. El campo `adjunto` es una ruta interna, no una URL abrible: para verlo hay que pedir GET /api/activities/{id}/adjunto.\nEs el catálogo para quien arma cursos (admin, instructor). Un aprendiz ve sus actividades por curso en GET /api/courses/{id}/sections.\n",
         "security": [
           {
             "bearerAuth": []
@@ -38,6 +38,9 @@
           },
           "401": {
             "description": "Token ausente o inválido"
+          },
+          "403": {
+            "description": "Quien llama es aprendiz"
           }
         }
       }
@@ -152,7 +155,10 @@
             "description": "Devuelve { url }"
           },
           "404": {
-            "description": "La actividad no existe, no tiene adjunto o es de otra empresa"
+            "description": "La actividad no existe, no tiene adjunto, es de otra empresa o, para un aprendiz, es de un curso que no tiene asignado\n"
+          },
+          "409": {
+            "description": "Para un aprendiz, el curso no está publicado o fue archivado"
           }
         }
       }
@@ -1394,6 +1400,80 @@
         }
       }
     },
+    "/api/entregas": {
+      "get": {
+        "summary": "Mi bandeja de entregas por revisar",
+        "tags": [
+          "Entregas"
+        ],
+        "description": "Las entregas de todos los cursos de quien corrige, juntas: un instructor ve las de los cursos que dicta, un administrador las de su organización. Por defecto trae las que esperan revisión, de la más antigua a la más nueva, que es lo primero que hay que atender.\n`contadores` trae siempre los totales por estado, con cualquier filtro: sirve para mostrar cuántas hay por revisar.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "estado",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "entregado",
+                "rehacer",
+                "aprobada",
+                "todas"
+              ],
+              "default": "entregado"
+            },
+            "description": "entregado son las que esperan revisión."
+          },
+          {
+            "in": "query",
+            "name": "orden",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "antiguas",
+                "recientes"
+              ],
+              "default": "antiguas"
+            },
+            "description": "Por fecha de entrega."
+          },
+          {
+            "in": "query",
+            "name": "cursoId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Para ver solo las de un curso."
+          },
+          {
+            "in": "query",
+            "name": "tenantId",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Solo para el superadmin."
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve contadores (porRevisar, rehacer, aprobadas, total) y entregas, cada una con su actividad, su curso y el aprendiz\n"
+          },
+          "400": {
+            "description": "estado u orden inválidos"
+          },
+          "403": {
+            "description": "Quien llama es aprendiz"
+          },
+          "404": {
+            "description": "El curso indicado no existe o no es de quien llama"
+          }
+        }
+      }
+    },
     "/api/entregas/{id}/revisar": {
       "put": {
         "summary": "Revisa una entrega y decide si queda completa",
@@ -1806,6 +1886,25 @@
         "responses": {
           "200": {
             "description": "Resumen e historial de intentos"
+          }
+        }
+      }
+    },
+    "/api/concursos/mios": {
+      "get": {
+        "summary": "Mi historial de juegos",
+        "tags": [
+          "Exámenes"
+        ],
+        "description": "Cada concurso que jugué, del más reciente al más viejo, con mi mejor porcentaje, cuántas partidas llevo, si lo aprobé y el XP que me dio. Los puntos dependen del desempeño y el XP completo se gana solo la primera vez: `xpGanado` es lo que de verdad se acreditó y `xpPosible` lo máximo que daba.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve juegos, juegosAprobados, xpGanado e historial"
           }
         }
       }
@@ -2799,13 +2898,53 @@
         }
       }
     },
+    "/api/gamification/logros/cierre-ranking": {
+      "post": {
+        "summary": "Cierra el periodo de ranking y otorga sus medallas",
+        "tags": [
+          "Logros"
+        ],
+        "description": "Las medallas de ranking (\"quedar en el puesto 3 o mejor\") no se dan en tiempo real: un puesto cambia cada vez que otro suma puntos. Se otorgan al cerrar el periodo, a quien esté en el puesto pedido en ese momento. Lo llama un administrador (o una tarea programada) al terminar cada periodo, por ejemplo cada viernes.\nCada medalla se da una sola vez por persona y no se pierde: cerrar dos veces no duplica nada. Si la medalla paga XP, se acredita y se recalcula el nivel.\nEl resto de los logros se evalúa solo al completar un recurso, al aprobar una entrega, un examen o un concurso.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "tenantId": {
+                    "type": "string",
+                    "description": "Solo para el superadmin."
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Devuelve message, medallasEvaluadas y otorgados (logro, persona y puesto)"
+          },
+          "400": {
+            "description": "El superadmin no indicó la organización"
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          }
+        }
+      }
+    },
     "/api/gamification/logros/mios": {
       "get": {
         "summary": "Mis logros, ganados y por ganar",
         "tags": [
           "Logros"
         ],
-        "description": "Todos los logros activos que le corresponden a quien pregunta (los de su organización y los genéricos), con `desbloqueado`, la fecha y el `progreso` de cada uno.\nAntes de responder evalúa los pendientes: un logro de ranking que se ganó porque otros quedaron atrás aparece sin esperar a la próxima actividad. Los recién ganados vienen con `nuevo: true`.\nPrimero van los ganados, del más reciente al más viejo; después los que faltan, de los más avanzados a los menos.\n",
+        "description": "Todos los logros activos que le corresponden a quien pregunta (los de su organización y los genéricos), con `desbloqueado`, la fecha y el `progreso` de cada uno.\nSolo consulta: no otorga nada. Los logros se ganan al completar un recurso, al aprobar una entrega, un examen o un concurso, y los de ranking al cierre del periodo. Los ganados en las últimas 24 horas vienen con `nuevo: true`.\nPrimero van los ganados, del más reciente al más viejo; después los que faltan, de los más avanzados a los menos.\n",
         "security": [
           {
             "bearerAuth": []
@@ -2959,7 +3098,7 @@
         "tags": [
           "Material de apoyo"
         ],
-        "description": "Devuelve cada archivo con su nombre original, tipo, tamaño y una URL temporal para abrirlo o descargarlo. La ruta interna del bucket no se expone nunca.\n",
+        "description": "Devuelve cada archivo con su nombre original, tipo, tamaño y una URL temporal para abrirlo o descargarlo. La ruta interna del bucket no se expone nunca.\n`tipo` es `pdf`, `video`, `imagen`, `audio`, `enlace` (un enlace externo, por ejemplo de YouTube) o `archivo`. `previsualizable` dice si se puede mostrar dentro de la plataforma sin descargarlo.\nUn aprendiz solo ve el material de cursos publicados que tenga asignados por alguno de sus grupos.\n",
         "security": [
           {
             "bearerAuth": []
@@ -2981,7 +3120,10 @@
             "description": "Lista de materiales, ordenada como se cargaron"
           },
           "404": {
-            "description": "La actividad no existe o es de otra organización"
+            "description": "La actividad no existe, es de otra organización o, para un aprendiz, es de un curso que no tiene asignado\n"
+          },
+          "409": {
+            "description": "Para un aprendiz, el curso no está publicado o fue archivado"
           }
         }
       },
@@ -3291,7 +3433,7 @@
         "tags": [
           "Secciones"
         ],
-        "description": "Devuelve las secciones ordenadas, cada una con sus actividades ya ordenadas dentro, con su `xp`. El campo `adjunto` de cada actividad es una ruta interna: para abrirlo hay que pedir GET /api/activities/{id}/adjunto.\n**Para un aprendiz** no vienen las secciones vacías, un curso despublicado responde 404, y cada actividad trae además:\n- `completada`: si ya la terminó (completó el recurso, le aprobaron la\n  entrega o aprobó el examen).\n\n- `entrega`: el estado de su entrega (`entregado`, `aprobada`,\n  `rehacer`) o null si todavía no entregó.\n",
+        "description": "Devuelve las secciones ordenadas, cada una con sus actividades ya ordenadas dentro, con su `xp`. El campo `adjunto` de cada actividad es una ruta interna: para abrirlo hay que pedir GET /api/activities/{id}/adjunto.\n**Para un aprendiz** solo responde si tiene el curso asignado por alguno de sus grupos (si no, 404, igual que un curso despublicado). No vienen las secciones vacías y cada actividad trae además:\n- `estado`: `pendiente`, `entregada` (mandó la entrega y espera\n  revisión) o `completada` (completó el recurso, le aprobaron la\n  entrega o aprobó el examen o el concurso). Una entrega devuelta para\n  rehacer cuenta como pendiente.\n\n- `completada`: lo mismo que `estado: completada`, como booleano.\n- `entrega`: el estado crudo de su entrega (`entregado`, `aprobada`,\n  `rehacer`) o null si todavía no entregó.\n",
         "security": [
           {
             "bearerAuth": []
@@ -3313,7 +3455,7 @@
             "description": "Lista de secciones"
           },
           "404": {
-            "description": "El curso no existe o es de otra organización"
+            "description": "El curso no existe, es de otra organización o, para un aprendiz, no está publicado o no lo tiene asignado\n"
           }
         }
       },
@@ -4020,7 +4162,7 @@
     },
     {
       "name": "Logros",
-      "description": "Catálogo de logros de la organización. Un logro es la definición de una meta —\"completar 10 actividades\", \"llegar al nivel 5\"—, no el hecho de haberla conseguido. El desbloqueo es automático: se evalúa cada vez que alguien gana XP, y cada persona ve los suyos en GET /api/gamification/logros/mios.\n"
+      "description": "Catálogo de logros de la organización. Un logro es la definición de una meta —\"completar 10 actividades\", \"llegar al nivel 5\"—, no el hecho de haberla conseguido. El desbloqueo es automático: se evalúa cada vez que alguien gana XP, salvo las medallas de ranking, que se otorgan al cierre del periodo. Cada persona ve los suyos en GET /api/gamification/logros/mios.\n"
     },
     {
       "name": "Material de apoyo",

@@ -47,6 +47,15 @@ class EntregaController {
     }
   }
 
+  static async bandeja(req, res) {
+    try {
+      const { estado, orden, cursoId, tenantId } = req.query;
+      return res.status(200).json(await EntregaService.bandeja(actorDe(req), { estado, orden, cursoId, tenantId }));
+    } catch (error) {
+      return responder(res, error, "Error al obtener la bandeja de entregas");
+    }
+  }
+
   /** El instructor decide si la entrega queda completa o hay que rehacerla. */
   static async revisar(req, res) {
     try {

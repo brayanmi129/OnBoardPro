@@ -42,6 +42,13 @@ function responder(res, error, contexto) {
  *       Devuelve cada archivo con su nombre original, tipo, tamaño y una URL
  *       temporal para abrirlo o descargarlo. La ruta interna del bucket no se
  *       expone nunca.
+ *
+ *       `tipo` es `pdf`, `video`, `imagen`, `audio`, `enlace` (un enlace
+ *       externo, por ejemplo de YouTube) o `archivo`. `previsualizable` dice si
+ *       se puede mostrar dentro de la plataforma sin descargarlo.
+ *
+ *       Un aprendiz solo ve el material de cursos publicados que tenga
+ *       asignados por alguno de sus grupos.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -54,7 +61,11 @@ function responder(res, error, contexto) {
  *       200:
  *         description: Lista de materiales, ordenada como se cargaron
  *       404:
- *         description: La actividad no existe o es de otra organización
+ *         description: >
+ *           La actividad no existe, es de otra organización o, para un
+ *           aprendiz, es de un curso que no tiene asignado
+ *       409:
+ *         description: Para un aprendiz, el curso no está publicado o fue archivado
  */
 router.get("/activities/:id/materiales", verifyJWT, async (req, res) => {
   try {

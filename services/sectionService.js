@@ -2,6 +2,7 @@ const crypto = require("crypto");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { errorDeValidacion } = require("../helpers/validacion.js");
 const SectionSchema = require("../schemas/sectionSchema.js");
+const { asegurarAsignado } = require("../helpers/cursoDeActividad.js");
 
 // La base guarda course_id / tenant_id; la API expone courseId / tenantId.
 function aFila(d) {
@@ -59,6 +60,8 @@ class SectionService {
     if (soloConContenido && (curso.status === "Cerrado" || curso.archivado)) {
       throw fallo("Curso no encontrado", 404);
     }
+    // Y solo uno asignado a alguno de sus grupos (HU-035).
+    if (aprendizId) await asegurarAsignado(courseId, { role: "student", id: aprendizId });
 
     const { data: secciones, error } = await supabase
       .from("sections")
@@ -91,12 +94,27 @@ class SectionService {
       // Se pide por actividad con GET /api/activities/{id}/adjunto.
       actividades: (actividades || [])
         .filter((a) => a.section_id === s.id)
-        .map((a) => (estado
-          ? { ...a, completada: estado.hechas.has(a.id), entrega: estado.entregas.get(a.id) ?? null }
-          : a)),
+        .map((a) => (estado ? { ...a, ...SectionService._estadoDeActividad(a, estado) } : a)),
     }));
 
     return soloConContenido ? armadas.filter((s) => s.actividades.length > 0) : armadas;
+  }
+
+  /**
+   * El estado de una actividad para el aprendiz (HU-035):
+   *
+   *   completada  ya cobró su XP (recurso marcado, entrega aprobada, examen aprobado)
+   *   entregada   mandó la entrega y espera la revisión
+   *   pendiente   todo lo demás, incluida una entrega devuelta para rehacer
+   *
+   * `entrega` sigue viniendo con el estado crudo, para distinguir "rehacer".
+   */
+  static _estadoDeActividad(actividad, { hechas, entregas }) {
+    const entrega = entregas.get(actividad.id) ?? null;
+    let estado = "pendiente";
+    if (hechas.has(actividad.id)) estado = "completada";
+    else if (entrega === "entregado") estado = "entregada";
+    return { estado, completada: estado === "completada", entrega };
   }
 
   /**

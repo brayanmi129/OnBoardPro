@@ -42,6 +42,35 @@ async function asegurarPublicado(actividadId, actor) {
     throw fallo("Este curso no está publicado.", 409);
   }
   if (curso?.archivado) throw fallo("Este curso fue archivado.", 409);
+  // Que sea de su empresa no alcanza: el aprendiz solo accede a los cursos
+  // asignados a alguno de sus grupos (HU-035, HU-038).
+  if (curso && actor.id) await asegurarAsignado(curso.id, actor);
 }
 
-module.exports = { cursoDeActividad, asegurarPublicado };
+/**
+ * Si el curso está asignado a alguno de los grupos de la persona.
+ *
+ * La asignación es por grupo (groups_courses): no hay cursos asignados a una
+ * persona suelta.
+ */
+async function cursoAsignado(courseId, userId) {
+  const { data: grupos } = await supabase
+    .from("users_groups").select("id_group").eq("id_user", userId);
+  if (!grupos?.length) return false;
+  const { data: asignaciones } = await supabase
+    .from("groups_courses").select("id_course")
+    .in("id_group", grupos.map((g) => g.id_group));
+  return (asignaciones || []).some((a) => a.id_course === courseId);
+}
+
+/**
+ * Frena a un aprendiz que pide algo de un curso que no tiene asignado. Se
+ * responde 404, igual que si no existiera: no le confirma que el curso está ahí.
+ * Al resto de los roles no los afecta: sus permisos se miran en cada servicio.
+ */
+async function asegurarAsignado(courseId, actor) {
+  if (actor.role !== "student") return;
+  if (!(await cursoAsignado(courseId, actor.id))) throw fallo("Curso no encontrado", 404);
+}
+
+module.exports = { cursoDeActividad, asegurarPublicado, cursoAsignado, asegurarAsignado };
