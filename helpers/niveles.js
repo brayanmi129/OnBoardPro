@@ -103,13 +103,37 @@ const XP_POR_TIPO = {
   Concurso: 30, // un juego de preguntas: se puede rejugar, pero paga una vez
 };
 
+/**
+ * Cuánto XP puede dar cada tipo de actividad. Quien arma el curso elige el
+ * valor dentro del rango; si no elige, va el recomendado. Los niveles siguen
+ * una curva fija, así que el rango es lo que mantiene el ritmo de progreso
+ * parejo entre cursos: sin él, un recurso de 500 XP sube tres niveles de golpe.
+ */
+const XP_REGLAS = {
+  Recurso: { minimo: 5, recomendado: XP_POR_TIPO.Recurso, maximo: 30 },
+  Tarea: { minimo: 10, recomendado: XP_POR_TIPO.Tarea, maximo: 100 },
+  Examen: { minimo: 20, recomendado: XP_POR_TIPO.Examen, maximo: 150 },
+  Concurso: { minimo: 10, recomendado: XP_POR_TIPO.Concurso, maximo: 100 },
+};
+
 /** XP que corresponde a una actividad: el suyo si lo tiene, el de su tipo si no. */
 function xpDeActividad({ xp, type }) {
   if (xp !== undefined && xp !== null && xp !== "") return Number(xp);
   return XP_POR_TIPO[type] ?? XP_POR_TIPO.Recurso;
 }
 
+/** Si el XP está fuera del rango de su tipo, el mensaje que lo explica; si no, null. */
+function xpFueraDeRango(xp, type) {
+  const r = XP_REGLAS[type];
+  if (!r) return null;
+  const n = Number(xp);
+  if (!Number.isInteger(n) || n < r.minimo || n > r.maximo) {
+    return `Una actividad de tipo ${type} da entre ${r.minimo} y ${r.maximo} XP (recomendado: ${r.recomendado}).`;
+  }
+  return null;
+}
+
 module.exports = {
   umbral, umbralDe, maximoDe, nombreDe, nivelPara, progreso, progresoEn,
-  NIVEL_MAXIMO, XP_POR_TIPO, xpDeActividad,
+  NIVEL_MAXIMO, XP_POR_TIPO, XP_REGLAS, xpDeActividad, xpFueraDeRango,
 };

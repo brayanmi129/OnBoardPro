@@ -5,9 +5,11 @@ class GamificationController {
     try {
       // El superadmin (null) ve el ranking global; el resto, el de su empresa.
       const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
-      const ranking = await gamificationService.getRanking(tenantId);
+      const grupoId = req.query.grupoId ? String(req.query.grupoId) : undefined;
+      const ranking = await gamificationService.getRanking(tenantId, { grupoId, actor: req.user });
       res.status(200).json(ranking);
     } catch (error) {
+      if (error.status) return res.status(error.status).json({ message: error.message });
       console.error("Error al obtener el ranking:", error);
       res.status(500).send("Error al obtener el ranking");
     }

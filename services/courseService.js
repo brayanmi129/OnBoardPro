@@ -524,6 +524,76 @@ class CourseService {
    * el total. Hecha es la que ya tiene su movimiento en el libro de XP, que
    * es lo mismo que marca "completada" en la pantalla del curso.
    */
+  /**
+   * Quiénes están en el curso: el instructor, los grupos que lo tienen y sus
+   * aprendices. Lo ve quien tiene el curso asignado, quien lo dicta y la
+   * administración. A un aprendiz no se le muestran los correos de los demás.
+   */
+  static async participantes(courseId, actor) {
+    const { asegurarAsignado } = require("../helpers/cursoDeActividad.js");
+    const tenantId = actor.role === "superadmin" ? null : actor.tenantId;
+    const { data: curso } = await delTenant(
+      supabase.from("courses").select("id, name, instructor, tenant_id").eq("id", courseId),
+      tenantId
+    ).maybeSingle();
+    if (!curso) throw fallo("Curso no encontrado", 404);
+    if (actor.role === "student") await asegurarAsignado(curso.id, actor);
+    if (actor.role === "instructor" && curso.instructor !== actor.email) {
+      throw fallo("Curso no encontrado", 404);
+    }
+
+    const { data: enlaces } = await supabase
+      .from("groups_courses").select("id_group").eq("id_course", curso.id);
+    const grupoIds = [...new Set((enlaces || []).map((e) => e.id_group))];
+
+    let grupos = [];
+    let aprendices = [];
+    if (grupoIds.length) {
+      const { data: gs } = await supabase.from("groups").select("id, name").in("id", grupoIds);
+      grupos = (gs || []).map((g) => ({ id: g.id, nombre: g.name }))
+        .sort((a, b) => a.nombre.localeCompare(b.nombre));
+
+      const { data: miembros } = await supabase
+        .from("users_groups").select("id_user").in("id_group", grupoIds);
+      const ids = [...new Set((miembros || []).map((m) => m.id_user))];
+      if (ids.length) {
+        const { data: personas } = await supabase
+          .from("users").select("id, firstname, lastname, email, role, level, status")
+          .in("id", ids);
+        const verCorreos = actor.role !== "student";
+        aprendices = (personas || [])
+          .filter((u) => u.role === "student" && u.status !== "Inactive")
+          .map((u) => ({
+            id: u.id,
+            firstname: u.firstname,
+            lastname: u.lastname,
+            level: u.level ?? 0,
+            ...(verCorreos ? { email: u.email } : {}),
+          }))
+          .sort((a, b) => `${a.firstname} ${a.lastname}`.localeCompare(`${b.firstname} ${b.lastname}`));
+      }
+    }
+
+    let instructor = null;
+    if (curso.instructor) {
+      const { data: persona } = await supabase
+        .from("users").select("id, email, firstname, lastname, role, phonumber")
+        .eq("email", curso.instructor).maybeSingle();
+      // El teléfono va para que el aprendiz tenga cómo contactarlo, si lo cargó.
+      instructor = persona
+        ? { ...presentarPersona(persona), telefono: persona.phonumber || null }
+        : { id: null, email: curso.instructor, firstname: null, lastname: null, role: "instructor", telefono: null };
+    }
+
+    return {
+      curso: { id: curso.id, nombre: curso.name },
+      instructor,
+      grupos,
+      aprendices,
+      total: aprendices.length,
+    };
+  }
+
   static async _progresoDe(userId, courseIds) {
     const vacio = () => ({ hechas: 0, total: 0, porcentaje: 0 });
     const resultado = new Map(courseIds.map((id) => [id, vacio()]));

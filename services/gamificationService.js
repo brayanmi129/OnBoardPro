@@ -12,7 +12,25 @@ function fallo(message, status) {
 }
 
 class GamificationService {
-  static async getRanking(tenantId = null) {
+  static async getRanking(tenantId = null, { grupoId, actor } = {}) {
+    // Por grupo: solo sus integrantes. El grupo tiene que ser de la
+    // organización, y un aprendiz solo ve el ranking de grupos a los que
+    // pertenece; si no, 404 como si no existiera.
+    let integrantes = null;
+    if (grupoId) {
+      let qg = supabase.from("groups").select("id").eq("id", grupoId);
+      if (tenantId) qg = qg.eq("tenant_id", tenantId);
+      const { data: grupo } = await qg.maybeSingle();
+      if (!grupo) throw fallo("Grupo no encontrado", 404);
+      const { data: miembros } = await supabase
+        .from("users_groups").select("id_user").eq("id_group", grupoId);
+      integrantes = (miembros || []).map((m) => m.id_user);
+      if (actor?.role === "student" && !integrantes.includes(actor.id)) {
+        throw fallo("Grupo no encontrado", 404);
+      }
+      if (!integrantes.length) return [];
+    }
+
     // Sin este filtro el ranking mezclaba a los aprendices de todas las
     // empresas: un cliente veía los nombres de los empleados de otro.
     let consulta = supabase
@@ -20,6 +38,7 @@ class GamificationService {
       .select("id, firstname, lastname, level, xp")
       .not("role", "in", "(admin,superadmin,instructor)");
     if (tenantId) consulta = consulta.eq("tenant_id", tenantId);
+    if (integrantes) consulta = consulta.in("id", integrantes);
 
     // Se ordena por XP y no por nivel: dentro de un mismo nivel el XP es lo que
     // distingue a quien va adelante. Ordenar por nivel dejaba empates masivos.
@@ -56,13 +75,26 @@ class GamificationService {
 
     const porPersona = new Map(sumas.map((s) => [s.user_id, Number(s.xp) || 0]));
 
+    // Solo compite quien tiene el curso asignado hoy: si sacaron a alguien del
+    // grupo, su XP se conserva pero deja de figurar en el ranking del curso.
+    // Así el ranking y la lista de participantes cuentan a la misma gente.
+    const { data: enlaces } = await supabase
+      .from("groups_courses").select("id_group").eq("id_course", courseId);
+    const grupos = (enlaces || []).map((e) => e.id_group);
+    if (!grupos.length) return [];
+    const { data: miembros } = await supabase
+      .from("users_groups").select("id_user").in("id_group", grupos);
+    const asignados = new Set((miembros || []).map((m) => m.id_user));
+    const ids = [...porPersona.keys()].filter((id) => asignados.has(id));
+    if (!ids.length) return [];
+
     const { data: personas } = await supabase
-      .from("users").select("id, firstname, lastname, level, role")
-      .in("id", [...porPersona.keys()]);
+      .from("users").select("id, firstname, lastname, level, role, status")
+      .in("id", ids);
 
     return (personas || [])
       // El instructor y los administradores no compiten con sus aprendices.
-      .filter((u) => u.role === "student")
+      .filter((u) => u.role === "student" && u.status !== "Inactive")
       .map((u) => ({
         id: u.id,
         firstname: u.firstname,
@@ -90,9 +122,17 @@ class GamificationService {
       .eq("id", actividadId);
     if (tenantId) consulta = consulta.eq("tenant_id", tenantId);
 
-    const { data: actividad } = await consulta.maybeSingle();
+    // La actividad y el permiso sobre su curso se consultan a la vez. Si la
+    // actividad no existe (o es de otra empresa) gana el 404 de abajo.
+    const [{ data: actividad }, permiso] = await Promise.all([
+      consulta.maybeSingle(),
+      asegurarPublicado(actividadId, { role: "student", id: userId }).then(
+        () => null,
+        (err) => err
+      ),
+    ]);
     if (!actividad) throw fallo("Actividad no encontrada", 404);
-    await asegurarPublicado(actividad.id, { role: "student", id: userId });
+    if (permiso) throw permiso;
 
     // Criterio 1 de HU-040: marcarse algo como hecho solo vale para material
     // que se consume —un PDF, un video—. Sin esto el botón era una máquina de
@@ -148,18 +188,17 @@ class GamificationService {
 
   static async acreditar({ userId, actividadId, tenantId, puntos, motivo, siRepite }) {
     const base = Math.max(Math.round(puntos ?? 0), 0);
-    // El tope diario (HU-055) se aplica en la base, con la fila del usuario
-    // bloqueada: calculado acá, dos acreditaciones a la vez podían pasarse
-    // del tope entre las dos.
     const otorgado = await GamificationService._insertarMovimiento({
       userId, actividadId, tenantId, base, motivo, siRepite,
     });
 
     // La racha se mueve acá y no al iniciar sesión: entrar no es estar activo.
     // Cuenta el día en que se hizo algo que otorgó puntos.
-    const racha = await GamificationService.registrarDiaActivo(userId);
-
-    let resumen = await GamificationService.recalcular(userId);
+    // Tocan columnas distintas del usuario: van en paralelo.
+    let [racha, resumen] = await Promise.all([
+      GamificationService.registrarDiaActivo(userId),
+      GamificationService.recalcular(userId, tenantId),
+    ]);
 
     // Ganar XP es lo único que mueve las condiciones de un logro (HU-061), así
     // que acá se evalúan. Si falla, los puntos ya quedaron: no se deshace nada.
@@ -177,13 +216,6 @@ class GamificationService {
     return {
       xpGanado: otorgado,
       xpBase: base,
-      // Si el tope recortó algo, la persona tiene que saberlo (HU-055): si no,
-      // parece que la actividad pagó menos sin motivo.
-      avisoXp: otorgado < base
-        ? otorgado === 0
-          ? "Llegaste al tope de XP de hoy: la actividad quedó completada, pero no sumó XP."
-          : `Llegaste al tope de XP de hoy: sumaste ${otorgado} de ${base} XP.`
-        : null,
       ...resumen,
       racha,
       logrosDesbloqueados,
@@ -191,11 +223,10 @@ class GamificationService {
   }
 
   /**
-   * Escribe el movimiento y devuelve cuánto XP se otorgó de verdad.
-   *
-   * Si la base todavía no tiene la función acreditar_xp (el backend se
-   * desplegó antes que el SQL), se inserta sin tope, como antes: dejar de
-   * acreditar sería peor que no aplicar el tope un rato.
+   * Escribe el movimiento y devuelve el XP otorgado: cada actividad paga lo
+   * que vale, una sola vez (lo garantiza el UNIQUE de la base). Se usa la
+   * función acreditar_xp, que escribe todo junto; si la base todavía no la
+   * tiene, se inserta directo.
    */
   static async _insertarMovimiento({ userId, actividadId, tenantId, base, motivo, siRepite }) {
     const yaCobrada = (error) => {
@@ -227,28 +258,9 @@ class GamificationService {
       yaCobrada(error);
     }
 
-    console.warn("[xp] falta la función acreditar_xp; se acredita sin tope diario.");
     const { error: e2 } = await supabase.from("xp_movimientos").insert({ ...fila, xp: base });
     if (e2) yaCobrada(e2);
     return base;
-  }
-
-  /**
-   * Cuánto XP de actividades ganó hoy la persona y cuánto le queda antes del
-   * tope de su organización. Null si la organización no tiene tope.
-   */
-  static async topeDeHoy(userId, tenantId) {
-    const ReglasXpService = require("./reglasXpService.js");
-    const tope = await ReglasXpService.topeDe(tenantId);
-    if (!tope) return null;
-
-    const { inicio } = ReglasXpService.hoyEnColombia();
-    const { data } = await supabase
-      .from("xp_movimientos").select("xp")
-      .eq("user_id", userId).not("activity_id", "is", null)
-      .gte("created_at", inicio);
-    const ganadoHoy = (data || []).reduce((t, m) => t + (m.xp || 0), 0);
-    return { tope, ganadoHoy, restante: Math.max(tope - ganadoHoy, 0) };
   }
 
   /**
@@ -300,17 +312,24 @@ class GamificationService {
    * así un movimiento borrado o corregido se refleja solo, y el total nunca
    * queda a la deriva respecto de su historial.
    */
-  static async recalcular(userId) {
+  static async recalcular(userId, tenantId) {
+    // Cada organización puede tener su propia tabla de niveles (HU-053). Si
+    // quien llama ya sabe la organización, la tabla se pide junto con la suma.
+    const tablaDeLaOrg = async () => {
+      if (tenantId) return NivelesService.tablaDe(tenantId);
+      const { data: dueño } = await supabase
+        .from("users").select("tenant_id").eq("id", userId).maybeSingle();
+      return NivelesService.tablaDe(dueño?.tenant_id);
+    };
+
     // La suma y la escritura van juntas en la base (función recalcular_xp),
     // con la fila del usuario bloqueada. Hechas desde acá, dos acreditaciones
     // simultáneas podían pisarse y dejar un total viejo.
-    const { data: xp, error } = await supabase.rpc("recalcular_xp", { p_user: userId });
+    const [{ data: xp, error }, tabla] = await Promise.all([
+      supabase.rpc("recalcular_xp", { p_user: userId }),
+      tablaDeLaOrg(),
+    ]);
     if (error) throw new Error(error.message);
-
-    // Cada organización puede tener su propia tabla de niveles (HU-053).
-    const { data: dueño } = await supabase
-      .from("users").select("tenant_id").eq("id", userId).maybeSingle();
-    const tabla = await NivelesService.tablaDe(dueño?.tenant_id);
 
     // El nivel nunca baja, aunque el XP se corrija hacia abajo: quitarle un
     // nivel a alguien que ya lo vio es peor que dejarlo un escalón arriba.
@@ -364,8 +383,6 @@ class GamificationService {
     return {
       ...progresoEn(nivel, xp, tabla),
       actividadesCompletadas: count ?? 0,
-      // Null si la organización no tiene tope diario.
-      topeDiario: await GamificationService.topeDeHoy(userId, usuario.tenant_id),
       racha: {
         // Si al registrar hoy la racha arrancaría de nuevo en 1, es que se
         // cortó: pasó más de un día sin actividad. Si solo subiría un escalón,

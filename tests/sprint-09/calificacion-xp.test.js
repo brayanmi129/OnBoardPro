@@ -1,10 +1,9 @@
-// Sprint 9 · Calificar la evaluación (HU-045) y tope y antiabuso de XP (HU-055).
+// Sprint 9 · Calificar la evaluación (HU-045) y antiabuso de XP (HU-055). El tope diario se quitó: cada actividad paga lo que vale, una vez.
 const { preparar, estado } = require("../soporte/supabaseFalso.js");
 const { aprendiz, escenario, respuestas } = require("../soporte/escenarioExamen.js");
 const { test, describe, beforeEach } = require("node:test");
 const assert = require("node:assert/strict");
 const GamificationService = require("../../services/gamificationService.js");
-const ReglasXpService = require("../../services/reglasXpService.js");
 const ExamenService = require("../../services/examenService.js");
 const { xpDelIntento } = ExamenService._reglas;
 
@@ -84,7 +83,7 @@ describe("Calificar la evaluación y acreditar puntos", () => {
   });
 });
 
-describe("Reglas de tope y antiabuso de XP", () => {
+describe("Antiabuso de XP", () => {
   test("S9-09 · HU-055 · aprobar en un reintento da la mitad del XP", () => {
     assert.equal(xpDelIntento({ xp: 50 }, { numero: 2, porcentaje: 80 }), 20);
     assert.equal(xpDelIntento({ xp: 50 }, { numero: 3, porcentaje: 100 }), 25);
@@ -99,73 +98,4 @@ describe("Reglas de tope y antiabuso de XP", () => {
     assert.match(r.avisoXp, /reintento/);
   });
 
-  describe("Tope diario", () => {
-    beforeEach(() => {
-      GamificationService.acreditar = acreditarReal;
-      GamificationService.registrarDiaActivo = async () => null;
-      GamificationService.recalcular = async () => ({ nivel: 1, subioDeNivel: false });
-    });
-    const acreditar = () =>
-      GamificationService.acreditar({ userId: "u1", actividadId: "a1", tenantId: "t1", puntos: 50, motivo: "prueba" });
-
-    test("S9-11 · HU-055 · si el tope recorta, se avisa cuánto sumó de cuánto", async () => {
-      preparar({ rpc: () => ({ data: 20, error: null }) });
-      const r = await acreditar();
-      assert.equal(r.xpGanado, 20);
-      assert.match(r.avisoXp, /sumaste 20 de 50 XP/);
-    });
-
-    test("S9-12 · HU-055 · con el tope alcanzado la actividad se completa con 0 XP y se avisa", async () => {
-      preparar({ rpc: () => ({ data: 0, error: null }) });
-      const r = await acreditar();
-      assert.equal(r.xpGanado, 0);
-      assert.match(r.avisoXp, /no sumó XP/);
-    });
-
-    test("S9-13 · HU-055 · sin recorte no hay aviso", async () => {
-      preparar({ rpc: (fn, a) => ({ data: a.p_xp, error: null }) });
-      assert.equal((await acreditar()).avisoXp, null);
-    });
-  });
-
-  const admin = { role: "admin", tenantId: "t1" };
-
-  test("S9-14 · HU-055 · el administrador define y quita el tope diario", async () => {
-    preparar({ tablas: { tenants: [{ id: "t1", xp_tope_diario: null }] } });
-    assert.equal((await ReglasXpService.guardar(admin, { topeDiario: 150 })).topeDiario, 150);
-    assert.equal((await ReglasXpService.guardar(admin, { topeDiario: null })).topeDiario, null);
-  });
-
-  test("S9-15 · HU-055 · cero, negativos, decimales o texto responden 400", async () => {
-    preparar({ tablas: { tenants: [{ id: "t1" }] } });
-    for (const malo of [0, -5, 10.5, "mucho"]) {
-      await assert.rejects(ReglasXpService.guardar(admin, { topeDiario: malo }), (e) => e.status === 400);
-    }
-  });
-
-  test("S9-16 · HU-055 · el tope es de cada organización: un admin no cambia el de otra", async () => {
-    preparar({ tablas: { tenants: [{ id: "t1", xp_tope_diario: null }, { id: "t2", xp_tope_diario: null }] } });
-    await ReglasXpService.guardar(admin, { topeDiario: 99, tenantId: "t2" });
-    assert.equal(estado.tablas.tenants.find((t) => t.id === "t2").xp_tope_diario, null);
-    assert.equal(estado.tablas.tenants.find((t) => t.id === "t1").xp_tope_diario, 99);
-  });
-
-  test("S9-17 · HU-055 · lo ganado hoy cuenta solo XP de actividades de hoy", async () => {
-    const { inicio } = ReglasXpService.hoyEnColombia();
-    preparar({
-      tablas: {
-        tenants: [{ id: "t1", xp_tope_diario: 100 }],
-        xp_movimientos: [
-          { user_id: "u1", activity_id: "a1", xp: 30, created_at: inicio },
-          { user_id: "u1", activity_id: null, xp: 500, created_at: inicio },
-          { user_id: "u1", activity_id: "a0", xp: 40, created_at: "2020-01-01T00:00:00.000Z" },
-        ],
-      },
-    });
-    assert.deepEqual(await GamificationService.topeDeHoy("u1", "t1"), { tope: 100, ganadoHoy: 30, restante: 70 });
-  });
-
-  test("S9-18 · HU-055 · el día del tope empieza a medianoche de Colombia", () => {
-    assert.ok(ReglasXpService.hoyEnColombia().inicio.endsWith("T05:00:00.000Z"));
-  });
 });

@@ -107,13 +107,13 @@ describe("Crear actividad o recurso", () => {
 });
 
 describe("Definir el XP de una actividad", () => {
-  test("S6-06 · HU-051 · el XP indicado se respeta (aunque llegue como texto), sin él sale del tipo, y fuera de 0–1000 responde 400", async () => {
+  test("S6-06 · HU-051 · el XP indicado se respeta (aunque llegue como texto), sin él sale del tipo, y fuera del rango de su tipo responde 400", async () => {
     preparar({ tablas: base() });
     const propia = await ActivitiesService.create({ name: "A", title: "A", type: "Tarea", xp: "75", tenantId: "t1" }, null);
     assert.equal(propia.xp, 75);
     const porTipo = await ActivitiesService.create({ name: "B", title: "B", type: "Examen", tenantId: "t1" }, null);
     assert.equal(porTipo.xp, 50);
-    await rechaza(ActivitiesService.create({ name: "C", title: "C", type: "Tarea", xp: 1001, tenantId: "t1" }, null), 400, "xp");
+    await rechaza(ActivitiesService.create({ name: "C", title: "C", type: "Tarea", xp: 1001, tenantId: "t1" }, null), 400, "XP");
   });
 
   test("S6-07 · HU-051 · cambiar el XP de una actividad no toca el XP ya acreditado", async () => {
@@ -125,7 +125,7 @@ describe("Definir el XP de una actividad", () => {
     assert.equal(actividad("tar1").xp, 80);
     assert.equal(estado.tablas.xp_movimientos[0].xp, 30);
 
-    await rechaza(ActivitiesService.actualizar("tar1", { xp: -5 }, null, admin), 400, "xp");
+    await rechaza(ActivitiesService.actualizar("tar1", { xp: -5 }, null, admin), 400, "XP");
     assert.equal(actividad("tar1").xp, 80);
   });
 });

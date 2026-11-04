@@ -114,11 +114,12 @@ async function posicion(usuario, cursoId) {
  * todo lo que tenga asignado.
  */
 async function medir(usuario, logros) {
-  const hecho = await completadoPor(usuario.id);
-  const { mapa, propios } = await estructura(
-    usuario.id,
-    logros.map((l) => l.course_id).filter(Boolean)
-  );
+  // Las dos lecturas no dependen una de otra: en paralelo se ahorra una ida
+  // y vuelta completa a la base en cada acreditación.
+  const [hecho, { mapa, propios }] = await Promise.all([
+    completadoPor(usuario.id),
+    estructura(usuario.id, logros.map((l) => l.course_id).filter(Boolean)),
+  ]);
 
   const cursosDe = (cursoId) => (cursoId ? [cursoId] : [...propios]);
   const actividadesDe = (cursoId) =>
@@ -213,11 +214,12 @@ function presentar(l, extra = {}) {
 
 /** Una pasada: mide lo pendiente y registra lo que ya se cumple. */
 async function unaVuelta(usuario) {
-  const logros = (await logrosPara(usuario)).filter((l) => l.tipo_condicion !== RANKING);
+  const [todos, { data: ganados }] = await Promise.all([
+    logrosPara(usuario),
+    supabase.from("logros_usuario").select("logro_id").eq("user_id", usuario.id),
+  ]);
+  const logros = todos.filter((l) => l.tipo_condicion !== RANKING);
   if (!logros.length) return [];
-
-  const { data: ganados } = await supabase
-    .from("logros_usuario").select("logro_id").eq("user_id", usuario.id);
   const ya = new Set((ganados || []).map((g) => g.logro_id));
   const pendientes = logros.filter((l) => !ya.has(l.id));
   if (!pendientes.length) return [];

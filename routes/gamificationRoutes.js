@@ -10,13 +10,23 @@ const GamificationService = require("../services/gamificationService.js");
  * @swagger
  * /api/gamification/ranking:
  *   get:
- *     summary: Obtiene el ranking de usuarios por nivel
+ *     summary: El ranking de la organización, o de uno de sus grupos
  *     description: >
- *       Retorna una lista de usuarios ordenados por nivel (descendente),
- *       excluyendo administradores e instructores.
- *       Solo incluye firstname, lastname, level e id.
+ *       Los aprendices de la organización ordenados por XP (a igual XP, por
+ *       nombre), cada uno con su posición. Quedan afuera administradores e
+ *       instructores. El superadmin ve todas las organizaciones.
+ *
+ *       Con `grupoId` solo aparecen los integrantes de ese grupo.
  *     tags:
  *       - Gamificación
+ *     parameters:
+ *       - in: query
+ *         name: grupoId
+ *         description: >
+ *           Para ver solo a los integrantes de un grupo. Un aprendiz solo puede
+ *           pedir grupos a los que pertenece; si no, 404. Para el ranking de un
+ *           curso está GET /api/gamification/courses/{id}/ranking.
+ *         schema: { type: string }
  *     responses:
  *       200:
  *         description: Ranking generado correctamente
@@ -39,6 +49,8 @@ const GamificationService = require("../services/gamificationService.js");
  *                   level:
  *                     type: integer
  *                     example: 12
+ *       404:
+ *         description: El grupo no existe, es de otra organización o el aprendiz no es parte de él
  *       500:
  *         description: Error interno del servidor
  */
@@ -55,17 +67,13 @@ router.get("/ranking", verifyJWT, gamificationController.getRanking);
  *       la app y cualquier otro consumidor muestran el mismo número. Usa la
  *       tabla de niveles de la organización, o la curva por defecto
  *       25 * n * (n + 3): 100 XP el nivel 1, 250 el 2, 450 el 3.
- *
- *       Si la organización tiene tope diario de XP, `topeDiario` dice el tope,
- *       cuánto ganó hoy y cuánto le queda; si no tiene, viene en null.
  *     security:
  *       - bearerAuth: []
  *     responses:
  *       200:
  *         description: >
  *           Devuelve xp, nivel, nombreNivel, xpSiguienteNivel, porcentaje,
- *           faltan, actividadesCompletadas, racha y topeDiario
- *           ({ tope, ganadoHoy, restante } o null)
+ *           faltan, actividadesCompletadas y racha
  */
 router.get("/me", verifyJWT, gamificationController.miProgreso);
 
@@ -80,10 +88,6 @@ router.get("/me", verifyJWT, gamificationController.miProgreso);
  *       intento devuelve 409 y no suma nada. El movimiento queda registrado con
  *       su origen para poder auditarlo. Si el XP cruza un umbral, el nivel sube
  *       en la misma operación y la respuesta lo indica con `subioDeNivel`.
- *
- *       Si la organización tiene tope diario y ya se alcanzó, la actividad
- *       queda completada pero `xpGanado` es menor que `xpBase` (o 0) y
- *       `avisoXp` lo explica.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -94,7 +98,7 @@ router.get("/me", verifyJWT, gamificationController.miProgreso);
  *         schema: { type: string }
  *     responses:
  *       200:
- *         description: XP acreditado. Devuelve xpGanado, xpBase, avisoXp, xp, nivel y subioDeNivel
+ *         description: XP acreditado. Devuelve xpGanado, xpBase, xp, nivel, subioDeNivel y logrosDesbloqueados
  *       404:
  *         description: La actividad no existe o es de otra organización
  *       409:
@@ -111,7 +115,9 @@ router.get("/me", verifyJWT, gamificationController.miProgreso);
  *       cuenta el XP que salió de las actividades de ese curso. Sirve para el
  *       resumen del instructor, que quiere ver cómo va cada curso suyo.
  *
- *       Solo aparecen aprendices: quien dicta o administra no compite.
+ *       Solo aparecen aprendices activos que tienen el curso asignado hoy por
+ *       alguno de sus grupos: quien dicta o administra no compite, y a quien
+ *       sacaron del grupo se le conserva el XP pero deja de figurar.
  *     security:
  *       - bearerAuth: []
  *     parameters:

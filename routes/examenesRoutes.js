@@ -274,7 +274,7 @@ router.post("/activities/:id/examen/iniciar", verifyJWT, requireRole("student"),
  *       **XP:** proporcional a la nota, y la mitad si se aprobó en un
  *       reintento. `xpBase` es lo que correspondía y `xpAcreditado` lo que se
  *       sumó de verdad. Si no coinciden, o si el concurso ya había pagado,
- *       `avisoXp` explica por qué (reintento, ya ganado o tope diario de XP).
+ *       `avisoXp` explica por qué (reintento o ya ganado).
  *
  *       `detalle` (qué acertó y qué falló) viene en null si quien armó el
  *       examen desactivó `mostrarRespuestas`. La opción correcta de cada

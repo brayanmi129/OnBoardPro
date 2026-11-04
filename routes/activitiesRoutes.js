@@ -41,6 +41,32 @@ router.get("/get/all", verifyJWT, requireRole("admin", "superadmin", "instructor
 
 /**
  * @swagger
+ * /api/activities/reglas-xp:
+ *   get:
+ *     summary: Cuánto XP puede dar cada tipo de actividad
+ *     tags: [Actividades]
+ *     description: >
+ *       El mínimo, el recomendado y el máximo de XP de cada tipo (Recurso,
+ *       Tarea, Examen, Concurso). Crear o editar una actividad con un XP fuera
+ *       de su rango responde 400; sin XP se usa el recomendado. Si se cambia el
+ *       tipo y el XP que tenía queda fuera del rango nuevo, pasa al recomendado.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: >
+ *           Un objeto por tipo, por ejemplo
+ *           { "Recurso": { "minimo": 5, "recomendado": 10, "maximo": 30 } }
+ *       403:
+ *         description: Quien llama es aprendiz
+ */
+router.get("/reglas-xp", verifyJWT, requireRole("admin", "superadmin", "instructor"), (req, res) => {
+  const { XP_REGLAS } = require("../helpers/niveles.js");
+  return res.status(200).json(XP_REGLAS);
+});
+
+/**
+ * @swagger
  * /api/activities/create:
  *   post:
  *     summary: Crea una actividad, con archivo adjunto opcional

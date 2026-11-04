@@ -3,7 +3,13 @@ const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacio
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { subirMaterial, urlFirmada, borrar, MATERIALES } = require("../helpers/storage.js");
 const activitieSchema = require("../schemas/activitieSchema.js");
-const { xpDeActividad } = require("../helpers/niveles.js");
+const { xpDeActividad, xpFueraDeRango, XP_REGLAS } = require("../helpers/niveles.js");
+
+function rangoInvalido(message) {
+  const err = new Error(message);
+  err.status = 400;
+  return err;
+}
 const AvisoService = require("./avisoService.js");
 
 // La base guarda tenant_id; la API expone tenantId, igual que en el resto.
@@ -82,6 +88,8 @@ class ActivitiesService {
     // Si no se indica, el XP sale del tipo. Así una actividad recién creada ya
     // otorga puntos sin que nadie tenga que configurarla.
     actividad.xp = xpDeActividad(actividad);
+    const fuera = xpFueraDeRango(actividad.xp, actividad.type);
+    if (fuera) throw rangoInvalido(fuera);
 
     // Se comprueba antes de subir nada: si la sección no sirve, no tiene
     // sentido dejar un archivo huérfano en Storage para después borrarlo.
@@ -258,6 +266,19 @@ class ActivitiesService {
       rutaNueva = ruta;
       cambios.adjunto = ruta;
       cambios.mime = file.mimetype;
+    }
+
+    // El XP tiene que quedar dentro del rango del tipo que queda. Si cambia el
+    // tipo y no se manda XP, el que tenía puede no servir: va el recomendado.
+    const tipoFinal = cambios.type ?? actual.type;
+    if (cambios.xp !== undefined) {
+      const fuera = xpFueraDeRango(cambios.xp, tipoFinal);
+      if (fuera) {
+        if (rutaNueva) await borrar(MATERIALES, rutaNueva);
+        throw rangoInvalido(fuera);
+      }
+    } else if (cambios.type && xpFueraDeRango(actual.xp, tipoFinal)) {
+      cambios.xp = XP_REGLAS[tipoFinal]?.recomendado ?? actual.xp;
     }
 
     if (!Object.keys(cambios).length) {

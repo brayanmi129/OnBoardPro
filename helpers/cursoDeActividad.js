@@ -37,14 +37,21 @@ async function cursoDeActividad(actividadId) {
  */
 async function asegurarPublicado(actividadId, actor) {
   if (actor.role !== "student") return;
-  const curso = await cursoDeActividad(actividadId);
+  // El curso y los cursos asignados a la persona no dependen uno del otro: se
+  // piden a la vez para no sumar las dos esperas.
+  const [curso, asignados] = await Promise.all([
+    cursoDeActividad(actividadId),
+    actor.id ? cursosAsignados(actor.id) : null,
+  ]);
   if (curso && curso.status === "Cerrado") {
     throw fallo("Este curso no está publicado.", 409);
   }
   if (curso?.archivado) throw fallo("Este curso fue archivado.", 409);
   // Que sea de su empresa no alcanza: el aprendiz solo accede a los cursos
   // asignados a alguno de sus grupos (HU-035, HU-038).
-  if (curso && actor.id) await asegurarAsignado(curso.id, actor);
+  if (curso && asignados && !asignados.has(curso.id)) {
+    throw fallo("Curso no encontrado", 404);
+  }
 }
 
 /**
@@ -53,14 +60,18 @@ async function asegurarPublicado(actividadId, actor) {
  * La asignación es por grupo (groups_courses): no hay cursos asignados a una
  * persona suelta.
  */
-async function cursoAsignado(courseId, userId) {
+async function cursosAsignados(userId) {
   const { data: grupos } = await supabase
     .from("users_groups").select("id_group").eq("id_user", userId);
-  if (!grupos?.length) return false;
+  if (!grupos?.length) return new Set();
   const { data: asignaciones } = await supabase
     .from("groups_courses").select("id_course")
     .in("id_group", grupos.map((g) => g.id_group));
-  return (asignaciones || []).some((a) => a.id_course === courseId);
+  return new Set((asignaciones || []).map((a) => a.id_course));
+}
+
+async function cursoAsignado(courseId, userId) {
+  return (await cursosAsignados(userId)).has(courseId);
 }
 
 /**

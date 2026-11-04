@@ -454,4 +454,48 @@ router.post(
   CourseController.subirBanner
 );
 
+/**
+ * @swagger
+ * /api/courses/{id}/participantes:
+ *   get:
+ *     summary: Quiénes están en el curso
+ *     tags: [Cursos]
+ *     description: >
+ *       El instructor que lo dicta, los grupos que lo tienen asignado y sus
+ *       aprendices activos, ordenados por nombre.
+ *
+ *       Lo puede pedir un aprendiz que tenga el curso asignado por alguno de
+ *       sus grupos, el instructor que lo dicta y la administración de la
+ *       organización. Al aprendiz no le llegan los correos de sus compañeros;
+ *       el correo y el teléfono del instructor sí, para que pueda contactarlo.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: >
+ *           Devuelve curso {id, nombre}, instructor {id, email, firstname,
+ *           lastname, role, telefono} o null (telefono es null si no lo cargó), grupos [{id, nombre}], aprendices [{id,
+ *           firstname, lastname, level, email?}] y total
+ *       401:
+ *         description: Token ausente o inválido
+ *       404:
+ *         description: >
+ *           El curso no existe, es de otra organización, el instructor no lo
+ *           dicta o el aprendiz no lo tiene asignado
+ */
+router.get("/:id/participantes", verifyToken, async (req, res) => {
+  try {
+    const CourseService = require("../services/courseService.js");
+    return res.status(200).json(await CourseService.participantes(req.params.id, req.user));
+  } catch (error) {
+    if (!error.status) console.error("Error al listar los participantes:", error.message);
+    return res.status(error.status || 500).json({ message: error.message });
+  }
+});
+
 module.exports = router;

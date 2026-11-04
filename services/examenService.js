@@ -752,7 +752,7 @@ class ExamenService {
 
   /**
    * Acredita un intento aprobado y arma el aviso de por qué no sumó todo,
-   * si es el caso: reintento, ya cobrado (concurso rejugado) o tope diario.
+   * si es el caso: reintento o ya cobrado (concurso rejugado).
    *
    * Aprobar es lo que completa la actividad. Se acredita aunque valga 0 XP: el
    * movimiento es lo que la marca como hecha y dispara los logros.
@@ -801,7 +801,7 @@ class ExamenService {
    * Mi historial de juegos (HU-067): cada concurso que jugué, con mi mejor
    * resultado, cuántas partidas llevo y el XP que me dio. El XP sale del
    * libro de movimientos: es lo que de verdad se acreditó, con los recortes
-   * de reintento o tope diario ya aplicados.
+   * de reintento ya aplicados.
    */
   static async misJuegos(actor) {
     const { data: intentos, error } = await supabase

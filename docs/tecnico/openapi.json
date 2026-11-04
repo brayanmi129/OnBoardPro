@@ -45,6 +45,28 @@
         }
       }
     },
+    "/api/activities/reglas-xp": {
+      "get": {
+        "summary": "Cuánto XP puede dar cada tipo de actividad",
+        "tags": [
+          "Actividades"
+        ],
+        "description": "El mínimo, el recomendado y el máximo de XP de cada tipo (Recurso, Tarea, Examen, Concurso). Crear o editar una actividad con un XP fuera de su rango responde 400; sin XP se usa el recomendado. Si se cambia el tipo y el XP que tenía queda fuera del rango nuevo, pasa al recomendado.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Un objeto por tipo, por ejemplo { \"Recurso\": { \"minimo\": 5, \"recomendado\": 10, \"maximo\": 30 } }\n"
+          },
+          "403": {
+            "description": "Quien llama es aprendiz"
+          }
+        }
+      }
+    },
     "/api/activities/create": {
       "post": {
         "summary": "Crea una actividad, con archivo adjunto opcional",
@@ -1279,6 +1301,41 @@
         }
       }
     },
+    "/api/courses/{id}/participantes": {
+      "get": {
+        "summary": "Quiénes están en el curso",
+        "tags": [
+          "Cursos"
+        ],
+        "description": "El instructor que lo dicta, los grupos que lo tienen asignado y sus aprendices activos, ordenados por nombre.\nLo puede pedir un aprendiz que tenga el curso asignado por alguno de sus grupos, el instructor que lo dicta y la administración de la organización. Al aprendiz no le llegan los correos de sus compañeros; el correo y el teléfono del instructor sí, para que pueda contactarlo.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "path",
+            "name": "id",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Devuelve curso {id, nombre}, instructor {id, email, firstname, lastname, role, telefono} o null (telefono es null si no lo cargó), grupos [{id, nombre}], aprendices [{id, firstname, lastname, level, email?}] y total\n"
+          },
+          "401": {
+            "description": "Token ausente o inválido"
+          },
+          "404": {
+            "description": "El curso no existe, es de otra organización, el instructor no lo dicta o el aprendiz no lo tiene asignado\n"
+          }
+        }
+      }
+    },
     "/api/activities/{id}/entrega": {
       "post": {
         "summary": "Sube o reemplaza mi entrega de una actividad",
@@ -1799,7 +1856,7 @@
         "tags": [
           "Exámenes"
         ],
-        "description": "La corrección es automática y sale de la base. Una pregunta sin responder cuenta como incorrecta. Si el porcentaje alcanza el `porcentajeAprobacion` del examen, se acredita su XP y se evalúan los logros: la respuesta trae `logrosDesbloqueados`.\n**XP:** proporcional a la nota, y la mitad si se aprobó en un reintento. `xpBase` es lo que correspondía y `xpAcreditado` lo que se sumó de verdad. Si no coinciden, o si el concurso ya había pagado, `avisoXp` explica por qué (reintento, ya ganado o tope diario de XP).\n`detalle` (qué acertó y qué falló) viene en null si quien armó el examen desactivó `mostrarRespuestas`. La opción correcta de cada pregunta (`detalle[].opcionCorrecta`) solo viene si aprobó o si ya no le quedan intentos.\n",
+        "description": "La corrección es automática y sale de la base. Una pregunta sin responder cuenta como incorrecta. Si el porcentaje alcanza el `porcentajeAprobacion` del examen, se acredita su XP y se evalúan los logros: la respuesta trae `logrosDesbloqueados`.\n**XP:** proporcional a la nota, y la mitad si se aprobó en un reintento. `xpBase` es lo que correspondía y `xpAcreditado` lo que se sumó de verdad. Si no coinciden, o si el concurso ya había pagado, `avisoXp` explica por qué (reintento o ya ganado).\n`detalle` (qué acertó y qué falló) viene en null si quien armó el examen desactivó `mostrarRespuestas`. La opción correcta de cada pregunta (`detalle[].opcionCorrecta`) solo viene si aprobó o si ya no le quedan intentos.\n",
         "security": [
           {
             "bearerAuth": []
@@ -2102,10 +2159,20 @@
     },
     "/api/gamification/ranking": {
       "get": {
-        "summary": "Obtiene el ranking de usuarios por nivel",
-        "description": "Retorna una lista de usuarios ordenados por nivel (descendente), excluyendo administradores e instructores. Solo incluye firstname, lastname, level e id.\n",
+        "summary": "El ranking de la organización, o de uno de sus grupos",
+        "description": "Los aprendices de la organización ordenados por XP (a igual XP, por nombre), cada uno con su posición. Quedan afuera administradores e instructores. El superadmin ve todas las organizaciones.\nCon `grupoId` solo aparecen los integrantes de ese grupo.\n",
         "tags": [
           "Gamificación"
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "grupoId",
+            "description": "Para ver solo a los integrantes de un grupo. Un aprendiz solo puede pedir grupos a los que pertenece; si no, 404. Para el ranking de un curso está GET /api/gamification/courses/{id}/ranking.\n",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
         "responses": {
           "200": {
@@ -2139,6 +2206,9 @@
               }
             }
           },
+          "404": {
+            "description": "El grupo no existe, es de otra organización o el aprendiz no es parte de él"
+          },
           "500": {
             "description": "Error interno del servidor"
           }
@@ -2151,7 +2221,7 @@
         "tags": [
           "Gamificación"
         ],
-        "description": "El cálculo del nivel lo hace el servidor, no el cliente: así el panel, la app y cualquier otro consumidor muestran el mismo número. Usa la tabla de niveles de la organización, o la curva por defecto 25 * n * (n + 3): 100 XP el nivel 1, 250 el 2, 450 el 3.\nSi la organización tiene tope diario de XP, `topeDiario` dice el tope, cuánto ganó hoy y cuánto le queda; si no tiene, viene en null.\n",
+        "description": "El cálculo del nivel lo hace el servidor, no el cliente: así el panel, la app y cualquier otro consumidor muestran el mismo número. Usa la tabla de niveles de la organización, o la curva por defecto 25 * n * (n + 3): 100 XP el nivel 1, 250 el 2, 450 el 3.\n",
         "security": [
           {
             "bearerAuth": []
@@ -2159,7 +2229,7 @@
         ],
         "responses": {
           "200": {
-            "description": "Devuelve xp, nivel, nombreNivel, xpSiguienteNivel, porcentaje, faltan, actividadesCompletadas, racha y topeDiario ({ tope, ganadoHoy, restante } o null)\n"
+            "description": "Devuelve xp, nivel, nombreNivel, xpSiguienteNivel, porcentaje, faltan, actividadesCompletadas y racha\n"
           }
         }
       }
@@ -2170,7 +2240,7 @@
         "tags": [
           "Gamificación"
         ],
-        "description": "Cada actividad se puede completar una sola vez por persona: el segundo intento devuelve 409 y no suma nada. El movimiento queda registrado con su origen para poder auditarlo. Si el XP cruza un umbral, el nivel sube en la misma operación y la respuesta lo indica con `subioDeNivel`.\nSi la organización tiene tope diario y ya se alcanzó, la actividad queda completada pero `xpGanado` es menor que `xpBase` (o 0) y `avisoXp` lo explica.\n",
+        "description": "Cada actividad se puede completar una sola vez por persona: el segundo intento devuelve 409 y no suma nada. El movimiento queda registrado con su origen para poder auditarlo. Si el XP cruza un umbral, el nivel sube en la misma operación y la respuesta lo indica con `subioDeNivel`.\n",
         "security": [
           {
             "bearerAuth": []
@@ -2189,7 +2259,7 @@
         ],
         "responses": {
           "200": {
-            "description": "XP acreditado. Devuelve xpGanado, xpBase, avisoXp, xp, nivel y subioDeNivel"
+            "description": "XP acreditado. Devuelve xpGanado, xpBase, xp, nivel, subioDeNivel y logrosDesbloqueados"
           },
           "404": {
             "description": "La actividad no existe o es de otra organización"
@@ -2206,7 +2276,7 @@
         "tags": [
           "Gamificación"
         ],
-        "description": "A diferencia de /ranking, que es de toda la organización, acá solo cuenta el XP que salió de las actividades de ese curso. Sirve para el resumen del instructor, que quiere ver cómo va cada curso suyo.\nSolo aparecen aprendices: quien dicta o administra no compite.\n",
+        "description": "A diferencia de /ranking, que es de toda la organización, acá solo cuenta el XP que salió de las actividades de ese curso. Sirve para el resumen del instructor, que quiere ver cómo va cada curso suyo.\nSolo aparecen aprendices activos que tienen el curso asignado hoy por alguno de sus grupos: quien dicta o administra no compite, y a quien sacaron del grupo se le conserva el XP pero deja de figurar.\n",
         "security": [
           {
             "bearerAuth": []
@@ -3346,87 +3416,6 @@
         }
       }
     },
-    "/api/gamification/reglas-xp": {
-      "get": {
-        "summary": "Las reglas de XP de la organización",
-        "tags": [
-          "Reglas de XP"
-        ],
-        "description": "`topeDiario` es el máximo de XP de actividades que una persona puede ganar por día (en hora de Colombia), o null si no hay tope. Los premios de logros no cuentan para el tope. El superadmin indica la organización con `?tenantId=`.\n",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "parameters": [
-          {
-            "in": "query",
-            "name": "tenantId",
-            "description": "Solo para el superadmin.",
-            "schema": {
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "Devuelve tenantId, topeDiario y la descripción de las reglas fijas"
-          },
-          "400": {
-            "description": "El superadmin no indicó la organización"
-          }
-        }
-      },
-      "put": {
-        "summary": "Define el tope diario de XP de la organización",
-        "tags": [
-          "Reglas de XP"
-        ],
-        "description": "Con un número, nadie gana más de ese XP de actividades por día: lo que pase del tope se registra como completado pero sin XP, y la respuesta de la acreditación lo avisa en `avisoXp`. Con null se quita el tope. No cambia el XP ya ganado.\n",
-        "security": [
-          {
-            "bearerAuth": []
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "type": "object",
-                "required": [
-                  "topeDiario"
-                ],
-                "properties": {
-                  "topeDiario": {
-                    "type": "integer",
-                    "nullable": true,
-                    "minimum": 1,
-                    "maximum": 100000,
-                    "example": 150
-                  },
-                  "tenantId": {
-                    "type": "string",
-                    "description": "Solo para el superadmin."
-                  }
-                }
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Devuelve message y las reglas actualizadas"
-          },
-          "400": {
-            "description": "Falta topeDiario o no es un entero válido"
-          },
-          "403": {
-            "description": "Quien llama no es administrador"
-          }
-        }
-      }
-    },
     "/api/courses/{id}/sections": {
       "get": {
         "summary": "Lista las secciones de un curso con sus actividades",
@@ -4171,10 +4160,6 @@
     {
       "name": "Niveles",
       "description": "La tabla de niveles de cada organización: cuánto XP pide cada nivel y cómo se llama. Si una organización no define la suya, se usa la curva por defecto (100, 250, 450, 700, 1000... XP).\n"
-    },
-    {
-      "name": "Reglas de XP",
-      "description": "Límites para que el XP mida aprendizaje y no insistencia. Siempre valen: una actividad paga una sola vez, un examen aprobado en un reintento paga la mitad y un concurso se puede rejugar sin volver a pagar. Cada organización puede sumar un tope de XP por día.\n"
     },
     {
       "name": "Secciones",
