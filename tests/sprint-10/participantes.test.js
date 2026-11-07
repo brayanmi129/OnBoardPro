@@ -35,7 +35,7 @@ const base = () => preparar({
 });
 
 describe("Participantes del curso", () => {
-  test("S10-34 · el aprendiz ve al instructor, los grupos y sus compañeros, sin duplicados", async () => {
+  test("S10-29 · HU-035 · el aprendiz ve al instructor, los grupos y sus compañeros, sin duplicados", async () => {
     base();
     const r = await CourseService.participantes("c1", aprendiz);
     assert.equal(r.instructor.firstname, "Inés");
@@ -46,13 +46,13 @@ describe("Participantes del curso", () => {
     assert.equal(r.total, 2);
   });
 
-  test("S10-35 · no aparecen ni el instructor entre los aprendices ni la gente inactiva", async () => {
+  test("S10-30 · HU-035 · no aparecen ni el instructor entre los aprendices ni la gente inactiva", async () => {
     base();
     const r = await CourseService.participantes("c1", aprendiz);
     assert.ok(!r.aprendices.some((a) => a.id === "i1" || a.id === "u3"));
   });
 
-  test("S10-36 · al aprendiz no le llegan los correos de sus compañeros; a la administración sí", async () => {
+  test("S10-31 · HU-035 · al aprendiz no le llegan los correos de sus compañeros; a la administración sí", async () => {
     base();
     const comoAprendiz = await CourseService.participantes("c1", aprendiz);
     assert.ok(comoAprendiz.aprendices.every((a) => a.email === undefined));
@@ -60,7 +60,7 @@ describe("Participantes del curso", () => {
     assert.equal(comoAdmin.aprendices[0].email, "ana@t1.com");
   });
 
-  test("S10-37 · un aprendiz sin el curso, un instructor que no lo dicta u otra organización reciben 404", async () => {
+  test("S10-32 · HU-035 · un aprendiz sin el curso, un instructor que no lo dicta u otra organización reciben 404", async () => {
     base();
     for (const actor of [ajeno, otroInstructor, adminAjeno]) {
       await assert.rejects(CourseService.participantes("c1", actor), (e) => e.status === 404);

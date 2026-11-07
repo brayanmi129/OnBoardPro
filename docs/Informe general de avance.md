@@ -9,27 +9,28 @@
 | Sprints | 11 · semanales, de viernes a viernes |
 | Inicio | 28/8/2026 |
 | Entrega | 20/11/2026 |
-| Alcance del MVP | 226 SP · 64 historias |
-| Suma de los pronósticos por sprint | 235 SP · 67 historias |
+| Alcance del MVP | 216 SP · 62 historias |
+| Suma de los pronósticos por sprint | 230 SP · 66 historias |
 | Diferencia | HU-034 y HU-036 (6 SP) se pronosticaron en los sprints 5 y 6, y HU-058 (3 SP) en los sprints 7 y 8, porque no cerraron en el primero |
-| Post-MVP en backlog | 66 SP · 29 historias |
-| Último sprint cerrado | Sprint 8 · 16/10 – 23/10 |
-| Sprint en curso | Sprint 9 · 23/10 – 30/10 |
+| Post-MVP en backlog | 76 SP · 31 historias |
+| Fuera del MVP | Concurso de preguntas (HU-065) y jugar y ganar puntos (HU-067), 10 SP: salen del alcance el 6/11/2026 y pasan al backlog con el resto de la épica de juegos |
+| Último sprint cerrado | Sprint 10 · 30/10 – 6/11 |
+| Sprint en curso | Sprint 11 · 6/11 – 13/11 |
 | Estabilización y entrega | 13/11 – 20/11 |
 
 ## 2. KPIs del proyecto
 
 | Indicador | Valor | Se actualiza |
 |---|---|---|
-| Sprints cerrados | 8 de 11 | Cada sprint |
-| Avance del MVP | 154 de 226 SP · 68% | Cada sprint |
-| Historias entregadas | 45 de 49 comprometidas · 92% | Cada sprint |
-| Velocidad promedio | 19,3 SP | Cada sprint |
-| Velocidad últimos 3 sprints | 26,7 SP | Cada sprint |
-| Pronóstico cumplido | 92% · 154 de 168 SP | Cada sprint |
-| Sprints al 100% | 5 de 8 · 63% | Cada sprint |
+| Sprints cerrados | 10 de 11 | Cada sprint |
+| Avance del MVP | 199 de 216 SP · 92% | Cada sprint |
+| Historias entregadas | 57 de 61 comprometidas · 93% | Cada sprint |
+| Velocidad promedio | 19,9 SP | Cada sprint |
+| Velocidad últimos 3 sprints | 23,0 SP | Cada sprint |
+| Pronóstico cumplido | 93% · 199 de 213 SP | Cada sprint |
+| Sprints al 100% | 7 de 10 · 70% | Cada sprint |
 | Mejor sprint | Sprint 6 · 29 SP | Cada sprint |
-| SP restantes | 72 en 3 sprints | Cada sprint |
+| SP restantes | 17 en 1 sprint | Cada sprint |
 
 ## 3. Avance por sprint
 
@@ -43,11 +44,11 @@
 | 6 | 2/10 – 9/10 | Cerrado | 9 / 9 | 29 | 29 | 100% | 103 | 4 |
 | 7 | 9/10 – 16/10 | Cerrado | 8 / 7 | 30 | 27 | 90% | 130 | 3 |
 | 8 | 16/10 – 23/10 | Cerrado | 7 / 6 | 29 | 24 | 83% | 154 | 4 |
-| 9 | 23/10 – 30/10 | En curso | 6 / — | 26 | — | — | — | — |
-| 10 | 30/10 – 6/11 | Planificado | 7 / — | 24 | — | — | — | — |
-| 11 | 6/11 – 13/11 | Planificado | 5 / — | 17 | — | — | — | — |
-| **Cerrados (1–8)** | | | **49 / 45** | **168** | **154** | **92%** | **154** | **19** |
-| **Todos (1–11)** | | | **67 / 45** | **235** | **154** | **66%** | **154** | **19** |
+| 9 | 23/10 – 30/10 | Cerrado | 6 / 6 | 26 | 26 | 100% | 180 | 6 |
+| 10 | 30/10 – 6/11 | Cerrado | 6 / 6 | 19 | 19 | 100% | 199 | 5 |
+| 11 | 6/11 – 13/11 | En curso | 5 / — | 17 | — | — | — | — |
+| **Cerrados (1–10)** |  |  | **61 / 57** | **213** | **199** | **93%** | **199** | **30** |
+| **Todos (1–11)** |  |  | **66 / 57** | **230** | **199** | **87%** | **199** | **30** |
 
 ![Velocidad por sprint: puntos pronosticados contra completados.](img/g1-velocidad.png)
 
@@ -57,15 +58,15 @@
 
 | Indicador | Valor |
 |---|---|
-| Defectos detectados | 19 |
-| Defectos resueltos | 18 · 95% |
-| Defectos mitigados | 1 |
+| Defectos detectados | 30 |
+| Defectos resueltos | 28 · 93% |
+| Defectos mitigados | 2 |
 | Defectos abiertos | 0 |
-| Densidad | 0,12 por SP entregado |
-| Defectos de integración (merge) | 3 de 19 · 16% |
-| Defectos de seguridad | 7 de 19 · 37% |
-| Sprint con más defectos | Sprints 6 y 8 · 4 |
-| Resueltos en el mismo sprint | 18 de 19 · 95% |
+| Densidad | 0,15 por SP entregado |
+| Defectos de integración (merge) | 4 de 30 · 13% |
+| Defectos de seguridad | 12 de 30 · 40% |
+| Sprint con más defectos | Sprint 9 · 6 |
+| Resueltos en el mismo sprint | 28 de 30 · 93% |
 
 ![Defectos detectados en cada sprint.](img/g3-bugs.png)
 
@@ -92,6 +93,17 @@
 | B-17 | 8 | Consultar un usuario por su id devolvía usuarios de otras organizaciones. | Seguridad | Resuelto |
 | B-18 | 8 | Una entrega aprobada podía volver a «rehacer», y enviarla dos veces respondía 500. | Funcional | Resuelto |
 | B-19 | 8 | El progreso de nivel mostraba datos de otro nivel («Nivel 3 · te faltan 55 para el nivel 4» con el XP del nivel 2). | Funcional | Resuelto |
+| B-20 | 9 | Al entrar con Microsoft, un correo registrado con mayúsculas no se encontraba y se creaba una segunda cuenta. | Funcional | Resuelto |
+| B-21 | 9 | Editar un usuario permitía cambiar su id, la clave primaria, y dejaba sueltos sus grupos y su XP. | Seguridad | Resuelto |
+| B-22 | 9 | Editar un usuario devolvía en la respuesta su contraseña cifrada. | Seguridad | Resuelto |
+| B-23 | 9 | Un administrador podía borrar a un superadministrador asociado a su organización. | Seguridad | Resuelto |
+| B-24 | 9 | El inicio de sesión con contraseña no bloqueaba a las personas de una organización desactivada. | Seguridad | Resuelto |
+| B-25 | 9 | Un logro podía asociarse a un curso de otra organización. | Seguridad | Resuelto |
+| B-26 | 10 | El resultado de un examen no se mostraba cuando el instructor ocultaba las respuestas. | Funcional | Resuelto |
+| B-27 | 10 | El ranking del curso incluía a aprendices que ya no estaban en el grupo asignado. | Funcional | Resuelto |
+| B-28 | 10 | La celebración de subida de nivel no aparecía si la sección se plegaba al completar la actividad. | Funcional | Resuelto |
+| B-29 | 10 | Al integrar la rama development, las portadas de «Mis cursos» dejaron de verse por un campo renombrado. | Merge | Resuelto |
+| B-30 | 10 | Completar una actividad tardaba más de 7 segundos por consultas en serie a la base. | Rendimiento | Mitigado |
 
 ## 6. Alcance por módulo
 
@@ -106,11 +118,11 @@
 | Cursos y secciones | Completo | — |
 | Actividades y material | Completo | — |
 | Exámenes | Parcial | Banco de preguntas (HU-043) |
-| Entregas y revisión | Completo | — |
-| XP, niveles y ranking | Parcial | Tabla de niveles por organización (HU-053), antiabuso (HU-055) |
+| Entregas y revisión | Parcial | Ver mi calificación y retroalimentación (HU-049) |
+| XP, niveles y ranking | Parcial | Ver mi XP y nivel (HU-056), ranking por periodo (HU-057) |
 | Racha de días activos | Completo | — |
 | Logros | Completo | — |
-| Juegos | Sin empezar | HU-065, HU-067 |
+| Juegos | Fuera del MVP | Concursos (HU-065, HU-067) y demás juegos (HU-063, HU-064, HU-066, HU-068), para una etapa posterior |
 
 ## 7. Artefactos y rutas
 
