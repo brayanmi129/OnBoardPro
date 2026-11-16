@@ -1,0 +1,124 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "class": {"nodeSpacing": 30, "rankSpacing": 60}}}%%
+classDiagram
+    direction TB
+
+    class tenants {
+        +id
+        +name
+        +domain «unique»
+        +active: bool
+        +xp_tope_diario: int
+    }
+    class users {
+        +id
+        +email «unique»
+        +role: enum
+        +status: enum
+        +xp: int
+        +level: int
+        +streak: int
+        +racha_maxima: int
+    }
+    class groups {
+        +id
+        +name
+    }
+    class courses {
+        +id
+        +name
+        +instructor: email
+        +status: Abierto/Cerrado
+        +archivado: bool
+        +banner_url
+    }
+    class sections {
+        +id
+        +name
+        +orden: int
+    }
+    class activities {
+        +id
+        +type: enum
+        +title
+        +xp: int
+        +intentos_permitidos
+        +porcentaje_aprobacion
+    }
+    class materiales {
+        +id
+        +nombre
+        +ruta
+        +mime
+    }
+    class preguntas {
+        +id
+        +enunciado
+        +puntaje: int
+        +dificultad: 1..3
+    }
+    class opciones {
+        +id
+        +texto
+        +es_correcta: bool
+    }
+    class intentos_examen {
+        +id
+        +numero: int
+        +estado: enum
+        +respuestas: jsonb
+        +porcentaje: int
+        +aprobado: bool
+    }
+    class entregas {
+        +id
+        +archivo
+        +estado: enum
+        +feedback
+        +revisado_por
+    }
+    class xp_movimientos {
+        +id
+        +xp: int
+        +xp_base: int
+        +motivo
+    }
+    class niveles {
+        +numero: int
+        +xp_minimo: int
+        +nombre
+    }
+    class logros {
+        +id
+        +nombre
+        +categoria
+        +tipo_condicion
+        +meta: int
+        +xp_recompensa: int
+    }
+    class logros_usuario {
+        +xp_otorgado: int
+        +desbloqueado_at
+    }
+
+    tenants "1" --> "0..*" users : pertenecen
+    tenants "1" --> "0..*" groups
+    tenants "1" --> "0..*" courses
+    tenants "1" --> "0..*" niveles
+    users "0..*" -- "0..*" groups : users_groups
+    groups "0..*" -- "0..*" courses : groups_courses
+    courses "1" *-- "0..*" sections
+    sections "0..1" o-- "0..*" activities
+    activities "1" *-- "0..*" materiales
+    activities "1" *-- "0..*" preguntas
+    preguntas "1" *-- "0..*" opciones
+    activities "1" --> "0..*" intentos_examen
+    activities "1" --> "0..*" entregas
+    activities "0..1" --> "0..*" xp_movimientos
+    users "1" --> "0..*" intentos_examen
+    users "1" --> "0..*" entregas
+    users "1" --> "0..*" xp_movimientos
+    tenants "0..1" --> "0..*" logros : NULL = genérico
+    courses "0..1" --> "0..*" logros
+    logros "0..1" --> "0..*" xp_movimientos
+    logros_usuario "0..*" <-- "1" logros
+    logros_usuario "0..*" <-- "1" users

@@ -1,0 +1,72 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "flowchart": {"nodeSpacing": 14, "rankSpacing": 110, "padding": 10, "subGraphTitleMargin": {"top": 14, "bottom": 10}}}}%%
+flowchart LR
+    AD["«actor»<br/><b>Administrador</b>"]:::actor
+    SA["«actor»<br/><b>Superadministrador</b>"]:::actor
+    SA -. "generalización:<br/>hereda sus casos" .-> AD
+
+    subgraph SYS["Sistema OnBoard Pro"]
+        direction LR
+        subgraph USR["Usuarios"]
+            A1(["Listar y filtrar usuarios"])
+            A2(["Crear usuario"])
+            A3(["Editar usuario y cambiar su rol"])
+            A4(["Eliminar usuario"])
+            A18(["Importar usuarios desde CSV o Excel"])
+            A19(["Descargar plantilla de importación"])
+        end
+        subgraph GRP["Grupos y asignación"]
+            A5(["Crear, editar o eliminar grupo"])
+            A6(["Gestionar integrantes del grupo"])
+            A7(["Asignar o retirar cursos a un grupo"])
+        end
+        subgraph CUR["Cursos"]
+            A8(["Gestionar cursos, secciones y actividades"])
+            A9(["Asignar instructor a un curso"])
+            A10(["Eliminar curso tras ver su impacto"])
+            A11(["Revisar bandeja de entregas"])
+        end
+        subgraph GAM["Gamificación"]
+            A12(["Definir o restaurar tabla de niveles"])
+            A13(["Gestionar catálogo de logros"])
+            A14(["Previsualizar cuántos cumplirían un logro"])
+            A15(["Cerrar periodo de ranking y otorgar medallas"])
+            A16(["Consultar ranking por periodo"])
+        end
+        subgraph PAN["Panel"]
+            A17(["Ver pendientes de la organización"])
+            A20(["Consultar tablero de indicadores"])
+        end
+        subgraph ORG["Organizaciones"]
+            S1(["Crear, editar o eliminar organización y su dominio"])
+            S2(["Elegir organización al operar"])
+            S3(["Gestionar logros genéricos"])
+            S4(["Consultar tablero de toda la plataforma"])
+        end
+        I1(["Registrar auditoría del cambio de rol"])
+        I2(["Avisar por correo"])
+        I3(["Validar el archivo y previsualizar filas"])
+    end
+    ML["«sistema externo»<br/>Correo (Brevo)"]:::ext
+
+    AD --- A1 & A2 & A3 & A4 & A18 & A19
+    AD --- A5 & A6 & A7
+    AD --- A8 & A9 & A10 & A11
+    AD --- A12 & A13 & A14 & A15 & A16
+    AD --- A17 & A20
+    SA --- S1 & S2 & S3 & S4
+    A18 -. "«include»" .-> I3
+    A3 -. "«include»" .-> I1
+    A7 -. "«include»" .-> I2
+    A9 -. "«include»" .-> I2
+    I2 --- ML
+
+    classDef actor fill:#ffffff,stroke:#333333,stroke-width:2px,color:#111111
+    classDef ext fill:#f4f4f4,stroke:#666666,stroke-dasharray:4 3,color:#111111
+    classDef default fill:#ffffff,stroke:#555555,color:#111111
+    style SYS fill:#fafafa,stroke:#333333,stroke-width:2px
+    style USR fill:#ffffff,stroke:#aaaaaa
+    style GRP fill:#ffffff,stroke:#aaaaaa
+    style CUR fill:#ffffff,stroke:#aaaaaa
+    style GAM fill:#ffffff,stroke:#aaaaaa
+    style PAN fill:#ffffff,stroke:#aaaaaa
+    style ORG fill:#ffffff,stroke:#aaaaaa

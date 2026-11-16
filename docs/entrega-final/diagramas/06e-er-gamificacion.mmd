@@ -1,0 +1,70 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "er": {"fontSize": 20, "entityPadding": 10, "minEntityWidth": 100}}}%%
+erDiagram
+    users ||--o{ xp_movimientos : "user_id"
+    activities |o--o{ xp_movimientos : "activity_id (SET NULL)"
+    logros |o--o{ xp_movimientos : "logro_id"
+    tenants ||--o{ niveles : "tenant_id"
+    tenants |o--o{ logros : "tenant_id (NULL = generico)"
+    courses |o--o{ logros : "course_id"
+    logros ||--o{ logros_usuario : "logro_id"
+    users ||--o{ logros_usuario : "user_id"
+
+    tenants {
+        varchar(50) id PK
+        integer xp_tope_diario
+    }
+    courses {
+        varchar(50) id PK
+    }
+    activities {
+        varchar(50) id PK
+        integer xp
+    }
+    users {
+        varchar(50) id PK
+        integer xp
+        integer level
+        integer streak
+        integer racha_maxima
+        date ultima_actividad
+    }
+    xp_movimientos {
+        varchar(50) id PK
+        varchar(50) user_id FK "UNIQUE(user_id, activity_id)"
+        varchar(50) tenant_id FK
+        varchar(50) activity_id FK
+        varchar(50) logro_id FK "UNIQUE parcial (user_id, logro_id)"
+        integer xp "otorgado"
+        integer xp_base "antes de recortes"
+        varchar(40) motivo
+        timestamptz created_at
+    }
+    niveles {
+        varchar(50) id PK
+        varchar(50) tenant_id FK "UNIQUE(tenant_id, numero)"
+        integer numero
+        integer xp_minimo "UNIQUE(tenant_id, xp_minimo)"
+        varchar(40) nombre
+    }
+    logros {
+        varchar(50) id PK
+        varchar(50) tenant_id FK
+        varchar(50) course_id FK
+        varchar(100) nombre "unico por organizacion"
+        text descripcion
+        varchar(30) categoria
+        varchar(40) tipo_condicion
+        integer meta
+        integer xp_recompensa
+        varchar(100) icono
+        boolean activo
+        varchar(50) creado_por FK
+    }
+    logros_usuario {
+        varchar(50) id PK
+        varchar(50) logro_id FK "UNIQUE(logro_id, user_id)"
+        varchar(50) user_id FK
+        varchar(50) tenant_id FK
+        integer xp_otorgado
+        timestamptz desbloqueado_at
+    }

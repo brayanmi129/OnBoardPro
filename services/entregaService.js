@@ -123,12 +123,113 @@ class EntregaService {
     };
   }
 
-  /** Mi entrega de una actividad. Null si todavía no entregué. */
+  /**
+   * Mi entrega de una actividad (HU-049). Null si todavía no entregué.
+   *
+   * Trae quién la revisó, cuándo y cuánto XP me dio, para no obligar al
+   * aprendiz a cruzar ids a mano.
+   */
   static async miEntrega(actividadId, actor) {
     const { data } = await supabase
       .from("entregas").select("*")
       .eq("activity_id", actividadId).eq("user_id", actor.id).maybeSingle();
-    return aObjeto(data);
+    if (!data) return null;
+    const [conRevision] = await EntregaService._conRevision([data], actor.id);
+    return { ...aObjeto(data), ...conRevision };
+  }
+
+  /**
+   * La revisión de cada entrega tal como la ve el aprendiz: feedback, quién y
+   * cuándo, y el XP que le dio (sale del libro de movimientos, que es lo que
+   * de verdad se acreditó).
+   *
+   * Mientras la entrega espera revisión todo va en null. Si se pidió rehacerla
+   * y la reemplazó, la fila conserva el feedback viejo: mostrarlo junto al
+   * trabajo nuevo haría creer que ya revisaron este.
+   */
+  static async _conRevision(entregas, userId) {
+    const revisadas = entregas.filter((e) => e.estado !== "entregado");
+    const revisores = [...new Set(revisadas.map((e) => e.revisado_por).filter(Boolean))];
+    const actividades = revisadas.map((e) => e.activity_id);
+
+    const [{ data: personas }, { data: movimientos }] = await Promise.all([
+      revisores.length
+        ? supabase.from("users").select("id, firstname, lastname").in("id", revisores)
+        : { data: [] },
+      actividades.length
+        ? supabase.from("xp_movimientos").select("activity_id, xp")
+            .eq("user_id", userId).in("activity_id", actividades)
+        : { data: [] },
+    ]);
+    const persona = new Map((personas || []).map((u) => [u.id, u]));
+    const xp = new Map((movimientos || []).map((m) => [m.activity_id, m.xp]));
+
+    return entregas.map((e) => {
+      if (e.estado === "entregado") {
+        return { feedback: null, revisadoAt: null, revisadoPor: null, xpObtenido: null };
+      }
+      const quien = persona.get(e.revisado_por);
+      return {
+        feedback: e.feedback ?? null,
+        revisadoAt: e.revisado_at ?? null,
+        revisadoPor: quien ? { firstname: quien.firstname, lastname: quien.lastname } : null,
+        xpObtenido: xp.has(e.activity_id) ? Number(xp.get(e.activity_id)) || 0 : null,
+      };
+    });
+  }
+
+  /**
+   * Todas mis entregas con su revisión (HU-049), de la última revisada a la
+   * más vieja; las que esperan revisión van al final, de la más reciente a la
+   * más antigua.
+   */
+  static async mias(actor) {
+    const { data: entregas, error } = await supabase
+      .from("entregas").select("*").eq("user_id", actor.id);
+    if (error) throw new Error(error.message);
+    if (!entregas?.length) return [];
+
+    const { data: actividades } = await supabase
+      .from("activities").select("id, title, section_id")
+      .in("id", [...new Set(entregas.map((e) => e.activity_id))]);
+    const seccionIds = [...new Set((actividades || []).map((a) => a.section_id).filter(Boolean))];
+    const { data: secciones } = seccionIds.length
+      ? await supabase.from("sections").select("id, course_id").in("id", seccionIds)
+      : { data: [] };
+    const cursoIds = [...new Set((secciones || []).map((s) => s.course_id).filter(Boolean))];
+
+    const [{ data: cursos }, revision] = await Promise.all([
+      cursoIds.length
+        ? supabase.from("courses").select("id, name").in("id", cursoIds)
+        : { data: [] },
+      EntregaService._conRevision(entregas, actor.id),
+    ]);
+
+    const actividad = new Map((actividades || []).map((a) => [a.id, a]));
+    const cursoDeSeccion = new Map((secciones || []).map((s) => [s.id, s.course_id]));
+    const curso = new Map((cursos || []).map((c) => [c.id, c]));
+
+    const lista = entregas.map((e, i) => {
+      const a = actividad.get(e.activity_id);
+      const c = curso.get(cursoDeSeccion.get(a?.section_id));
+      return {
+        id: e.id,
+        actividad: { id: e.activity_id, titulo: a?.title ?? null },
+        curso: c ? { id: c.id, nombre: c.name } : null,
+        estado: e.estado,
+        entregadoAt: e.entregado_at ?? null,
+        ...revision[i],
+      };
+    });
+
+    // En milisegundos: Postgres no siempre escribe la fracción de segundo, y
+    // como texto "10:00:00+00" y "10:00:00.5+00" se ordenan al revés.
+    const desc = (x, y) => (y ? new Date(y).getTime() : 0) - (x ? new Date(x).getTime() : 0);
+    return lista.sort((a, b) => {
+      if (a.revisadoAt && !b.revisadoAt) return -1;
+      if (!a.revisadoAt && b.revisadoAt) return 1;
+      return desc(a.revisadoAt, b.revisadoAt) || desc(a.entregadoAt, b.entregadoAt);
+    });
   }
 
   /** Todas las entregas de una actividad, para quien la corrige. */

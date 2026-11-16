@@ -37,17 +37,27 @@ const subirMaterial = multer({
   fileFilter: soloTipos(MATERIAL),
 }).single("archivo");
 
+// La carga masiva de usuarios (HU-019). Se filtra por extensión y no por
+// tipo MIME: el navegador manda un CSV como text/csv, application/vnd.ms-excel
+// o application/octet-stream según el sistema, y los tres son el mismo archivo.
+const subirPlanilla = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 2 * MB, files: 1 },
+  fileFilter: (req, file, cb) => {
+    if (/\.(csv|xlsx)$/i.test(file.originalname || "")) return cb(null, true);
+    cb(new Error("El archivo tiene que ser .csv o .xlsx."));
+  },
+}).single("archivo");
+
 // multer devuelve sus errores por next(err). Sin esto caerían en el manejador
 // genérico como un 500, cuando en realidad son culpa de lo que mandó el cliente.
-function conManejo(middleware) {
+function conManejo(middleware, mensajeTamano = "El archivo supera el tamaño máximo permitido.") {
   return (req, res, next) =>
     middleware(req, res, (err) => {
       if (!err) return next();
       const esLimite = err instanceof multer.MulterError;
       return res.status(400).json({
-        message: esLimite && err.code === "LIMIT_FILE_SIZE"
-          ? "El archivo supera el tamaño máximo permitido."
-          : err.message,
+        message: esLimite && err.code === "LIMIT_FILE_SIZE" ? mensajeTamano : err.message,
       });
     });
 }
@@ -55,4 +65,5 @@ function conManejo(middleware) {
 module.exports = {
   banner: conManejo(subirBanner),
   material: conManejo(subirMaterial),
+  planilla: conManejo(subirPlanilla, "El archivo supera el máximo de 2 MB."),
 };

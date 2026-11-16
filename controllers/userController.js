@@ -1,7 +1,41 @@
 const UserService = require("../services/userService.js");
+const ImportacionService = require("../services/importacionService.js");
 const zod = require("zod");
 
+const actorDe = (req) => ({ id: req.user.id, email: req.user.email, role: req.user.role, tenantId: req.user.tenantId });
+
 class UserController {
+  /** La plantilla CSV para la carga masiva. */
+  static plantillaImportacion(req, res) {
+    res.set({
+      "Content-Type": "text/csv; charset=utf-8",
+      "Content-Disposition": 'attachment; filename="plantilla-usuarios.csv"',
+    });
+    return res.status(200).send(ImportacionService.plantilla());
+  }
+
+  static async previsualizarImportacion(req, res) {
+    try {
+      return res.status(200).json(
+        await ImportacionService.previsualizar(req.file, actorDe(req), req.body?.tenantId)
+      );
+    } catch (error) {
+      console.error("Error al previsualizar la importación:", error.message);
+      return res.status(error.status || 500).json({ message: error.message });
+    }
+  }
+
+  static async importar(req, res) {
+    try {
+      return res.status(200).json(
+        await ImportacionService.importar(req.file, actorDe(req), req.body?.tenantId)
+      );
+    } catch (error) {
+      console.error("Error al importar usuarios:", error.message);
+      return res.status(error.status || 500).json({ message: error.message });
+    }
+  }
+
   static async create(req, res) {
     try {
       // Admin solo puede crear usuarios en su tenant; superadmin puede especificar tenantId

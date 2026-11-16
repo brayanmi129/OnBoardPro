@@ -1,0 +1,79 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "er": {"fontSize": 20, "entityPadding": 12, "minEntityWidth": 120, "layoutDirection": "TB"}}}%%
+erDiagram
+    tenants ||--o{ users : ""
+    tenants ||--o{ groups : ""
+    tenants ||--o{ courses : ""
+    niveles }o--|| tenants : ""
+    password_resets }o--|| users : ""
+    role_changes }o--|| users : ""
+    users_groups }o--|| users : ""
+    users_groups }o--|| groups : ""
+    groups ||--o{ groups_courses : ""
+    courses ||--o{ groups_courses : ""
+    courses ||--o{ sections : ""
+    sections |o--o{ activities : ""
+    activities ||--o{ materiales : ""
+    activities ||--o{ preguntas : ""
+    preguntas ||--o{ opciones : ""
+    activities ||--o{ intentos_examen : ""
+    users ||--o{ intentos_examen : ""
+    activities ||--o{ entregas : ""
+    users ||--o{ entregas : ""
+    users ||--o{ xp_movimientos : ""
+    activities |o--o{ xp_movimientos : ""
+    logros |o--o{ xp_movimientos : ""
+    logros }o--o| tenants : "NULL = generico"
+    logros }o--o| courses : ""
+    logros ||--o{ logros_usuario : ""
+    users ||--o{ logros_usuario : ""
+
+    tenants { varchar id PK }
+    users { varchar id PK
+        varchar tenant_id FK }
+    groups { varchar id PK
+        varchar tenant_id FK }
+    users_groups { serial id PK
+        varchar id_user FK
+        varchar id_group FK }
+    courses { varchar id PK
+        varchar tenant_id FK }
+    groups_courses { serial id PK
+        varchar id_group FK
+        varchar id_course FK }
+    sections { varchar id PK
+        varchar course_id FK
+        varchar tenant_id FK }
+    activities { varchar id PK
+        varchar section_id FK
+        varchar tenant_id FK }
+    materiales { varchar id PK
+        varchar activity_id FK
+        varchar subido_por FK }
+    preguntas { varchar id PK
+        varchar activity_id FK }
+    opciones { varchar id PK
+        varchar pregunta_id FK }
+    intentos_examen { varchar id PK
+        varchar activity_id FK
+        varchar user_id FK }
+    entregas { varchar id PK
+        varchar activity_id FK
+        varchar user_id FK
+        varchar revisado_por FK }
+    xp_movimientos { varchar id PK
+        varchar user_id FK
+        varchar activity_id FK
+        varchar logro_id FK }
+    niveles { varchar id PK
+        varchar tenant_id FK }
+    logros { varchar id PK
+        varchar tenant_id FK
+        varchar course_id FK }
+    logros_usuario { varchar id PK
+        varchar logro_id FK
+        varchar user_id FK }
+    password_resets { varchar id PK
+        varchar user_id FK }
+    role_changes { varchar id PK
+        varchar user_id FK
+        varchar autor_id FK }

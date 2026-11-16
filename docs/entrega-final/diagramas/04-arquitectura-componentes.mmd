@@ -1,0 +1,51 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "flowchart": {"nodeSpacing": 30, "rankSpacing": 55, "padding": 12, "wrappingWidth": 640, "subGraphTitleMargin": {"top": 6, "bottom": 8}}}}%%
+flowchart TB
+    U["Navegador web<br/>(aprendiz, instructor, administración)"]
+
+    subgraph FE["Front-end (Vercel)"]
+        direction LR
+        F1["React 19 + TanStack Start<br/>Rutas por rol<br/>/student · /instructor · /admin<br/>(TanStack Router)"]
+        F2["Hooks de datos<br/>TanStack Query<br/>(caché e invalidación)"]
+        F3["apiFetch<br/>Authorization: Bearer JWT<br/>(cookie session_token)"]
+        F1 --> F2 --> F3
+    end
+
+    subgraph BE["API REST (Render)"]
+        direction TB
+        B0["Node.js 22 + Express 4 · index.js:<br/> CORS por lista de orígenes · express.json 1 MB<br/>express-session (solo state de OAuth) · Passport · logPeticiones"]
+        B1["routes/ · 14 routers bajo /api<br/>auth · users · tenants · groups · courses · sections · activities<br/>materiales · examenes · entregas · gamification · logros · niveles · dashboard"]
+        B2["middlewares/<br/>verifyJWT → req.user · requireRole(...)<br/>subida (multer en memoria) · intentos (freno de fuerza bruta)"]
+        B3["controllers/<br/>fijan tenantId desde req.user"]
+        B4["services/<br/>lógica de negocio: Course, Section, Activities, Examen, Entrega,<br/>Gamification, Desbloqueo, Logro, Niveles, Dashboard, Importacion…"]
+        B5["helpers/<br/>supabaseHelper · storage · cursoDeActividad · niveles · racha<br/>periodo · consultas · mailer · passportHelper · validacion (Zod)"]
+        SW["Swagger UI<br/>/api-docs"]
+        B0 --> B1 --> B2 --> B3 --> B4 --> B5
+    end
+
+    subgraph SB["Supabase"]
+        direction LR
+        DB[("PostgreSQL<br/>tablas + funciones RPC atómicas<br/>acreditar_xp · recalcular_xp · subir_nivel<br/>otorgar_logro · ranking_curso · guardar_examen<br/>editar_pregunta · guardar_niveles")]
+        ST[("Storage<br/>bucket banners (público)<br/>bucket materiales (privado,<br/>URL firmada)")]
+    end
+
+    G["Google OAuth 2.0"]:::ext
+    M["Microsoft identity<br/>(OAuth 2.0)"]:::ext
+    BR["Brevo<br/>API HTTP de correo"]:::ext
+
+    U -- "HTTPS" --> F1
+    F3 -- "HTTPS · JSON · Bearer JWT" --> B0
+    B5 -- "supabase-js → PostgREST<br/>(clave secreta del servidor)" --> DB
+    B5 -- "Storage API" --> ST
+    B5 -- "HTTPS · OAuth 2.0 (passport)<br/>el navegador es redirigido al proveedor" --> G & M
+    B5 -- "HTTPS (mailer)" --> BR
+    B1 -.- SW
+
+    NOTE["Aislamiento multiempresa:<br/>se aplica en la API (controllers + services),<br/>no en la base: cada consulta filtra por tenant_id"]:::note
+    B3 -.- NOTE
+
+    classDef ext fill:#f4f4f4,stroke:#666666,stroke-dasharray:4 3,color:#111111
+    classDef note fill:#fffef2,stroke:#999999,color:#111111
+    classDef default fill:#ffffff,stroke:#555555,color:#111111
+    style FE fill:#fafafa,stroke:#555555
+    style BE fill:#fafafa,stroke:#555555
+    style SB fill:#fafafa,stroke:#555555

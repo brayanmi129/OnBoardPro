@@ -38,6 +38,15 @@ class EntregaController {
     }
   }
 
+  /** El aprendiz ve todas sus entregas con la revisión de cada una. */
+  static async mias(req, res) {
+    try {
+      return res.status(200).json(await EntregaService.mias(actorDe(req)));
+    } catch (error) {
+      return responder(res, error, "Error al listar mis entregas");
+    }
+  }
+
   /** Quien corrige ve todas las entregas de la actividad. */
   static async listar(req, res) {
     try {

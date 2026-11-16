@@ -69,6 +69,12 @@ router.post("/activities/:id/entrega", verifyJWT, subida.material, EntregaContro
  *   get:
  *     summary: Mi entrega de esa actividad
  *     tags: [Entregas]
+ *     description: >
+ *       La revisión (`feedback`, `revisadoAt`, `revisadoPor` y `xpObtenido`)
+ *       solo se muestra una vez revisada: mientras el estado sea `entregado`
+ *       esos cuatro campos van en null, también si se reemplazó una entrega
+ *       que había vuelto para rehacer. `xpObtenido` es el XP que de verdad
+ *       acreditó esa actividad (null si no acreditó nada).
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -78,11 +84,88 @@ router.post("/activities/:id/entrega", verifyJWT, subida.material, EntregaContro
  *         schema: { type: string }
  *     responses:
  *       200:
- *         description: Devuelve la entrega con su estado (entregado, aprobada o rehacer) y la retroalimentación
+ *         description: La entrega con su estado y su revisión
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/MiEntrega'
  *       404:
  *         description: Todavía no entregaste esta actividad
  */
 router.get("/activities/:id/mi-entrega", verifyJWT, EntregaController.miEntrega);
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     RevisorEntrega:
+ *       type: object
+ *       nullable: true
+ *       properties:
+ *         firstname: { type: string, example: Laura }
+ *         lastname: { type: string, example: Gómez }
+ *     MiEntrega:
+ *       type: object
+ *       properties:
+ *         id: { type: string }
+ *         activityId: { type: string }
+ *         userId: { type: string }
+ *         estado: { type: string, enum: [entregado, aprobada, rehacer] }
+ *         archivo: { type: string, nullable: true }
+ *         comentario: { type: string, nullable: true }
+ *         entregadoAt: { type: string, format: date-time }
+ *         feedback: { type: string, nullable: true }
+ *         revisadoAt: { type: string, format: date-time, nullable: true }
+ *         revisadoPor: { $ref: '#/components/schemas/RevisorEntrega' }
+ *         xpObtenido: { type: integer, nullable: true, example: 40 }
+ *     MiEntregaResumen:
+ *       type: object
+ *       properties:
+ *         id: { type: string }
+ *         actividad:
+ *           type: object
+ *           properties:
+ *             id: { type: string }
+ *             titulo: { type: string }
+ *         curso:
+ *           type: object
+ *           nullable: true
+ *           properties:
+ *             id: { type: string }
+ *             nombre: { type: string }
+ *         estado: { type: string, enum: [entregado, aprobada, rehacer] }
+ *         entregadoAt: { type: string, format: date-time }
+ *         feedback: { type: string, nullable: true }
+ *         revisadoAt: { type: string, format: date-time, nullable: true }
+ *         revisadoPor: { $ref: '#/components/schemas/RevisorEntrega' }
+ *         xpObtenido: { type: integer, nullable: true }
+ */
+
+/**
+ * @swagger
+ * /api/entregas/mias:
+ *   get:
+ *     summary: Todas mis entregas con su calificación y retroalimentación
+ *     tags: [Entregas]
+ *     description: >
+ *       Las entregas de quien llama, de todos sus cursos. Primero las
+ *       revisadas, de la más reciente a la más antigua; después las que
+ *       esperan revisión, por fecha de entrega descendente. Mismas reglas que
+ *       mi-entrega: la revisión va en null mientras el estado sea `entregado`.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: Lista de entregas (vacía si no entregó nada)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/MiEntregaResumen'
+ */
+// Antes que cualquier /entregas/:id para que "mias" no se tome como un id.
+router.get("/entregas/mias", verifyJWT, EntregaController.mias);
 
 /**
  * @swagger

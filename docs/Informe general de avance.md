@@ -9,28 +9,28 @@
 | Sprints | 11 · semanales, de viernes a viernes |
 | Inicio | 28/8/2026 |
 | Entrega | 20/11/2026 |
-| Alcance del MVP | 216 SP · 62 historias |
-| Suma de los pronósticos por sprint | 230 SP · 66 historias |
+| Alcance del MVP | 211 SP · 61 historias |
+| Suma de los pronósticos por sprint | 225 SP · 65 historias |
 | Diferencia | HU-034 y HU-036 (6 SP) se pronosticaron en los sprints 5 y 6, y HU-058 (3 SP) en los sprints 7 y 8, porque no cerraron en el primero |
-| Post-MVP en backlog | 76 SP · 31 historias |
+| Post-MVP en backlog | 81 SP · 32 historias (incluye HU-043, que salió del Sprint 11) |
 | Fuera del MVP | Concurso de preguntas (HU-065) y jugar y ganar puntos (HU-067), 10 SP: salen del alcance el 6/11/2026 y pasan al backlog con el resto de la épica de juegos |
-| Último sprint cerrado | Sprint 10 · 30/10 – 6/11 |
-| Sprint en curso | Sprint 11 · 6/11 – 13/11 |
+| Último sprint cerrado | Sprint 11 · 6/11 – 13/11 |
+| Sprint en curso | Ninguno: semana de estabilización y entrega (13/11 – 20/11) |
 | Estabilización y entrega | 13/11 – 20/11 |
 
 ## 2. KPIs del proyecto
 
 | Indicador | Valor | Se actualiza |
 |---|---|---|
-| Sprints cerrados | 10 de 11 | Cada sprint |
-| Avance del MVP | 199 de 216 SP · 92% | Cada sprint |
-| Historias entregadas | 57 de 61 comprometidas · 93% | Cada sprint |
-| Velocidad promedio | 19,9 SP | Cada sprint |
-| Velocidad últimos 3 sprints | 23,0 SP | Cada sprint |
-| Pronóstico cumplido | 93% · 199 de 213 SP | Cada sprint |
-| Sprints al 100% | 7 de 10 · 70% | Cada sprint |
+| Sprints cerrados | 11 de 11 | Cada sprint |
+| Avance del MVP | 211 de 211 SP · 100% | Cada sprint |
+| Historias entregadas | 61 de 65 comprometidas · 94% | Cada sprint |
+| Velocidad promedio | 19,2 SP | Cada sprint |
+| Velocidad últimos 3 sprints | 19,0 SP | Cada sprint |
+| Pronóstico cumplido | 94% · 211 de 225 SP | Cada sprint |
+| Sprints al 100% | 8 de 11 · 73% | Cada sprint |
 | Mejor sprint | Sprint 6 · 29 SP | Cada sprint |
-| SP restantes | 17 en 1 sprint | Cada sprint |
+| SP restantes | 0 | Cada sprint |
 
 ## 3. Avance por sprint
 
@@ -46,9 +46,9 @@
 | 8 | 16/10 – 23/10 | Cerrado | 7 / 6 | 29 | 24 | 83% | 154 | 4 |
 | 9 | 23/10 – 30/10 | Cerrado | 6 / 6 | 26 | 26 | 100% | 180 | 6 |
 | 10 | 30/10 – 6/11 | Cerrado | 6 / 6 | 19 | 19 | 100% | 199 | 5 |
-| 11 | 6/11 – 13/11 | En curso | 5 / — | 17 | — | — | — | — |
-| **Cerrados (1–10)** |  |  | **61 / 57** | **213** | **199** | **93%** | **199** | **30** |
-| **Todos (1–11)** |  |  | **66 / 57** | **230** | **199** | **87%** | **199** | **30** |
+| 11 | 6/11 – 13/11 | Cerrado | 4 / 4 | 12 | 12 | 100% | 211 | 1 |
+| **Cerrados (1–11)** |  |  | **65 / 61** | **225** | **211** | **94%** | **211** | **31** |
+| **Todos (1–11)** |  |  | **65 / 61** | **225** | **211** | **94%** | **211** | **31** |
 
 ![Velocidad por sprint: puntos pronosticados contra completados.](img/g1-velocidad.png)
 
@@ -58,15 +58,15 @@
 
 | Indicador | Valor |
 |---|---|
-| Defectos detectados | 30 |
-| Defectos resueltos | 28 · 93% |
+| Defectos detectados | 31 |
+| Defectos resueltos | 29 · 94% |
 | Defectos mitigados | 2 |
 | Defectos abiertos | 0 |
 | Densidad | 0,15 por SP entregado |
-| Defectos de integración (merge) | 4 de 30 · 13% |
-| Defectos de seguridad | 12 de 30 · 40% |
+| Defectos de integración (merge) | 4 de 31 · 13% |
+| Defectos de seguridad | 12 de 31 · 39% |
 | Sprint con más defectos | Sprint 9 · 6 |
-| Resueltos en el mismo sprint | 28 de 30 · 93% |
+| Resueltos en el mismo sprint | 29 de 31 · 94% |
 
 ![Defectos detectados en cada sprint.](img/g3-bugs.png)
 
@@ -104,6 +104,7 @@
 | B-28 | 10 | La celebración de subida de nivel no aparecía si la sección se plegaba al completar la actividad. | Funcional | Resuelto |
 | B-29 | 10 | Al integrar la rama development, las portadas de «Mis cursos» dejaron de verse por un campo renombrado. | Merge | Resuelto |
 | B-30 | 10 | Completar una actividad tardaba más de 7 segundos por consultas en serie a la base. | Rendimiento | Mitigado |
+| B-31 | 11 | El ranking incluía a personas desactivadas en la organización. | Funcional | Resuelto |
 
 ## 6. Alcance por módulo
 
@@ -112,14 +113,14 @@
 | Autenticación y perfil | Completo | — |
 | Contraseñas y límite de intentos | Completo | — |
 | Organizaciones | Completo | — |
-| Usuarios y roles | Completo | Carga masiva (HU-019) |
+| Usuarios y roles | Completo | — |
 | Aislamiento entre organizaciones | Completo | — |
 | Grupos e integrantes | Completo | — |
 | Cursos y secciones | Completo | — |
 | Actividades y material | Completo | — |
-| Exámenes | Parcial | Banco de preguntas (HU-043) |
-| Entregas y revisión | Parcial | Ver mi calificación y retroalimentación (HU-049) |
-| XP, niveles y ranking | Parcial | Ver mi XP y nivel (HU-056), ranking por periodo (HU-057) |
+| Exámenes | Completo | Banco de preguntas (HU-043), fuera del MVP |
+| Entregas y revisión | Completo | — |
+| XP, niveles y ranking | Completo | — |
 | Racha de días activos | Completo | — |
 | Logros | Completo | — |
 | Juegos | Fuera del MVP | Concursos (HU-065, HU-067) y demás juegos (HU-063, HU-064, HU-066, HU-068), para una etapa posterior |

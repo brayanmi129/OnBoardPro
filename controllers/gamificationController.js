@@ -6,7 +6,11 @@ class GamificationController {
       // El superadmin (null) ve el ranking global; el resto, el de su empresa.
       const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;
       const grupoId = req.query.grupoId ? String(req.query.grupoId) : undefined;
-      const ranking = await gamificationService.getRanking(tenantId, { grupoId, actor: req.user });
+      const ranking = await gamificationService.getRanking(tenantId, {
+        grupoId,
+        actor: req.user,
+        periodo: req.query.periodo,
+      });
       res.status(200).json(ranking);
     } catch (error) {
       if (error.status) return res.status(error.status).json({ message: error.message });
@@ -24,6 +28,17 @@ class GamificationController {
       return res.status(200).json(r);
     } catch (error) {
       console.error("Error al completar la actividad:", error.message);
+      return res.status(error.status || 500).json({ message: error.message });
+    }
+  }
+
+  static async misMovimientos(req, res) {
+    try {
+      return res.status(200).json(
+        await gamificationService.misMovimientos(req.user.id, { limite: req.query.limite })
+      );
+    } catch (error) {
+      console.error("Error al obtener los movimientos de XP:", error.message);
       return res.status(error.status || 500).json({ message: error.message });
     }
   }

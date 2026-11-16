@@ -3,6 +3,173 @@ const router = express.Router();
 const UserController = require("../controllers/userController");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
+const subida = require("../middlewares/subida.js");
+
+const administra = requireRole("admin", "superadmin");
+
+/**
+ * @swagger
+ * /api/users/import/plantilla:
+ *   get:
+ *     summary: Descarga la plantilla CSV para la carga masiva de usuarios
+ *     tags: [Usuarios]
+ *     description: >
+ *       CSV en UTF-8 con BOM (para que Excel respete tildes y eñes) con las
+ *       columnas nombre, apellido, correo, rol, telefono y grupo, y dos filas
+ *       de ejemplo.
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: plantilla-usuarios.csv
+ *         content:
+ *           text/csv:
+ *             schema: { type: string }
+ *       403:
+ *         description: Quien llama no es administrador
+ */
+router.get("/import/plantilla", verifyJWT, administra, UserController.plantillaImportacion);
+
+/**
+ * @swagger
+ * components:
+ *   schemas:
+ *     ArchivoImportacion:
+ *       type: object
+ *       required: [archivo]
+ *       properties:
+ *         archivo:
+ *           type: string
+ *           format: binary
+ *           description: .csv o .xlsx, máximo 2 MB y 1000 filas de datos.
+ *         tenantId:
+ *           type: string
+ *           description: Solo el superadmin, para elegir la organización.
+ */
+
+/**
+ * @swagger
+ * /api/users/import/preview:
+ *   post:
+ *     summary: Valida un archivo de usuarios sin guardar nada
+ *     tags: [Usuarios]
+ *     description: >
+ *       Lee el archivo (primera fila = encabezados) y devuelve cada fila con
+ *       sus errores. `fila` es el número de fila en el archivo: la primera de
+ *       datos es la 2.
+ *
+ *       Reglas: nombre y correo obligatorios; correo válido; rol aprendiz /
+ *       student o instructor (vacío = aprendiz); el grupo, si viene, tiene que
+ *       existir en la organización (por nombre, sin distinguir mayúsculas).
+ *       `duplicado` indica que el correo ya está registrado en la plataforma o
+ *       que se repite en el archivo (se marca la segunda aparición).
+ *
+ *       En el resumen, `validas` son las que se crearían al importar: sin
+ *       errores y sin duplicar.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/ArchivoImportacion'
+ *     responses:
+ *       200:
+ *         description: Filas validadas y resumen
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 filas:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       fila: { type: integer, example: 2 }
+ *                       datos:
+ *                         type: object
+ *                         properties:
+ *                           firstname: { type: string }
+ *                           lastname: { type: string }
+ *                           email: { type: string }
+ *                           role: { type: string, example: student }
+ *                           phonumber: { type: string }
+ *                           grupo: { type: string }
+ *                       errores:
+ *                         type: array
+ *                         items: { type: string }
+ *                         example: ["El grupo Ventas no existe"]
+ *                       duplicado: { type: boolean }
+ *                 resumen:
+ *                   type: object
+ *                   properties:
+ *                     total: { type: integer }
+ *                     validas: { type: integer }
+ *                     conErrores: { type: integer }
+ *                     duplicadas: { type: integer }
+ *       400:
+ *         description: >
+ *           Sin archivo, tipo no permitido, más de 2 MB, vacío, sin las columnas
+ *           nombre y correo, más de 1000 filas, o superadmin sin tenantId
+ *       403:
+ *         description: Quien llama no es administrador
+ *       404:
+ *         description: La organización indicada no existe
+ */
+router.post("/import/preview", verifyJWT, administra, subida.planilla, UserController.previsualizarImportacion);
+
+/**
+ * @swagger
+ * /api/users/import:
+ *   post:
+ *     summary: Crea los usuarios válidos de un archivo
+ *     tags: [Usuarios]
+ *     description: >
+ *       Vuelve a validar el archivo con las mismas reglas que la vista previa
+ *       y crea solo las filas sin errores ni duplicados, en la organización de
+ *       quien llama (o la indicada por el superadmin), activas y sin
+ *       contraseña: entran con Google o Microsoft, o la definen con "olvidé mi
+ *       contraseña". Si la fila trae grupo, se agrega a ese grupo.
+ *
+ *       Las filas que no se crean van en `omitidas` con su motivo; una fila
+ *       que falla al guardarse no corta las demás.
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         multipart/form-data:
+ *           schema:
+ *             $ref: '#/components/schemas/ArchivoImportacion'
+ *     responses:
+ *       200:
+ *         description: Resultado de la importación
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string, example: Se crearon 48 usuarios. }
+ *                 creados: { type: integer, example: 48 }
+ *                 conGrupo: { type: integer, example: 30 }
+ *                 omitidas:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       fila: { type: integer }
+ *                       email: { type: string, nullable: true }
+ *                       motivo: { type: string, example: El correo ya está registrado. }
+ *       400:
+ *         description: Archivo inválido (mismos casos que la vista previa)
+ *       403:
+ *         description: Quien llama no es administrador
+ *       404:
+ *         description: La organización indicada no existe
+ */
+router.post("/import", verifyJWT, administra, subida.planilla, UserController.importar);
 
 /**
  * @swagger

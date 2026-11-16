@@ -1,0 +1,46 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "flowchart": {"nodeSpacing": 40, "rankSpacing": 80, "padding": 14, "wrappingWidth": 640, "subGraphTitleMargin": {"top": 6, "bottom": 8}}}}%%
+flowchart TB
+    NAV["«dispositivo» Equipo del usuario<br/><b>Navegador web</b>"]
+
+    subgraph VER["«nodo» Vercel"]
+        FRONT["«artefacto» onboard-pro-refactor<br/>TanStack Start (SSR + cliente)<br/>onboard-pro-refactor.vercel.app<br/>VITE_API_URL → URL de la API"]
+    end
+
+    subgraph REN["«nodo» Render"]
+        API["«artefacto» OnBoardPro backend (Web Service Node.js)<br/>npm start → node index.js<br/>onboardpro.onrender.com<br/>instancia única · disco efímero · TLS en el proxy"]
+    end
+
+    subgraph SUP["«nodo» Supabase"]
+        PG[("PostgreSQL<br/>+ PostgREST")]
+        STO[("Storage<br/>banners · materiales")]
+    end
+
+    GO["Google OAuth 2.0"]:::ext
+    MS["Microsoft OAuth 2.0"]:::ext
+    BRV["Brevo<br/>(correo transaccional)"]:::ext
+
+    subgraph GH["«nodo» GitHub"]
+        REPOS["Repositorios<br/>front y backend"]
+        WF["GitHub Actions<br/>main_onboardpro-back.yml<br/>push a main → npm install → deploy"]
+    end
+    AZ["«nodo heredado» Azure App Service<br/>onboardpro-back (iisnode · web.config)<br/>no vigente: responde 500"]:::legacy
+
+    NAV -- "HTTPS" --> FRONT
+    NAV -- "HTTPS · REST/JSON<br/>Authorization: Bearer JWT" --> API
+    FRONT -- "HTTPS · Bearer JWT<br/>(render en servidor)" --> API
+    API -- "HTTPS · PostgREST<br/>supabase-js + clave secreta" --> PG
+    API -- "HTTPS · Storage API<br/>URL firmada / pública" --> STO
+    API -- "HTTPS · OAuth 2.0" --> GO & MS
+    API -- "HTTPS · API REST" --> BRV
+    REPOS -. "despliegue desde Git<br/>(configurado en la plataforma)" .-> FRONT
+    REPOS -. "despliegue desde Git<br/>(configurado en la plataforma)" .-> API
+    REPOS --> WF
+    WF -. "azure/webapps-deploy (OIDC)" .-> AZ
+
+    classDef ext fill:#f4f4f4,stroke:#666666,stroke-dasharray:4 3,color:#111111
+    classDef legacy fill:#f2f2f2,stroke:#999999,stroke-dasharray:6 4,color:#555555
+    classDef default fill:#ffffff,stroke:#555555,color:#111111
+    style VER fill:#fafafa,stroke:#555555
+    style REN fill:#fafafa,stroke:#555555
+    style SUP fill:#fafafa,stroke:#555555
+    style GH fill:#fafafa,stroke:#555555

@@ -1,0 +1,27 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "flowchart": {"nodeSpacing": 40, "rankSpacing": 42, "padding": 12, "wrappingWidth": 560}}}%%
+flowchart TB
+    A["<b>Inicio de sesión</b> → AuthService firma el JWT (3 h)<br/>{ id, email, tenantId, role }<br/>tenantId = users.tenant_id; con Google/Microsoft,<br/>la organización se resuelve por el dominio del correo"]
+    D["<b>verifyJWT</b>: valida la firma con JWT_SECRET y fija req.user<br/>(el cliente no puede cambiar su tenantId sin invalidar la firma)"]
+    E["<b>requireRole(...)</b>: 403 si el rol no corresponde"]
+    F{"¿role =<br/>superadmin?"}
+    G["<b>Controller</b><br/>tenantId = req.user.tenantId<br/>(se ignora el del body o la URL)"]
+    H["<b>Controller</b><br/>tenantId = el que elige (query/body)<br/>o null = todas las organizaciones"]
+    I["<b>Service</b>: filtra con .eq(&quot;tenant_id&quot;, tenantId)<br/>y al crear copia tenant_id en la fila hija"]
+    I1["Aprendiz: además, el curso debe estar<br/>asignado a uno de sus grupos<br/>(asegurarAsignado / asegurarPublicado)"]:::note
+    J[("<b>Supabase PostgreSQL</b><br/>acceso con clave secreta del servidor")]
+    J1["Sin RLS: la base no filtra por sí sola;<br/>el aislamiento depende de la API"]:::note
+    K{"¿Fila encontrada?"}
+    L["<b>200 OK</b><br/>datos de su organización"]
+    N["<b>404 «no encontrado»</b><br/>igual que si no existiera: no revela<br/>que el recurso es de otra organización"]
+
+    A --> D --> E --> F
+    F -- "no" --> G --> I
+    F -- "sí" --> H --> I
+    I --> J --> K
+    K -- "sí" --> L
+    K -- "no, o es de otra organización" --> N
+    I1 -.- I
+    J1 -.- J
+
+    classDef default fill:#ffffff,stroke:#555555,color:#111111
+    classDef note fill:#f7f7f7,stroke:#999999,stroke-dasharray:4 3,color:#222222

@@ -1,0 +1,75 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px", "actorFontSize": "20px", "messageFontSize": "19px", "noteFontSize": "18px", "labelFontSize": "18px", "loopTextColor": "#222222", "noteBkgColor": "#f3f3f3", "noteTextColor": "#111111", "noteBorderColor": "#888888"}, "sequence": {"mirrorActors": true, "showSequenceNumbers": true, "actorMargin": 30, "messageMargin": 30, "noteMargin": 8, "boxMargin": 6, "boxTextMargin": 4, "width": 150, "height": 56, "wrap": false}}}%%
+sequenceDiagram
+    autonumber
+    actor A as Aprendiz
+    participant F as Front<br/>useCompleteActivity
+    participant API as API Express<br/>verifyJWT +<br/>Controller
+    participant G as Gamification<br/>Service
+    participant H as cursoDe<br/>Actividad
+    participant D as Desbloqueo<br/>Service
+    participant DB as Supabase<br/>PostgreSQL
+
+    A->>F: "Marcar como<br/>completada"
+    Note over F: onMutate: marca optimista<br/>y aviso "Guardando…"
+    F->>API: POST /api/gamification/<br/>activities/:id/completar<br/>Bearer JWT
+    API->>API: jwt.verify → req.user<br/>{id, tenantId, role}
+    alt token ausente o inválido
+        API-->>F: 401
+    end
+    API->>G: completarActividad<br/>(userId, id, tenantId)
+
+    par Promise.all
+        G->>DB: SELECT activities<br/>WHERE id AND tenant_id
+    and
+        G->>H: asegurarPublicado(id)
+        par Promise.all
+            H->>DB: actividad → sección → curso
+        and
+            H->>DB: grupos → cursos asignados
+        end
+        H-->>G: ok / 409 cerrado o archivado<br/>/ 404 no asignado
+    end
+    alt no existe u otra organización
+        G-->>F: 404
+    else tipo ≠ Recurso
+        G-->>F: 409
+    end
+
+    G->>DB: rpc acreditar_xp
+    Note over DB: transacción: FOR UPDATE users,<br/>tope diario, INSERT xp_movimientos
+    alt UNIQUE (user_id, activity_id) violado
+        DB-->>G: 23505
+        G-->>F: 409 "Ya habías<br/>completado esta actividad"
+    else primera vez
+        DB-->>G: XP otorgado
+    end
+
+    par Promise.all
+        G->>DB: registrarDiaActivo:<br/>UPDATE streak (racha)
+    and
+        par recalcular()
+            G->>DB: rpc recalcular_xp
+        and
+            G->>DB: SELECT niveles (tenant)
+        end
+        G->>DB: rpc subir_nivel<br/>(nivelPara(xp, tabla))
+    end
+
+    G->>D: evaluar(userId)
+    loop hasta 3 vueltas si un logro paga XP
+        par Promise.all
+            D->>DB: logros activos
+        and
+            D->>DB: logros_usuario
+        end
+        D->>DB: rpc otorgar_logro<br/>(por logro cumplido)
+        opt logro con XP
+            D->>G: recalcular()
+        end
+    end
+    D-->>G: logros desbloqueados
+
+    G-->>API: xpGanado, nivel,<br/>subioDeNivel, racha,<br/>logrosDesbloqueados
+    API-->>F: 200 OK (JSON)
+    Note over F: onSuccess: "+N XP" y celebrar()<br/>onError: revierte · onSettled: invalida caché
+    F-->>A: Celebración<br/>(nivel / logros)

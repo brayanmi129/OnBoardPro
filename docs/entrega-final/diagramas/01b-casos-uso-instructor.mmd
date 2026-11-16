@@ -1,0 +1,48 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "flowchart": {"nodeSpacing": 16, "rankSpacing": 110, "padding": 10, "subGraphTitleMargin": {"top": 14, "bottom": 10}}}}%%
+flowchart LR
+    IN["«actor»<br/><b>Instructor</b>"]:::actor
+
+    subgraph SYS["Sistema OnBoard Pro"]
+        direction LR
+        subgraph AUTH["Autenticación y perfil"]
+            UC1(["Iniciar sesión (correo, Google o Microsoft)"])
+            UC4(["Cambiar contraseña y editar perfil"])
+        end
+        subgraph CUR["Cursos y contenido"]
+            UC15(["Crear o editar curso y portada"])
+            UC16(["Publicar, despublicar o archivar curso"])
+            UC17(["Organizar secciones del curso"])
+            UC18(["Crear o editar actividades y su XP"])
+            UC19(["Subir o quitar material de apoyo"])
+            UC20(["Configurar examen o concurso y sus preguntas"])
+        end
+        subgraph SEG["Seguimiento"]
+            UC22(["Revisar entregas: aprobar o pedir rehacer"])
+            UC21(["Consultar resultados de exámenes"])
+            UC24(["Consultar participantes y progreso del curso"])
+            UC23(["Crear grupos y gestionar integrantes"])
+            UC13(["Consultar ranking del curso por periodo"])
+            UC14(["Ver pendientes en el panel de inicio"])
+        end
+        UCX(["Acreditar XP al aprendiz y evaluar logros"])
+        UCN(["Avisar por correo a los aprendices"])
+    end
+
+    ML["«sistema externo»<br/>Correo (Brevo)"]:::ext
+    OA["«sistema externo»<br/>Google / Microsoft OAuth"]:::ext
+
+    IN --- UC1 & UC4
+    IN --- UC15 & UC16 & UC17 & UC18 & UC19 & UC20
+    IN --- UC22 & UC21 & UC24 & UC23 & UC13 & UC14
+    UC22 -. "«include»" .-> UCX
+    UC18 -. "«include»" .-> UCN
+    UC1 --- OA
+    UCN --- ML
+
+    classDef actor fill:#ffffff,stroke:#333333,stroke-width:2px,color:#111111
+    classDef ext fill:#f4f4f4,stroke:#666666,stroke-dasharray:4 3,color:#111111
+    classDef default fill:#ffffff,stroke:#555555,color:#111111
+    style SYS fill:#fafafa,stroke:#333333,stroke-width:2px
+    style AUTH fill:#ffffff,stroke:#aaaaaa
+    style CUR fill:#ffffff,stroke:#aaaaaa
+    style SEG fill:#ffffff,stroke:#aaaaaa

@@ -16,10 +16,20 @@ const GamificationService = require("../services/gamificationService.js");
  *       nombre), cada uno con su posición. Quedan afuera administradores e
  *       instructores. El superadmin ve todas las organizaciones.
  *
- *       Con `grupoId` solo aparecen los integrantes de ese grupo.
+ *       Con `grupoId` solo aparecen los integrantes de ese grupo. Solo
+ *       figuran aprendices activos.
+ *
+ *       Con `periodo` = `semana` o `mes`, `xp` es lo ganado desde el lunes
+ *       00:00 o el día 1 00:00 en hora de Colombia (-05:00), y aparecen igual
+ *       todos los aprendices, con 0 si no ganaron nada. `level` sigue siendo
+ *       el nivel total.
  *     tags:
  *       - Gamificación
  *     parameters:
+ *       - in: query
+ *         name: periodo
+ *         description: Por defecto `siempre` (el XP total).
+ *         schema: { type: string, enum: [semana, mes, siempre], default: siempre }
  *       - in: query
  *         name: grupoId
  *         description: >
@@ -49,6 +59,15 @@ const GamificationService = require("../services/gamificationService.js");
  *                   level:
  *                     type: integer
  *                     example: 12
+ *                   xp:
+ *                     type: integer
+ *                     description: XP total, o el del periodo pedido.
+ *                     example: 340
+ *                   posicion:
+ *                     type: integer
+ *                     example: 1
+ *       400:
+ *         description: periodo inválido
  *       404:
  *         description: El grupo no existe, es de otra organización o el aprendiz no es parte de él
  *       500:
@@ -76,6 +95,60 @@ router.get("/ranking", verifyJWT, gamificationController.getRanking);
  *           faltan, actividadesCompletadas y racha
  */
 router.get("/me", verifyJWT, gamificationController.miProgreso);
+
+/**
+ * @swagger
+ * /api/gamification/me/movimientos:
+ *   get:
+ *     summary: Mi historial de XP, de dónde salió cada punto
+ *     tags: [Gamificación]
+ *     description: >
+ *       Los movimientos del libro de XP de quien llama, del más reciente al
+ *       más antiguo. `motivo` es el valor guardado: actividad_completada,
+ *       examen_aprobado, entrega_aprobada, concurso_aprobado o
+ *       logro_desbloqueado.
+ *
+ *       `origen` dice qué lo generó: una actividad (con su curso) o un logro
+ *       (con el curso solo si es un logro de curso). Si la actividad o el
+ *       logro se borraron después, `origen.id` y `origen.titulo` van en null.
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: query
+ *         name: limite
+ *         description: Cuántos devolver. Por defecto 20, máximo 100.
+ *         schema: { type: integer, default: 20, minimum: 1, maximum: 100 }
+ *     responses:
+ *       200:
+ *         description: Movimientos de XP
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 movimientos:
+ *                   type: array
+ *                   items:
+ *                     type: object
+ *                     properties:
+ *                       id: { type: string }
+ *                       xp: { type: integer, example: 25 }
+ *                       motivo: { type: string, example: examen_aprobado }
+ *                       origen:
+ *                         type: object
+ *                         properties:
+ *                           tipo: { type: string, enum: [actividad, logro] }
+ *                           id: { type: string, nullable: true }
+ *                           titulo: { type: string, nullable: true, example: Examen de inducción }
+ *                           curso:
+ *                             type: object
+ *                             nullable: true
+ *                             properties:
+ *                               id: { type: string }
+ *                               nombre: { type: string }
+ *                       fecha: { type: string, format: date-time }
+ */
+router.get("/me/movimientos", verifyJWT, gamificationController.misMovimientos);
 
 /**
  * @swagger
@@ -130,9 +203,19 @@ router.get("/me", verifyJWT, gamificationController.miProgreso);
  *         name: limite
  *         description: Cuántos devolver. Por defecto 3.
  *         schema: { type: integer, default: 3 }
+ *       - in: query
+ *         name: periodo
+ *         description: >
+ *           Por defecto `siempre`. Con `semana` o `mes` solo cuenta el XP de
+ *           las actividades del curso ganado desde el lunes o el día 1 (hora
+ *           de Colombia), y aparecen todos los aprendices asignados, con 0 si
+ *           no ganaron nada en el periodo.
+ *         schema: { type: string, enum: [semana, mes, siempre], default: siempre }
  *     responses:
  *       200:
  *         description: Lista ordenada por XP, con su posición
+ *       400:
+ *         description: periodo inválido
  *       404:
  *         description: El curso no existe o es de otra organización
  */
@@ -141,7 +224,7 @@ router.get("/courses/:id/ranking", verifyJWT, async (req, res) => {
     const r = await GamificationService.rankingDeCurso(
       req.params.id,
       { id: req.user.id, role: req.user.role, tenantId: req.user.tenantId },
-      { limite: req.query.limite }
+      { limite: req.query.limite, periodo: req.query.periodo }
     );
     return res.status(200).json(r);
   } catch (error) {

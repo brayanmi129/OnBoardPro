@@ -1,0 +1,65 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "er": {"fontSize": 20, "entityPadding": 10, "minEntityWidth": 100}}}%%
+erDiagram
+    activities ||--o{ preguntas : "activity_id"
+    preguntas ||--o{ opciones : "pregunta_id (CASCADE)"
+    activities ||--o{ intentos_examen : ""
+    users ||--o{ intentos_examen : "rinde"
+    activities ||--o{ entregas : ""
+    users ||--o{ entregas : "entrega"
+    users |o--o{ entregas : "revisa"
+
+    activities {
+        varchar(50) id PK
+        varchar(20) type "Examen, Concurso o Tarea"
+        varchar(50) tenant_id FK
+    }
+    users {
+        varchar(50) id PK
+        varchar(50) tenant_id FK
+    }
+    preguntas {
+        varchar(50) id PK
+        varchar(50) activity_id FK
+        varchar(50) tenant_id FK
+        text enunciado
+        integer puntaje
+        smallint dificultad "1 a 3"
+        integer orden
+    }
+    opciones {
+        varchar(50) id PK
+        varchar(50) pregunta_id FK
+        text texto
+        boolean es_correcta
+        integer orden
+    }
+    intentos_examen {
+        varchar(50) id PK
+        varchar(50) activity_id FK "UNIQUE(activity_id, user_id, numero)"
+        varchar(50) user_id FK
+        varchar(50) tenant_id FK
+        integer numero
+        varchar(20) estado "en_curso, finalizado"
+        timestamptz iniciado_at
+        timestamptz finalizado_at
+        jsonb respuestas
+        jsonb preguntas "sorteadas en concurso"
+        integer puntaje
+        integer puntaje_total
+        integer porcentaje
+        boolean aprobado
+    }
+    entregas {
+        varchar(50) id PK
+        varchar(50) activity_id FK "UNIQUE(activity_id, user_id)"
+        varchar(50) user_id FK
+        varchar(50) tenant_id FK
+        text archivo
+        varchar(100) mime
+        text comentario
+        varchar(20) estado "entregado, aprobada, rehacer"
+        timestamptz entregado_at
+        text feedback
+        varchar(50) revisado_por FK
+        timestamptz revisado_at
+    }

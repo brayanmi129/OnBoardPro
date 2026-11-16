@@ -12,6 +12,211 @@
         "scheme": "bearer",
         "bearerFormat": "JWT"
       }
+    },
+    "schemas": {
+      "PeriodoTablero": {
+        "type": "object",
+        "properties": {
+          "dias": {
+            "type": "integer",
+            "example": 30
+          },
+          "desde": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "hasta": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "UsuariosTablero": {
+        "type": "object",
+        "properties": {
+          "total": {
+            "type": "integer",
+            "description": "Usuarios del alcance sin contar superadmins"
+          },
+          "porRol": {
+            "type": "object",
+            "properties": {
+              "student": {
+                "type": "integer"
+              },
+              "instructor": {
+                "type": "integer"
+              },
+              "admin": {
+                "type": "integer"
+              }
+            }
+          },
+          "activosPeriodo": {
+            "type": "integer",
+            "description": "Personas con algún movimiento de XP en el periodo"
+          },
+          "activosPeriodoAnterior": {
+            "type": "integer"
+          }
+        }
+      },
+      "DiaTablero": {
+        "type": "object",
+        "properties": {
+          "fecha": {
+            "type": "string",
+            "example": "2026-11-16"
+          },
+          "xp": {
+            "type": "integer"
+          },
+          "completadas": {
+            "type": "integer"
+          }
+        }
+      },
+      "RevisorEntrega": {
+        "type": "object",
+        "nullable": true,
+        "properties": {
+          "firstname": {
+            "type": "string",
+            "example": "Laura"
+          },
+          "lastname": {
+            "type": "string",
+            "example": "Gómez"
+          }
+        }
+      },
+      "MiEntrega": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "activityId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "entregado",
+              "aprobada",
+              "rehacer"
+            ]
+          },
+          "archivo": {
+            "type": "string",
+            "nullable": true
+          },
+          "comentario": {
+            "type": "string",
+            "nullable": true
+          },
+          "entregadoAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "feedback": {
+            "type": "string",
+            "nullable": true
+          },
+          "revisadoAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "revisadoPor": {
+            "$ref": "#/components/schemas/RevisorEntrega"
+          },
+          "xpObtenido": {
+            "type": "integer",
+            "nullable": true,
+            "example": 40
+          }
+        }
+      },
+      "MiEntregaResumen": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "actividad": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "titulo": {
+                "type": "string"
+              }
+            }
+          },
+          "curso": {
+            "type": "object",
+            "nullable": true,
+            "properties": {
+              "id": {
+                "type": "string"
+              },
+              "nombre": {
+                "type": "string"
+              }
+            }
+          },
+          "estado": {
+            "type": "string",
+            "enum": [
+              "entregado",
+              "aprobada",
+              "rehacer"
+            ]
+          },
+          "entregadoAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "feedback": {
+            "type": "string",
+            "nullable": true
+          },
+          "revisadoAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "revisadoPor": {
+            "$ref": "#/components/schemas/RevisorEntrega"
+          },
+          "xpObtenido": {
+            "type": "integer",
+            "nullable": true
+          }
+        }
+      },
+      "ArchivoImportacion": {
+        "type": "object",
+        "required": [
+          "archivo"
+        ],
+        "properties": {
+          "archivo": {
+            "type": "string",
+            "format": "binary",
+            "description": ".csv o .xlsx, máximo 2 MB y 1000 filas de datos."
+          },
+          "tenantId": {
+            "type": "string",
+            "description": "Solo el superadmin, para elegir la organización."
+          }
+        }
+      }
     }
   },
   "security": [
@@ -1336,6 +1541,271 @@
         }
       }
     },
+    "/api/dashboard": {
+      "get": {
+        "summary": "Tablero de indicadores de la plataforma o de una organización",
+        "tags": [
+          "Tablero"
+        ],
+        "description": "El \"periodo actual\" son los últimos `dias` días y el \"anterior\", los `dias` previos. Una persona está activa si tuvo algún movimiento de XP en el periodo. Las fechas de `actividadPorDia` son días en hora de Colombia, uno por día aunque no haya pasado nada, terminando hoy.\n**Superadmin sin tenantId** (`alcance: plataforma`): organizaciones, usuarios, cursos, XP, actividades completadas, serie por día y una fila por organización (`porOrganizacion`: id, nombre, activa, usuarios, aprendicesActivos, cursosPublicados, tasaFinalizacion, xpPeriodo).\n**Admin, o superadmin con tenantId** (`alcance: organizacion`): usuarios, cursos, `tasaFinalizacion` {actual, anterior}, xpPromedio, XP, entregasPorRevisar, serie por día, `cursosDetalle` (por curso publicado: aprendices, avancePromedio, completaron) y `aprendicesSinActividad` (aprendices sin movimientos en los últimos 7 días, máximo 20; `ultimaActividad` es el último día con actividad o null si nunca tuvo). Un admin ve siempre su organización, aunque mande otro tenantId.\n`tasaFinalizacion` (0 a 100) = actividades completadas por los aprendices activos / actividades que tienen asignadas por sus grupos en cursos publicados. \"anterior\" cuenta solo lo completado antes del inicio del periodo. Los cursos totales no incluyen los archivados.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "tenantId",
+            "description": "Solo superadmin. Sin él, el tablero es de toda la plataforma.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "dias",
+            "schema": {
+              "type": "integer",
+              "minimum": 7,
+              "maximum": 90,
+              "default": 30
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Indicadores según el alcance",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "oneOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "alcance": {
+                          "type": "string",
+                          "enum": [
+                            "plataforma"
+                          ]
+                        },
+                        "periodo": {
+                          "$ref": "#/components/schemas/PeriodoTablero"
+                        },
+                        "organizaciones": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "activas": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "usuarios": {
+                          "$ref": "#/components/schemas/UsuariosTablero"
+                        },
+                        "cursos": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "publicados": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "xp": {
+                          "type": "object",
+                          "properties": {
+                            "otorgadoPeriodo": {
+                              "type": "integer"
+                            },
+                            "otorgadoPeriodoAnterior": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "actividadesCompletadasPeriodo": {
+                          "type": "integer"
+                        },
+                        "actividadPorDia": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/DiaTablero"
+                          }
+                        },
+                        "porOrganizacion": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "activa": {
+                                "type": "boolean"
+                              },
+                              "usuarios": {
+                                "type": "integer"
+                              },
+                              "aprendicesActivos": {
+                                "type": "integer"
+                              },
+                              "cursosPublicados": {
+                                "type": "integer"
+                              },
+                              "tasaFinalizacion": {
+                                "type": "number",
+                                "example": 42.5
+                              },
+                              "xpPeriodo": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "type": "object",
+                      "properties": {
+                        "alcance": {
+                          "type": "string",
+                          "enum": [
+                            "organizacion"
+                          ]
+                        },
+                        "organizacion": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "nombre": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "periodo": {
+                          "$ref": "#/components/schemas/PeriodoTablero"
+                        },
+                        "usuarios": {
+                          "$ref": "#/components/schemas/UsuariosTablero"
+                        },
+                        "cursos": {
+                          "type": "object",
+                          "properties": {
+                            "total": {
+                              "type": "integer"
+                            },
+                            "publicados": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "tasaFinalizacion": {
+                          "type": "object",
+                          "properties": {
+                            "actual": {
+                              "type": "number"
+                            },
+                            "anterior": {
+                              "type": "number"
+                            }
+                          }
+                        },
+                        "xpPromedio": {
+                          "type": "number"
+                        },
+                        "xp": {
+                          "type": "object",
+                          "properties": {
+                            "otorgadoPeriodo": {
+                              "type": "integer"
+                            },
+                            "otorgadoPeriodoAnterior": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "entregasPorRevisar": {
+                          "type": "integer"
+                        },
+                        "actividadPorDia": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/DiaTablero"
+                          }
+                        },
+                        "cursosDetalle": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "aprendices": {
+                                "type": "integer"
+                              },
+                              "avancePromedio": {
+                                "type": "integer"
+                              },
+                              "completaron": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        },
+                        "aprendicesSinActividad": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "string"
+                              },
+                              "nombre": {
+                                "type": "string"
+                              },
+                              "apellido": {
+                                "type": "string"
+                              },
+                              "ultimaActividad": {
+                                "type": "string",
+                                "nullable": true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "dias fuera de 7..90"
+          },
+          "403": {
+            "description": "Quien llama es instructor o aprendiz"
+          },
+          "404": {
+            "description": "La organización indicada no existe"
+          }
+        }
+      }
+    },
     "/api/activities/{id}/entrega": {
       "post": {
         "summary": "Sube o reemplaza mi entrega de una actividad",
@@ -1400,6 +1870,7 @@
         "tags": [
           "Entregas"
         ],
+        "description": "La revisión (`feedback`, `revisadoAt`, `revisadoPor` y `xpObtenido`) solo se muestra una vez revisada: mientras el estado sea `entregado` esos cuatro campos van en null, también si se reemplazó una entrega que había vuelto para rehacer. `xpObtenido` es el XP que de verdad acreditó esa actividad (null si no acreditó nada).\n",
         "security": [
           {
             "bearerAuth": []
@@ -1417,10 +1888,46 @@
         ],
         "responses": {
           "200": {
-            "description": "Devuelve la entrega con su estado (entregado, aprobada o rehacer) y la retroalimentación"
+            "description": "La entrega con su estado y su revisión",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MiEntrega"
+                }
+              }
+            }
           },
           "404": {
             "description": "Todavía no entregaste esta actividad"
+          }
+        }
+      }
+    },
+    "/api/entregas/mias": {
+      "get": {
+        "summary": "Todas mis entregas con su calificación y retroalimentación",
+        "tags": [
+          "Entregas"
+        ],
+        "description": "Las entregas de quien llama, de todos sus cursos. Primero las revisadas, de la más reciente a la más antigua; después las que esperan revisión, por fecha de entrega descendente. Mismas reglas que mi-entrega: la revisión va en null mientras el estado sea `entregado`.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Lista de entregas (vacía si no entregó nada)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/MiEntregaResumen"
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2160,11 +2667,25 @@
     "/api/gamification/ranking": {
       "get": {
         "summary": "El ranking de la organización, o de uno de sus grupos",
-        "description": "Los aprendices de la organización ordenados por XP (a igual XP, por nombre), cada uno con su posición. Quedan afuera administradores e instructores. El superadmin ve todas las organizaciones.\nCon `grupoId` solo aparecen los integrantes de ese grupo.\n",
+        "description": "Los aprendices de la organización ordenados por XP (a igual XP, por nombre), cada uno con su posición. Quedan afuera administradores e instructores. El superadmin ve todas las organizaciones.\nCon `grupoId` solo aparecen los integrantes de ese grupo. Solo figuran aprendices activos.\nCon `periodo` = `semana` o `mes`, `xp` es lo ganado desde el lunes 00:00 o el día 1 00:00 en hora de Colombia (-05:00), y aparecen igual todos los aprendices, con 0 si no ganaron nada. `level` sigue siendo el nivel total.\n",
         "tags": [
           "Gamificación"
         ],
         "parameters": [
+          {
+            "in": "query",
+            "name": "periodo",
+            "description": "Por defecto `siempre` (el XP total).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "semana",
+                "mes",
+                "siempre"
+              ],
+              "default": "siempre"
+            }
+          },
           {
             "in": "query",
             "name": "grupoId",
@@ -2199,12 +2720,24 @@
                       "level": {
                         "type": "integer",
                         "example": 12
+                      },
+                      "xp": {
+                        "type": "integer",
+                        "description": "XP total, o el del periodo pedido.",
+                        "example": 340
+                      },
+                      "posicion": {
+                        "type": "integer",
+                        "example": 1
                       }
                     }
                   }
                 }
               }
             }
+          },
+          "400": {
+            "description": "periodo inválido"
           },
           "404": {
             "description": "El grupo no existe, es de otra organización o el aprendiz no es parte de él"
@@ -2230,6 +2763,103 @@
         "responses": {
           "200": {
             "description": "Devuelve xp, nivel, nombreNivel, xpSiguienteNivel, porcentaje, faltan, actividadesCompletadas y racha\n"
+          }
+        }
+      }
+    },
+    "/api/gamification/me/movimientos": {
+      "get": {
+        "summary": "Mi historial de XP, de dónde salió cada punto",
+        "tags": [
+          "Gamificación"
+        ],
+        "description": "Los movimientos del libro de XP de quien llama, del más reciente al más antiguo. `motivo` es el valor guardado: actividad_completada, examen_aprobado, entrega_aprobada, concurso_aprobado o logro_desbloqueado.\n`origen` dice qué lo generó: una actividad (con su curso) o un logro (con el curso solo si es un logro de curso). Si la actividad o el logro se borraron después, `origen.id` y `origen.titulo` van en null.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limite",
+            "description": "Cuántos devolver. Por defecto 20, máximo 100.",
+            "schema": {
+              "type": "integer",
+              "default": 20,
+              "minimum": 1,
+              "maximum": 100
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Movimientos de XP",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "movimientos": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "xp": {
+                            "type": "integer",
+                            "example": 25
+                          },
+                          "motivo": {
+                            "type": "string",
+                            "example": "examen_aprobado"
+                          },
+                          "origen": {
+                            "type": "object",
+                            "properties": {
+                              "tipo": {
+                                "type": "string",
+                                "enum": [
+                                  "actividad",
+                                  "logro"
+                                ]
+                              },
+                              "id": {
+                                "type": "string",
+                                "nullable": true
+                              },
+                              "titulo": {
+                                "type": "string",
+                                "nullable": true,
+                                "example": "Examen de inducción"
+                              },
+                              "curso": {
+                                "type": "object",
+                                "nullable": true,
+                                "properties": {
+                                  "id": {
+                                    "type": "string"
+                                  },
+                                  "nombre": {
+                                    "type": "string"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "fecha": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }
@@ -2300,11 +2930,28 @@
               "type": "integer",
               "default": 3
             }
+          },
+          {
+            "in": "query",
+            "name": "periodo",
+            "description": "Por defecto `siempre`. Con `semana` o `mes` solo cuenta el XP de las actividades del curso ganado desde el lunes o el día 1 (hora de Colombia), y aparecen todos los aprendices asignados, con 0 si no ganaron nada en el periodo.\n",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "semana",
+                "mes",
+                "siempre"
+              ],
+              "default": "siempre"
+            }
           }
         ],
         "responses": {
           "200": {
             "description": "Lista ordenada por XP, con su posición"
+          },
+          "400": {
+            "description": "periodo inválido"
           },
           "404": {
             "description": "El curso no existe o es de otra organización"
@@ -3747,6 +4394,225 @@
         }
       }
     },
+    "/api/users/import/plantilla": {
+      "get": {
+        "summary": "Descarga la plantilla CSV para la carga masiva de usuarios",
+        "tags": [
+          "Usuarios"
+        ],
+        "description": "CSV en UTF-8 con BOM (para que Excel respete tildes y eñes) con las columnas nombre, apellido, correo, rol, telefono y grupo, y dos filas de ejemplo.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "plantilla-usuarios.csv",
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          }
+        }
+      }
+    },
+    "/api/users/import/preview": {
+      "post": {
+        "summary": "Valida un archivo de usuarios sin guardar nada",
+        "tags": [
+          "Usuarios"
+        ],
+        "description": "Lee el archivo (primera fila = encabezados) y devuelve cada fila con sus errores. `fila` es el número de fila en el archivo: la primera de datos es la 2.\nReglas: nombre y correo obligatorios; correo válido; rol aprendiz / student o instructor (vacío = aprendiz); el grupo, si viene, tiene que existir en la organización (por nombre, sin distinguir mayúsculas). `duplicado` indica que el correo ya está registrado en la plataforma o que se repite en el archivo (se marca la segunda aparición).\nEn el resumen, `validas` son las que se crearían al importar: sin errores y sin duplicar.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchivoImportacion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Filas validadas y resumen",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "filas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fila": {
+                            "type": "integer",
+                            "example": 2
+                          },
+                          "datos": {
+                            "type": "object",
+                            "properties": {
+                              "firstname": {
+                                "type": "string"
+                              },
+                              "lastname": {
+                                "type": "string"
+                              },
+                              "email": {
+                                "type": "string"
+                              },
+                              "role": {
+                                "type": "string",
+                                "example": "student"
+                              },
+                              "phonumber": {
+                                "type": "string"
+                              },
+                              "grupo": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "errores": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            },
+                            "example": [
+                              "El grupo Ventas no existe"
+                            ]
+                          },
+                          "duplicado": {
+                            "type": "boolean"
+                          }
+                        }
+                      }
+                    },
+                    "resumen": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "validas": {
+                          "type": "integer"
+                        },
+                        "conErrores": {
+                          "type": "integer"
+                        },
+                        "duplicadas": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Sin archivo, tipo no permitido, más de 2 MB, vacío, sin las columnas nombre y correo, más de 1000 filas, o superadmin sin tenantId\n"
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          },
+          "404": {
+            "description": "La organización indicada no existe"
+          }
+        }
+      }
+    },
+    "/api/users/import": {
+      "post": {
+        "summary": "Crea los usuarios válidos de un archivo",
+        "tags": [
+          "Usuarios"
+        ],
+        "description": "Vuelve a validar el archivo con las mismas reglas que la vista previa y crea solo las filas sin errores ni duplicados, en la organización de quien llama (o la indicada por el superadmin), activas y sin contraseña: entran con Google o Microsoft, o la definen con \"olvidé mi contraseña\". Si la fila trae grupo, se agrega a ese grupo.\nLas filas que no se crean van en `omitidas` con su motivo; una fila que falla al guardarse no corta las demás.\n",
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "$ref": "#/components/schemas/ArchivoImportacion"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Resultado de la importación",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Se crearon 48 usuarios."
+                    },
+                    "creados": {
+                      "type": "integer",
+                      "example": 48
+                    },
+                    "conGrupo": {
+                      "type": "integer",
+                      "example": 30
+                    },
+                    "omitidas": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "fila": {
+                            "type": "integer"
+                          },
+                          "email": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "motivo": {
+                            "type": "string",
+                            "example": "El correo ya está registrado."
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Archivo inválido (mismos casos que la vista previa)"
+          },
+          "403": {
+            "description": "Quien llama no es administrador"
+          },
+          "404": {
+            "description": "La organización indicada no existe"
+          }
+        }
+      }
+    },
     "/api/users/get/all": {
       "get": {
         "summary": "Lista los usuarios de la organización, con filtros",
@@ -4136,6 +5002,10 @@
     {
       "name": "Cursos",
       "description": "Endpoints relacionados con cursos y sus usuarios"
+    },
+    {
+      "name": "Tablero",
+      "description": "Indicadores de uso para la administración de la plataforma y de cada organización."
     },
     {
       "name": "Entregas",

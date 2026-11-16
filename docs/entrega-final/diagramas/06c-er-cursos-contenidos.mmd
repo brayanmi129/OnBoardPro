@@ -1,0 +1,73 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "er": {"fontSize": 20, "entityPadding": 10, "minEntityWidth": 100}}}%%
+erDiagram
+    tenants ||--o{ courses : "tenant_id"
+    groups ||--o{ groups_courses : "id_group"
+    courses ||--o{ groups_courses : "id_course"
+    courses ||--o{ sections : "course_id (CASCADE)"
+    sections |o--o{ activities : "section_id (SET NULL)"
+    activities ||--o{ materiales : "activity_id"
+    users |o--o{ materiales : "subido_por"
+
+    tenants {
+        varchar(50) id PK
+    }
+    groups {
+        varchar(50) id PK
+        varchar(50) tenant_id FK
+    }
+    users {
+        varchar(50) id PK
+    }
+    courses {
+        varchar(50) id PK
+        varchar(50) tenant_id FK
+        varchar(100) name
+        varchar(255) instructor "correo del instructor, sin FK"
+        varchar(20) status "Abierto = publicado, Cerrado"
+        boolean archivado
+        timestamptz archivado_at
+        text banner_url "Storage, bucket banners"
+        timestamptz created_at
+    }
+    groups_courses {
+        serial id PK
+        varchar(50) id_group FK "UNIQUE(id_group, id_course)"
+        varchar(50) id_course FK
+        timestamptz created_at
+    }
+    sections {
+        varchar(50) id PK
+        varchar(50) course_id FK
+        varchar(50) tenant_id FK
+        varchar(120) name
+        integer orden
+    }
+    activities {
+        varchar(50) id PK
+        varchar(50) section_id FK
+        varchar(50) tenant_id FK
+        varchar(20) type "Tarea, Recurso, Examen, Concurso"
+        varchar(255) title
+        text description
+        boolean deliverable
+        integer orden
+        integer xp "XP que otorga"
+        integer tiempo_limite
+        integer intentos_permitidos
+        integer porcentaje_aprobacion
+        boolean mostrar_respuestas
+        integer tiempo_por_pregunta
+        integer preguntas_por_partida
+        boolean dificultad_creciente
+    }
+    materiales {
+        varchar(50) id PK
+        varchar(50) activity_id FK
+        varchar(50) tenant_id FK
+        text nombre
+        text ruta "Storage, bucket materiales"
+        varchar(100) mime
+        integer tamano
+        integer orden
+        varchar(50) subido_por FK
+    }

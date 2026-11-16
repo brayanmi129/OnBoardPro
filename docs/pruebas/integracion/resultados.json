@@ -1,0 +1,23 @@
+{
+  "fecha": "2026-11-16T16:49:55.648Z",
+  "duracionMs": 7296,
+  "entorno": {
+    "base": "dfbeioootnxeomupwdhe.supabase.co",
+    "organizacion": "Test",
+    "node": "v22.22.2",
+    "prefijoDatos": "itestmwji1akfdb5a"
+  },
+  "ejecutado": false,
+  "errorGeneral": "No se pudo leer la base: TypeError: fetch failed (no hay conexión con https://dfbeioootnxeomupwdhe.supabase.co: revisá que el proyecto de Supabase no esté pausado y que la URL del .env sea la vigente)",
+  "resumen": {
+    "total": 0,
+    "pasan": 0,
+    "noPasan": 0
+  },
+  "limpieza": {
+    "pasos": [],
+    "restos": {},
+    "limpio": true
+  },
+  "casos": []
+}

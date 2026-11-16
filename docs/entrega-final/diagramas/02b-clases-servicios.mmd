@@ -1,0 +1,140 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "class": {"nodeSpacing": 30, "rankSpacing": 70}}}%%
+classDiagram
+    direction LR
+
+    class AuthService {
+        +local()
+        +OAuthGoogle(profile)
+        +OAuthMicrosoft(profile)
+        +cambiarPassword()
+        +editarPerfil(id, datos)
+        +me(id)
+    }
+    class PasswordResetService {
+        +solicitar(email)
+        +restablecer(token, clave)
+    }
+    class TenantService {
+        +create(data)$
+        +getAll()$
+        +getByDomain(domain)$
+        +update(id, data)$
+        +delete(id)$
+    }
+    class UserService {
+        +create(data)$
+        +getAll(tenantId)$
+        +getById(id)$
+        +updateUser()$
+        +deleteUser()$
+    }
+    class GroupService {
+        +create(data)$
+        +addUsersToGroup()$
+        +addCoursesToGroup()$
+        +removeCoursesFromGroup()$
+        +getByUser(userId)$
+    }
+    class CourseService {
+        +getAll(tenantId)$
+        +createCourse(data)$
+        +publicar()$
+        +archivar()$
+        +asignarInstructor()$
+        +eliminar(id, actor)$
+        +getByUser(userId)$
+        +participantes()$
+    }
+    class SectionService {
+        +listar(courseId)$
+        +crear(courseId, datos)$
+        +renombrar(id, nombre)$
+        +eliminar(id)$
+    }
+    class ActivitiesService {
+        +getAll(tenantId)$
+        +create(data, file)$
+        +actualizar()$
+        +eliminar(id, actor)$
+        +urlAdjunto(id)$
+    }
+    class MaterialService {
+        +listar(actividadId)$
+        +agregar(archivo)$
+        +quitar(id, actor)$
+    }
+    class ExamenService {
+        +guardar(id, datos)$
+        +obtener(id, actor)$
+        +iniciar(id, actor)$
+        +responder(respuestas)$
+        +misIntentos(id)$
+        +resultados(id)$
+    }
+    class EntregaService {
+        +entregar(id, archivo)$
+        +miEntrega(id, actor)$
+        +mias(actor)$
+        +bandeja(actor)$
+        +revisar(id, decisión)$
+    }
+    class GamificationService {
+        +getRanking(grupoId)$
+        +rankingDeCurso(id)$
+        +completarActividad()$
+        +acreditar(datos)$
+        +registrarDiaActivo()$
+        +recalcular(userId)$
+        +miProgreso(userId)$
+        +misMovimientos(userId)$
+    }
+    class DesbloqueoService {
+        +evaluar(userId)$
+        +mios(userId)$
+        +cerrarPeriodoRanking()$
+        +vistaPrevia(datos)$
+    }
+    class LogroService {
+        +crear(actor, datos)$
+        +listar(actor)$
+        +actualizar(id, datos)$
+        +eliminar(id, actor)$
+    }
+    class NivelesService {
+        +tablaDe(tenantId)$
+        +obtener(actor)$
+        +guardar(niveles)$
+        +restaurar(actor)$
+    }
+    class PendientesService {
+        +de(actor)$
+    }
+    class DashboardService {
+        +de(actor, tenantId, dias)$
+    }
+    class ImportacionService {
+        +previsualizar(archivo)$
+        +importar(archivo)$
+    }
+    class AvisoService {
+        +cursoAsignado()$
+        +actividadNueva()$
+        +instructorAsignado()$
+    }
+
+    AuthService ..> UserService
+    AuthService ..> TenantService
+    PasswordResetService ..> UserService
+    GroupService ..> AvisoService : correo
+    ActivitiesService ..> AvisoService : correo
+    CourseService ..> AvisoService : correo
+    MaterialService ..> ActivitiesService
+    ExamenService ..> EntregaService
+    ExamenService ..> GamificationService : acreditar
+    EntregaService ..> GamificationService : acreditar
+    GamificationService ..> NivelesService : tablaDe
+    GamificationService ..> DesbloqueoService : evaluar
+    DesbloqueoService ..> GamificationService : recalcular
+    DesbloqueoService ..> LogroService : condiciones
+    PendientesService ..> NivelesService
+    ImportacionService ..> UserService : crea usuarios

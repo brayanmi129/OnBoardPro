@@ -116,6 +116,7 @@ app.use("/api/gamification", gamificationRoutes);
 app.use("/api/gamification", logrosRoutes);
 app.use("/api/gamification", nivelesRoutes);
 app.use("/api/tenants", tenantRoutes);
+app.use("/api/dashboard", require("./routes/dashboardRoutes.js"));
 
 // Va al final y montado en /api porque sus rutas cruzan varios recursos
 // (/courses/:id/sections, /sections/:id, /activities/:id/seccion). Si se

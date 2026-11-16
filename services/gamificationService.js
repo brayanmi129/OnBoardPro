@@ -4,6 +4,8 @@ const { nivelPara, progreso, progresoEn } = require("../helpers/niveles.js");
 const NivelesService = require("./nivelesService.js");
 const { siguienteRacha } = require("../helpers/racha.js");
 const { asegurarPublicado } = require("../helpers/cursoDeActividad.js");
+const { porLotes } = require("../helpers/consultas.js");
+const { inicioDePeriodo, periodoValido } = require("../helpers/periodo.js");
 
 function fallo(message, status) {
   const err = new Error(message);
@@ -11,8 +13,34 @@ function fallo(message, status) {
   return err;
 }
 
+/**
+ * XP ganado por persona desde una fecha, sumando el libro de movimientos.
+ * `filtrar(q, lote)` restringe la consulta por el lote de ids (personas o
+ * actividades, según quién llame).
+ */
+async function xpDesde(ids, desde, filtrar) {
+  const movimientos = await porLotes(ids, (lote) =>
+    filtrar(supabase.from("xp_movimientos").select("id, user_id, xp"), lote)
+      .gte("created_at", desde)
+      .order("id", { ascending: true })
+  );
+  const suma = new Map();
+  for (const m of movimientos) suma.set(m.user_id, (suma.get(m.user_id) || 0) + (Number(m.xp) || 0));
+  return suma;
+}
+
 class GamificationService {
-  static async getRanking(tenantId = null, { grupoId, actor } = {}) {
+  /**
+   * El ranking de la organización (o de un grupo) (HU-057).
+   *
+   * `periodo`: siempre (el XP total, por defecto), semana o mes. Con semana o
+   * mes cada fila muestra el XP ganado desde el lunes o el día 1 en hora de
+   * Colombia, y aparecen igual quienes no ganaron nada, con 0: un ranking
+   * semanal que solo lista a los que sumaron esconde a quien se quedó atrás.
+   * `level` sigue siendo el nivel total: el nivel no es de una semana.
+   */
+  static async getRanking(tenantId = null, { grupoId, actor, periodo } = {}) {
+    const elegido = periodoValido(periodo, fallo);
     // Por grupo: solo sus integrantes. El grupo tiene que ser de la
     // organización, y un aprendiz solo ve el ranking de grupos a los que
     // pertenece; si no, 404 como si no existiera.
@@ -35,7 +63,7 @@ class GamificationService {
     // empresas: un cliente veía los nombres de los empleados de otro.
     let consulta = supabase
       .from("users")
-      .select("id, firstname, lastname, level, xp")
+      .select("id, firstname, lastname, level, xp, status")
       .not("role", "in", "(admin,superadmin,instructor)");
     if (tenantId) consulta = consulta.eq("tenant_id", tenantId);
     if (integrantes) consulta = consulta.in("id", integrantes);
@@ -47,7 +75,25 @@ class GamificationService {
       .order("firstname", { ascending: true });
     if (error) throw new Error(error.message);
 
-    return (data || []).map((u, i) => ({ ...u, posicion: i + 1 }));
+    // Quien fue desactivado ya no compite. Se filtra acá y no con
+    // .neq("status") porque en la base eso descartaría también a quien tiene
+    // el estado en NULL.
+    let filas = (data || [])
+      .filter((u) => u.status !== "Inactive")
+      .map(({ status, ...u }) => u);
+
+    if (elegido !== "siempre" && filas.length) {
+      const suma = await xpDesde(
+        filas.map((u) => u.id),
+        inicioDePeriodo(elegido),
+        (q, lote) => q.in("user_id", lote)
+      );
+      filas = filas
+        .map((u) => ({ ...u, xp: suma.get(u.id) || 0 }))
+        .sort((a, b) => b.xp - a.xp || String(a.firstname ?? "").localeCompare(String(b.firstname ?? "")));
+    }
+
+    return filas.map((u, i) => ({ ...u, posicion: i + 1 }));
   }
 
   /**
@@ -58,7 +104,8 @@ class GamificationService {
    * de ese curso, siguiendo el rastro que deja cada movimiento:
    * movimiento -> actividad -> seccion -> curso.
    */
-  static async rankingDeCurso(courseId, actor, { limite = 3 } = {}) {
+  static async rankingDeCurso(courseId, actor, { limite = 3, periodo } = {}) {
+    const elegido = periodoValido(periodo, fallo);
     const tenantId = actor?.role === "superadmin" ? null : actor?.tenantId;
 
     let q = supabase.from("courses").select("id, instructor").eq("id", courseId);
@@ -66,14 +113,21 @@ class GamificationService {
     const { data: curso } = await q.maybeSingle();
     if (!curso) throw fallo("Curso no encontrado", 404);
 
-    // La suma la hace la base (ranking_curso). Traer los movimientos para
-    // sumarlos acá chocaba con el tope de 1000 filas de PostgREST: con 50
-    // personas y 25 actividades el ranking ya salía incompleto sin avisar.
-    const { data: sumas, error } = await supabase.rpc("ranking_curso", { p_course: courseId });
-    if (error) throw new Error(error.message);
-    if (!sumas?.length) return [];
-
-    const porPersona = new Map(sumas.map((s) => [s.user_id, Number(s.xp) || 0]));
+    let porPersona;
+    if (elegido === "siempre") {
+      // La suma la hace la base (ranking_curso). Traer los movimientos para
+      // sumarlos acá chocaba con el tope de 1000 filas de PostgREST: con 50
+      // personas y 25 actividades el ranking ya salía incompleto sin avisar.
+      const { data: sumas, error } = await supabase.rpc("ranking_curso", { p_course: courseId });
+      if (error) throw new Error(error.message);
+      if (!sumas?.length) return [];
+      porPersona = new Map(sumas.map((s) => [s.user_id, Number(s.xp) || 0]));
+    } else {
+      // ranking_curso no recibe fecha, y agregarle un parámetro obligaría a
+      // correr SQL nuevo. Se suma acá, pero paginado y por lotes de
+      // actividades (helpers/consultas.js), que era lo que fallaba antes.
+      porPersona = await GamificationService._xpDeCursoDesde(courseId, inicioDePeriodo(elegido));
+    }
 
     // Solo compite quien tiene el curso asignado hoy: si sacaron a alguien del
     // grupo, su XP se conserva pero deja de figurar en el ranking del curso.
@@ -85,7 +139,11 @@ class GamificationService {
     const { data: miembros } = await supabase
       .from("users_groups").select("id_user").in("id_group", grupos);
     const asignados = new Set((miembros || []).map((m) => m.id_user));
-    const ids = [...porPersona.keys()].filter((id) => asignados.has(id));
+    // Con semana o mes aparecen todos los asignados, también con 0: igual que
+    // en el ranking de la organización.
+    const ids = elegido === "siempre"
+      ? [...porPersona.keys()].filter((id) => asignados.has(id))
+      : [...asignados];
     if (!ids.length) return [];
 
     const { data: personas } = await supabase
@@ -102,9 +160,95 @@ class GamificationService {
         level: u.level,
         xp: porPersona.get(u.id) || 0,
       }))
-      .sort((a, b) => b.xp - a.xp || a.firstname.localeCompare(b.firstname))
+      .sort((a, b) => b.xp - a.xp || String(a.firstname ?? "").localeCompare(String(b.firstname ?? "")))
       .slice(0, Math.max(Number(limite) || 3, 1))
       .map((u, i) => ({ ...u, posicion: i + 1 }));
+  }
+
+  /** XP por persona ganado desde `desde` en las actividades de un curso. */
+  static async _xpDeCursoDesde(courseId, desde) {
+    const { data: secciones } = await supabase
+      .from("sections").select("id").eq("course_id", courseId);
+    if (!secciones?.length) return new Map();
+    const actividades = await porLotes(secciones.map((s) => s.id), (lote) =>
+      supabase.from("activities").select("id").in("section_id", lote).order("id", { ascending: true })
+    );
+    if (!actividades.length) return new Map();
+    return xpDesde(actividades.map((a) => a.id), desde, (q, lote) => q.in("activity_id", lote));
+  }
+
+  /**
+   * Mi historial de XP (HU-056): de dónde salió cada punto, del más reciente
+   * al más viejo. `motivo` es el valor crudo del libro (actividad_completada,
+   * examen_aprobado, entrega_aprobada, concurso_aprobado, logro_desbloqueado).
+   *
+   * El origen siempre viene como objeto, aunque la actividad o el logro se
+   * hayan borrado después (la fila del libro queda con el id en NULL): en ese
+   * caso id y título van en null y el tipo se deduce del motivo.
+   */
+  static async misMovimientos(userId, { limite } = {}) {
+    const n = Math.min(Math.max(parseInt(limite, 10) || 20, 1), 100);
+    const { data: movs, error } = await supabase
+      .from("xp_movimientos")
+      .select("id, xp, motivo, activity_id, logro_id, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .order("id", { ascending: false })
+      .limit(n);
+    if (error) throw new Error(error.message);
+    const lista = movs || [];
+
+    const actividadIds = [...new Set(lista.map((m) => m.activity_id).filter(Boolean))];
+    const logroIds = [...new Set(lista.map((m) => m.logro_id).filter(Boolean))];
+
+    const [{ data: actividades }, { data: logros }] = await Promise.all([
+      actividadIds.length
+        ? supabase.from("activities").select("id, title, section_id").in("id", actividadIds)
+        : { data: [] },
+      logroIds.length
+        ? supabase.from("logros").select("id, nombre, course_id").in("id", logroIds)
+        : { data: [] },
+    ]);
+    const seccionIds = [...new Set((actividades || []).map((a) => a.section_id).filter(Boolean))];
+    const { data: secciones } = seccionIds.length
+      ? await supabase.from("sections").select("id, course_id").in("id", seccionIds)
+      : { data: [] };
+    const cursoIds = [...new Set([
+      ...(secciones || []).map((s) => s.course_id),
+      ...(logros || []).map((l) => l.course_id),
+    ].filter(Boolean))];
+    const { data: cursos } = cursoIds.length
+      ? await supabase.from("courses").select("id, name").in("id", cursoIds)
+      : { data: [] };
+
+    const actividad = new Map((actividades || []).map((a) => [a.id, a]));
+    const logro = new Map((logros || []).map((l) => [l.id, l]));
+    const cursoDeSeccion = new Map((secciones || []).map((s) => [s.id, s.course_id]));
+    const curso = new Map((cursos || []).map((c) => [c.id, { id: c.id, nombre: c.name }]));
+
+    const origenDe = (m) => {
+      if (m.logro_id || (!m.activity_id && m.motivo === "logro_desbloqueado")) {
+        const l = logro.get(m.logro_id);
+        return { tipo: "logro", id: m.logro_id ?? null, titulo: l?.nombre ?? null, curso: curso.get(l?.course_id) ?? null };
+      }
+      const a = actividad.get(m.activity_id);
+      return {
+        tipo: "actividad",
+        id: m.activity_id ?? null,
+        titulo: a?.title ?? null,
+        curso: curso.get(cursoDeSeccion.get(a?.section_id)) ?? null,
+      };
+    };
+
+    return {
+      movimientos: lista.map((m) => ({
+        id: m.id,
+        xp: Number(m.xp) || 0,
+        motivo: m.motivo,
+        origen: origenDe(m),
+        fecha: m.created_at,
+      })),
+    };
   }
 
   /**

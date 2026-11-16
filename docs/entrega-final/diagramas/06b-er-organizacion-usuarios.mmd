@@ -1,0 +1,65 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "er": {"fontSize": 20, "entityPadding": 10, "minEntityWidth": 100}}}%%
+erDiagram
+    tenants ||--o{ users : "tenant_id (SET NULL)"
+    tenants ||--o{ groups : "tenant_id"
+    users ||--o{ users_groups : "id_user"
+    groups ||--o{ users_groups : "id_group"
+    users ||--o{ password_resets : "user_id"
+    users ||--o{ role_changes : "user_id"
+    users |o--o{ role_changes : "autor_id"
+
+    tenants {
+        varchar(50) id PK
+        varchar(100) name
+        varchar(100) domain UK "dominio de correo"
+        boolean active
+        integer xp_tope_diario "NULL = sin tope"
+        timestamptz created_at
+    }
+    users {
+        varchar(50) id PK
+        varchar(50) tenant_id FK
+        varchar(255) email UK
+        varchar(255) password "hash bcrypt"
+        varchar(100) firstname
+        varchar(255) lastname
+        varchar(30) phonumber
+        varchar(20) role "student, instructor, admin, superadmin"
+        varchar(20) status "Active, Inactive"
+        integer level
+        integer xp "suma de xp_movimientos"
+        integer streak
+        integer racha_maxima
+        date ultima_actividad
+        timestamptz created_at
+    }
+    groups {
+        varchar(50) id PK
+        varchar(50) tenant_id FK
+        varchar(100) name
+        text description
+        timestamptz created_at
+    }
+    users_groups {
+        serial id PK
+        varchar(50) id_user FK "UNIQUE(id_user, id_group)"
+        varchar(50) id_group FK
+        timestamptz created_at
+    }
+    password_resets {
+        varchar(50) id PK
+        varchar(50) user_id FK
+        varchar(64) token_hash UK "SHA-256 del token"
+        timestamptz expires_at
+        timestamptz used_at
+    }
+    role_changes {
+        varchar(50) id PK
+        varchar(50) user_id FK
+        varchar(50) tenant_id FK
+        varchar(20) rol_anterior
+        varchar(20) rol_nuevo
+        varchar(50) autor_id FK
+        varchar(255) autor_email
+        timestamptz created_at
+    }

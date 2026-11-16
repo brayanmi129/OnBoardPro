@@ -1,0 +1,49 @@
+%%{init: {"theme": "neutral", "themeVariables": {"fontSize": "20px"}, "flowchart": {"nodeSpacing": 16, "rankSpacing": 110, "padding": 10, "subGraphTitleMargin": {"top": 14, "bottom": 10}}}}%%
+flowchart LR
+    AP["«actor»<br/><b>Aprendiz</b>"]:::actor
+
+    subgraph SYS["Sistema OnBoard Pro"]
+        direction LR
+        subgraph AUTH["Autenticación y perfil"]
+            UC1(["Iniciar sesión con correo y contraseña"])
+            UC2(["Iniciar sesión con Google o Microsoft"])
+            UC3(["Recuperar contraseña por correo"])
+            UC4(["Cambiar contraseña y editar perfil"])
+        end
+        subgraph APR["Cursos y evaluación"]
+            UC5(["Consultar cursos asignados y su avance"])
+            UC6(["Ver secciones, actividades y material"])
+            UC7(["Marcar recurso como completado"])
+            UC8(["Rendir examen o jugar concurso"])
+            UC9(["Subir o reemplazar entrega de tarea"])
+            UC10(["Consultar mis entregas y su retroalimentación"])
+        end
+        subgraph GAM["Gamificación y panel"]
+            UC11(["Consultar XP, nivel y racha"])
+            UC12(["Consultar mis logros"])
+            UC13(["Consultar ranking de organización, grupo o curso por semana, mes o total"])
+            UC14(["Ver pendientes en el panel de inicio"])
+            UC15(["Consultar mi historial de XP"])
+        end
+        UCX(["Acreditar XP, racha y nivel; evaluar logros"])
+    end
+
+    ML["«sistema externo»<br/>Correo (Brevo)"]:::ext
+    OA["«sistema externo»<br/>Google / Microsoft OAuth"]:::ext
+
+    AP --- UC1 & UC2 & UC3 & UC4
+    AP --- UC5 & UC6 & UC7 & UC8 & UC9 & UC10
+    AP --- UC11 & UC12 & UC13 & UC14 & UC15
+    UC7 -. "«include»" .-> UCX
+    UC8 -. "«include»" .-> UCX
+    UC2 --- OA
+    UC3 --- ML
+    ML ~~~ OA
+
+    classDef actor fill:#ffffff,stroke:#333333,stroke-width:2px,color:#111111
+    classDef ext fill:#f4f4f4,stroke:#666666,stroke-dasharray:4 3,color:#111111
+    classDef default fill:#ffffff,stroke:#555555,color:#111111
+    style SYS fill:#fafafa,stroke:#333333,stroke-width:2px
+    style AUTH fill:#ffffff,stroke:#aaaaaa
+    style APR fill:#ffffff,stroke:#aaaaaa
+    style GAM fill:#ffffff,stroke:#aaaaaa

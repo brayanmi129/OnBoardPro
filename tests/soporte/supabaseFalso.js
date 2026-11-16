@@ -4,9 +4,9 @@
 // en la caché de require antes de cargar cualquier servicio, y cada prueba
 // define qué filas hay en cada tabla y qué devuelven las funciones (rpc).
 //
-// Soporta lo que usan los servicios: select, eq, neq, in, gte, not(... is null),
-// is, or (ignorado), order, limit, maybeSingle, single, insert, update y
-// delete. No pretende ser PostgREST: alcanza para probar la lógica.
+// Soporta lo que usan los servicios: select, eq, neq, in, gte, lt, lte,
+// not(... is null), is, or (ignorado), order, limit, range, maybeSingle,
+// single, insert, update y delete. No pretende ser PostgREST: alcanza para probar la lógica.
 const path = require("node:path");
 
 const estado = { tablas: {}, rpc: () => ({ data: null, error: null }), escrituras: [] };
@@ -17,6 +17,7 @@ function consulta(nombre) {
   let valores = null;
   let unico = null; // "maybe" | "single"
   const ordenes = []; // [columna, ascendente]
+  let rango = null; // [desde, hasta] inclusivo, como .range() de PostgREST
 
   const filas = () => {
     const todas = estado.tablas[nombre] || [];
@@ -53,6 +54,8 @@ function consulta(nombre) {
       }
       return 0;
     });
+    // El rango se aplica después de ordenar, como en PostgREST.
+    if (rango) return { data: data.slice(rango[0], rango[1] + 1), error: null, count: data.length };
     if (unico === "single") return data.length === 1 ? { data: data[0], error: null } : { data: null, error: { message: "no rows" } };
     if (unico === "maybe") return { data: data[0] ?? null, error: null };
     return { data, error: null, count: data.length };
@@ -67,11 +70,14 @@ function consulta(nombre) {
     neq: (c, v) => { filtros.push((f) => f[c] !== v); return q; },
     in: (c, vs) => { filtros.push((f) => vs.includes(f[c])); return q; },
     gte: (c, v) => { filtros.push((f) => f[c] >= v); return q; },
+    lt: (c, v) => { filtros.push((f) => f[c] != null && f[c] < v); return q; },
+    lte: (c, v) => { filtros.push((f) => f[c] != null && f[c] <= v); return q; },
     is: (c, v) => { filtros.push((f) => (f[c] ?? null) === v); return q; },
     not: (c, op, v) => { filtros.push((f) => !(op === "is" && (f[c] ?? null) === v)); return q; },
     or: () => q,
     order: (c, { ascending = true } = {}) => { ordenes.push([c, ascending]); return q; },
     limit: () => q,
+    range: (desde, hasta) => { rango = [desde, hasta]; return q; },
     maybeSingle: () => { unico = "maybe"; return q; },
     single: () => { unico = "single"; return q; },
     then: (ok, mal) => Promise.resolve(ejecutar()).then(ok, mal),
