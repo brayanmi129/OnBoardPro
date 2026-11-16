@@ -204,7 +204,7 @@ class ImportacionService {
       else if (!CORREO.test(datos.email)) errores.push(`El correo ${datos.email} no es válido.`);
 
       const rol = ROLES[normalizar(datos.role)];
-      if (!rol) errores.push(`El rol ${datos.role} no es válido: usá aprendiz o instructor.`);
+      if (!rol) errores.push(`El rol ${datos.role} no es válido: usa aprendiz o instructor.`);
 
       let grupoId = null;
       if (datos.grupo) {
