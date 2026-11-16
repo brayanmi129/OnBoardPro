@@ -11,16 +11,18 @@ function generateToken(user) {
   // El payload de un JWT va en base64, no cifrado: cualquiera con el token lo
   // lee. Por eso solo lleva lo que hace falta para autorizar, más el correo
   // para identificar al usuario en los logs sin tener que ir a la base.
-  return jwt.sign(
-    {
-      id: user.id,
-      email: user.email,
-      tenantId: user.tenantId || null,
-      role: user.role,
-    },
-    process.env.JWT_SECRET,
-    { expiresIn: "3h" }
-  );
+  //
+  // cambiarPassword va en el token y no se consulta en cada petición: así el
+  // middleware bloquea sin ir a la base. Al cambiar la contraseña se emite un
+  // token nuevo sin la marca.
+  const payload = {
+    id: user.id,
+    email: user.email,
+    tenantId: user.tenantId || null,
+    role: user.role,
+  };
+  if (user.debeCambiarPassword) payload.cambiarPassword = true;
+  return jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: "3h" });
 }
 
 class AuthService {
@@ -76,7 +78,13 @@ class AuthService {
 
       const token = generateToken(userData);
       const { password: _, ...safeUser } = userData;
-      return res.json({ userData: safeUser, token });
+      // Con contraseña temporal el login funciona igual, pero el token solo
+      // sirve para ver la sesión y cambiarla (middlewares/jwt.js).
+      return res.json({
+        userData: safeUser,
+        token,
+        debeCambiarPassword: Boolean(userData.debeCambiarPassword),
+      });
     } catch (error) {
       console.error("Error durante la autenticación local:", error);
       return res.status(500).json({ message: "Error del servidor." });
@@ -195,11 +203,18 @@ class AuthService {
     const coincide = await bcrypt.compare(actual, user.password);
     if (!coincide) return { estado: 401, message: "La contraseña actual es incorrecta." };
 
-    // updateUser ya hashea y valida contra el schema.
-    const resultado = await UserService.updateUser(id, { password: nueva });
+    // updateUser ya hashea y valida contra el schema. La que elige la persona
+    // ya no es temporal.
+    const resultado = await UserService.updateUser(id, { password: nueva, debeCambiarPassword: false });
     if (resultado?.error) return { estado: 500, message: resultado.error };
 
-    return { estado: 200, message: "Contraseña actualizada correctamente." };
+    // Token nuevo sin la marca de contraseña temporal: el anterior seguiría
+    // bloqueado hasta vencer.
+    return {
+      estado: 200,
+      message: "Contraseña actualizada correctamente.",
+      token: generateToken({ ...user, debeCambiarPassword: false }),
+    };
   }
 
   // Lo único que una persona puede cambiarse a sí misma (HU-070).
@@ -264,6 +279,7 @@ class AuthService {
       if (!user) return null;
       const { password, ...userinfo } = user;
       userinfo.oauthOnly = !password;
+      userinfo.debeCambiarPassword = Boolean(user.debeCambiarPassword);
 
       // El perfil mostraba el id crudo ("tenant-uc") donde debería decir el
       // nombre de la empresa.

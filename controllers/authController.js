@@ -95,7 +95,7 @@ class AuthController {
     try {
       const { actual, nueva } = req.body || {};
       const r = await AuthService.cambiarPassword(req.user.id, actual, nueva);
-      return res.status(r.estado).json({ message: r.message });
+      return res.status(r.estado).json(r.token ? { message: r.message, token: r.token } : { message: r.message });
     } catch (error) {
       console.error("Error en AuthController.cambiarPassword:", error);
       return res.status(500).json({ message: "Error interno del servidor." });

@@ -4,8 +4,11 @@ const EntregaController = require("../controllers/entregaController.js");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
 const subida = require("../middlewares/subida.js");
+const { soloLectura } = require("../middlewares/soloLectura.js");
 
 const puedeCorregir = requireRole("admin", "superadmin", "instructor");
+// Ver entregas: instructor, admin y superadmin. Revisarlas: solo el instructor.
+const soloInstructor = requireRole("instructor");
 
 /**
  * @swagger
@@ -291,13 +294,13 @@ router.get("/entregas", verifyJWT, puedeCorregir, EntregaController.bandeja);
  *       400:
  *         description: Falta indicar si queda aprobada, o se piden cambios sin comentario
  *       403:
- *         description: La entrega no pertenece a un curso que dicte el instructor
+ *         description: Solo el instructor revisa entregas (el administrador y el superadministrador no), y solo las de los cursos que dicta
  *       404:
  *         description: La entrega no existe o es de otra organización
  *       409:
  *         description: Se intentó pedir cambios sobre una entrega ya aprobada
  */
-router.put("/entregas/:id/revisar", verifyJWT, puedeCorregir, EntregaController.revisar);
+router.put("/entregas/:id/revisar", verifyJWT, soloInstructor, soloLectura, EntregaController.revisar);
 
 /**
  * @swagger

@@ -958,3 +958,22 @@ END $$;
 
 -- PostgREST guarda en caché las firmas de las funciones.
 NOTIFY pgrst, 'reload schema';
+
+-- ── Accesos por día (tablero: usuarios activos por día) ─────────────────────
+-- Una fila por persona y día (hora de Colombia) en que usó la plataforma. La
+-- escribe la API en la primera petición autenticada del día (helpers/accesos.js).
+CREATE TABLE IF NOT EXISTS accesos_diarios (
+  user_id        VARCHAR(50) NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  tenant_id      VARCHAR(50) REFERENCES tenants(id) ON DELETE CASCADE,
+  dia            DATE NOT NULL,
+  primer_acceso  TIMESTAMPTZ DEFAULT NOW(),
+  PRIMARY KEY (user_id, dia)
+);
+CREATE INDEX IF NOT EXISTS idx_accesos_tenant_dia ON accesos_diarios(tenant_id, dia);
+CREATE INDEX IF NOT EXISTS idx_accesos_dia ON accesos_diarios(dia);
+
+-- ── Contraseña temporal ─────────────────────────────────────────────────────
+-- TRUE cuando la contraseña la puso otra persona (alta con contraseña o un
+-- admin que se la cambia): en su primer ingreso tiene que cambiarla. Las
+-- cuentas que ya existen quedan en FALSE.
+ALTER TABLE users ADD COLUMN IF NOT EXISTS debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE;

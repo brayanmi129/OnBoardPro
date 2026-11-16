@@ -3,6 +3,7 @@ const router = express.Router();
 const SectionController = require("../controllers/sectionController.js");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
+const { soloLectura } = require("../middlewares/soloLectura.js");
 
 // Editar la estructura del curso es tarea de quien lo dicta o lo administra.
 const puedeEditar = requireRole("admin", "superadmin", "instructor");
@@ -88,6 +89,8 @@ router.get("/courses/:id/sections", verifyJWT, SectionController.listar);
  *                 type: integer
  *                 description: Posición. Si se omite, va al final.
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       201:
  *         description: Sección creada
  *       400:
@@ -95,7 +98,7 @@ router.get("/courses/:id/sections", verifyJWT, SectionController.listar);
  *       404:
  *         description: El curso no existe o es de otra organización
  */
-router.post("/courses/:id/sections", verifyJWT, puedeEditar, SectionController.crear);
+router.post("/courses/:id/sections", verifyJWT, puedeEditar, soloLectura, SectionController.crear);
 
 /**
  * @swagger
@@ -120,12 +123,14 @@ router.post("/courses/:id/sections", verifyJWT, puedeEditar, SectionController.c
  *             properties:
  *               name: { type: string, maxLength: 120 }
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Sección actualizada
  *       404:
  *         description: No existe o es de otra organización
  */
-router.put("/sections/:id", verifyJWT, puedeEditar, SectionController.renombrar);
+router.put("/sections/:id", verifyJWT, puedeEditar, soloLectura, SectionController.renombrar);
 
 /**
  * @swagger
@@ -145,6 +150,8 @@ router.put("/sections/:id", verifyJWT, puedeEditar, SectionController.renombrar)
  *         required: true
  *         schema: { type: string }
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Sección eliminada
  *       409:
@@ -152,6 +159,6 @@ router.put("/sections/:id", verifyJWT, puedeEditar, SectionController.renombrar)
  *       404:
  *         description: No existe o es de otra organización
  */
-router.delete("/sections/:id", verifyJWT, puedeEditar, SectionController.eliminar);
+router.delete("/sections/:id", verifyJWT, puedeEditar, soloLectura, SectionController.eliminar);
 
 module.exports = router;

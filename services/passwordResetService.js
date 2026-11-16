@@ -166,7 +166,7 @@ class PasswordResetService {
       return { estado: 400, message: "El enlace venció. Pedí uno nuevo." };
     }
 
-    const resultado = await UserService.updateUser(fila.user_id, { password: nueva });
+    const resultado = await UserService.updateUser(fila.user_id, { password: nueva, debeCambiarPassword: false });
     if (resultado?.error) return { estado: 500, message: resultado.error };
 
     await supabase

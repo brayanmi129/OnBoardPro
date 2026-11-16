@@ -17,6 +17,9 @@ class UserSchema {
       average: zod.number().min(0).max(5).optional(),
       missions: zod.string().optional(),
       streak: zod.number().int().min(0).optional(),
+      // La contraseña la puso otra persona (alta o restablecimiento por un
+      // admin): hay que cambiarla en el primer ingreso.
+      debeCambiarPassword: zod.boolean().optional(),
     })
     .strict();
 }

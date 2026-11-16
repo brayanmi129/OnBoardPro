@@ -4,6 +4,7 @@ const LogroService = require("../services/logroService.js");
 const DesbloqueoService = require("../services/desbloqueoService.js");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
+const { soloLectura, soloLogrosGenericos, soloVistaPreviaGenerica } = require("../middlewares/soloLectura.js");
 
 // El catálogo lo administra la organización; los aprendices solo lo consultan.
 const puedeAdministrar = requireRole("admin", "superadmin");
@@ -130,13 +131,13 @@ router.get("/logros/opciones", verifyJWT, (req, res) => {
  *           Falta un campo, el tipo de condición no existe, la meta no es un
  *           entero positivo, o se ató un logro genérico a un curso
  *       403:
- *         description: No es administrador, o pidió un logro genérico sin ser superadministrador
+ *         description: No es administrador, o pidió un logro genérico sin ser superadministrador; o el superadministrador solo crea logros genéricos
  *       404:
  *         description: El curso indicado no existe o es de otra organización
  *       409:
  *         description: Ya hay un logro con ese nombre en la organización
  */
-router.post("/logros", verifyJWT, puedeAdministrar, async (req, res) => {
+router.post("/logros", verifyJWT, puedeAdministrar, soloLogrosGenericos, async (req, res) => {
   try {
     const r = await LogroService.crear(actorDe(req), req.body || {});
     return res.status(201).json(r);
@@ -233,9 +234,9 @@ router.get("/logros", verifyJWT, async (req, res) => {
  *       400:
  *         description: Tipo de condición inexistente o meta inválida
  *       403:
- *         description: Quien llama no es administrador
+ *         description: Quien llama no es administrador; o el superadministrador solo pide la vista previa de logros genéricos
  */
-router.post("/logros/vista-previa", verifyJWT, puedeAdministrar, async (req, res) => {
+router.post("/logros/vista-previa", verifyJWT, puedeAdministrar, soloVistaPreviaGenerica, async (req, res) => {
   try {
     return res.status(200).json(await DesbloqueoService.vistaPrevia(actorDe(req), req.body || {}));
   } catch (error) {
@@ -279,9 +280,9 @@ router.post("/logros/vista-previa", verifyJWT, puedeAdministrar, async (req, res
  *       400:
  *         description: El superadmin no indicó la organización
  *       403:
- *         description: Quien llama no es administrador
+ *         description: Quien llama no es administrador; o el superadministrador solo consulta las organizaciones
  */
-router.post("/logros/cierre-ranking", verifyJWT, puedeAdministrar, async (req, res) => {
+router.post("/logros/cierre-ranking", verifyJWT, puedeAdministrar, soloLectura, async (req, res) => {
   try {
     return res.status(200).json(await DesbloqueoService.cerrarPeriodoRanking(actorDe(req), req.body || {}));
   } catch (error) {

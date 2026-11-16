@@ -4,6 +4,7 @@ const MaterialService = require("../services/materialService.js");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
 const subida = require("../middlewares/subida.js");
+const { soloLectura } = require("../middlewares/soloLectura.js");
 
 // Quien dicta o administra sube y quita material; el resto solo lo consulta.
 const puedeEditar = requireRole("admin", "superadmin", "instructor");
@@ -107,7 +108,7 @@ router.get("/activities/:id/materiales", verifyJWT, async (req, res) => {
  *       400:
  *         description: No se envió ningún archivo
  *       403:
- *         description: La actividad no pertenece a un curso que dicte el instructor
+ *         description: La actividad no pertenece a un curso que dicte el instructor; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: La actividad no existe o es de otra organización
  */
@@ -115,6 +116,7 @@ router.post(
   "/activities/:id/materiales",
   verifyJWT,
   puedeEditar,
+  soloLectura,
   subida.material,
   async (req, res) => {
     try {
@@ -150,11 +152,11 @@ router.post(
  *       200:
  *         description: Material eliminado
  *       403:
- *         description: La actividad no pertenece a un curso que dicte el instructor
+ *         description: La actividad no pertenece a un curso que dicte el instructor; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: El material no existe
  */
-router.delete("/materiales/:id", verifyJWT, puedeEditar, async (req, res) => {
+router.delete("/materiales/:id", verifyJWT, puedeEditar, soloLectura, async (req, res) => {
   try {
     return res.status(200).json(await MaterialService.quitar(req.params.id, actorDe(req)));
   } catch (error) {

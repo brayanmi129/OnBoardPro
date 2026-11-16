@@ -3,6 +3,7 @@ const router = express.Router();
 const GroupController = require("../controllers/groupsControler");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
+const { soloLectura } = require("../middlewares/soloLectura.js");
 
 /**
  * @swagger
@@ -75,12 +76,14 @@ router.get("/get/id/:id", verifyJWT, GroupController.getById);
  *                   type: string
  *                 example: ["usr123", "usr456"]
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       201:
  *         description: Grupo creado correctamente
  *       400:
  *         description: Datos inválidos, o algún integrante no pertenece a la organización
  */
-router.post("/create", verifyJWT, requireRole("admin", "superadmin", "instructor"), GroupController.create);
+router.post("/create", verifyJWT, requireRole("admin", "superadmin", "instructor"), soloLectura, GroupController.create);
 
 /**
  * @swagger
@@ -105,12 +108,14 @@ router.post("/create", verifyJWT, requireRole("admin", "superadmin", "instructor
  *               name: Nuevo nombre del grupo
  *               description: Nueva descripción
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Grupo actualizado correctamente
  *       400:
  *         description: Error de validación
  */
-router.put("/update/:id", verifyJWT, requireRole("admin", "superadmin"), GroupController.update);
+router.put("/update/:id", verifyJWT, requireRole("admin", "superadmin"), soloLectura, GroupController.update);
 
 /**
  * @swagger
@@ -138,10 +143,12 @@ router.put("/update/:id", verifyJWT, requireRole("admin", "superadmin"), GroupCo
  *                   type: string
  *                 example: ["usr123", "usr456"]
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Usuarios agregados correctamente
  */
-router.post("/:id/add-users", verifyJWT, requireRole("admin", "superadmin", "instructor"), GroupController.addUsers);
+router.post("/:id/add-users", verifyJWT, requireRole("admin", "superadmin", "instructor"), soloLectura, GroupController.addUsers);
 
 /**
  * @swagger
@@ -169,12 +176,14 @@ router.post("/:id/add-users", verifyJWT, requireRole("admin", "superadmin", "ins
  *                   type: string
  *                 example: ["usr123", "usr789"]
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Usuarios eliminados correctamente
  *       400:
  *         description: Error al eliminar usuarios
  */
-router.delete("/:id/remove-users", verifyJWT, requireRole("admin", "superadmin", "instructor"), GroupController.removeUsers);
+router.delete("/:id/remove-users", verifyJWT, requireRole("admin", "superadmin", "instructor"), soloLectura, GroupController.removeUsers);
 
 /**
  * @swagger
@@ -190,12 +199,14 @@ router.delete("/:id/remove-users", verifyJWT, requireRole("admin", "superadmin",
  *           type: string
  *         description: ID del grupo
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Grupo eliminado correctamente
  *       404:
  *         description: Grupo no encontrado
  */
-router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), GroupController.delete);
+router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), soloLectura, GroupController.delete);
 
 /**
  * @swagger
@@ -264,6 +275,8 @@ router.get("/me", verifyJWT, GroupController.getMyGroups);
  *                 type: array
  *                 items: { type: string }
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Cursos asignados
  *       400:
@@ -271,7 +284,7 @@ router.get("/me", verifyJWT, GroupController.getMyGroups);
  *       404:
  *         description: El equipo no existe o es de otra organización
  */
-router.post("/:id/add-courses", verifyJWT, requireRole("admin", "superadmin"), GroupController.addCourses);
+router.post("/:id/add-courses", verifyJWT, requireRole("admin", "superadmin"), soloLectura, GroupController.addCourses);
 
 /**
  * @swagger
@@ -302,11 +315,13 @@ router.post("/:id/add-courses", verifyJWT, requireRole("admin", "superadmin"), G
  *                 type: array
  *                 items: { type: string }
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Cursos retirados
  *       404:
  *         description: El equipo no existe o es de otra organización
  */
-router.delete("/:id/remove-courses", verifyJWT, requireRole("admin", "superadmin"), GroupController.removeCourses);
+router.delete("/:id/remove-courses", verifyJWT, requireRole("admin", "superadmin"), soloLectura, GroupController.removeCourses);
 
 module.exports = router;

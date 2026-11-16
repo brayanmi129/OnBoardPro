@@ -1,6 +1,7 @@
 const { supabase } = require("../helpers/supabaseHelper.js");
 const { todasLasFilas, porLotes } = require("../helpers/consultas.js");
 const { diaColombia, DIA_MS } = require("../helpers/periodo.js");
+const { tablaFaltante } = require("../helpers/accesos.js");
 
 function fallo(message, status) {
   const err = new Error(message);
@@ -47,19 +48,25 @@ async function cargar(tenantId, desdeAnterior) {
   const deOrg = (q) => (tenantId ? q.eq("tenant_id", tenantId) : q);
 
   // Tanda 1: lo que no depende de nada.
-  const [usuarios, cursos, tenants, porRevisar] = await Promise.all([
+  const [usuarios, cursos, tenants, porRevisar, grupos] = await Promise.all([
     todasLasFilas(() => deOrg(supabase.from("users")
       .select("id, firstname, lastname, role, status, tenant_id, xp, ultima_actividad"))
       .neq("role", "superadmin").order("id", { ascending: true })),
     todasLasFilas(() => deOrg(supabase.from("courses")
       .select("id, name, tenant_id, status, archivado")).order("id", { ascending: true })),
     tenantId
-      ? supabase.from("tenants").select("id, name, active").eq("id", tenantId).then((r) => r.data || [])
-      : todasLasFilas(() => supabase.from("tenants").select("id, name, active").order("id", { ascending: true })),
+      ? supabase.from("tenants").select("id, name, active, created_at").eq("id", tenantId).then((r) => r.data || [])
+      : todasLasFilas(() => supabase.from("tenants").select("id, name, active, created_at").order("id", { ascending: true })),
+    // En una organización basta el conteo; en la plataforma hace falta saber
+    // de qué organización es cada entrega pendiente.
     tenantId
       ? supabase.from("entregas").select("id", { count: "exact", head: true })
           .eq("tenant_id", tenantId).eq("estado", "entregado").then((r) => r.count ?? 0)
-      : 0,
+      : todasLasFilas(() => supabase.from("entregas").select("id, tenant_id")
+          .eq("estado", "entregado").order("id", { ascending: true })),
+    tenantId
+      ? []
+      : todasLasFilas(() => supabase.from("groups").select("id, tenant_id").order("id", { ascending: true })),
   ]);
 
   // Tanda 2: movimientos de la ventana (periodo actual + anterior), secciones
@@ -67,7 +74,15 @@ async function cargar(tenantId, desdeAnterior) {
   // sus personas: así no entra nada de otra aunque el movimiento tenga
   // tenant_id en NULL.
   const cursoIds = cursos.map((c) => c.id);
-  const [ventana, secciones, gruposCursos] = await Promise.all([
+  const ids = usuarios.map((u) => u.id);
+  // En una organización todo se pide por sus personas (nada ajeno entra
+  // aunque la fila tenga tenant_id en NULL); en la plataforma, todo.
+  const dePersonas = (tabla, campos, fecha) => (tenantId
+    ? porLotes(ids, (lote) => supabase.from(tabla).select(campos)
+        .in("user_id", lote).gte(fecha, desdeAnterior).order(fecha, { ascending: true }))
+    : todasLasFilas(() => supabase.from(tabla).select(campos)
+        .gte(fecha, desdeAnterior).order(fecha, { ascending: true })));
+  const [ventana, secciones, gruposCursos, accesos, entregasVentana, intentosVentana] = await Promise.all([
     tenantId
       ? porLotes(usuarios.map((u) => u.id), (lote) => supabase.from("xp_movimientos")
           .select("id, user_id, xp, activity_id, created_at")
@@ -79,12 +94,20 @@ async function cargar(tenantId, desdeAnterior) {
       .select("id, course_id").in("course_id", lote).order("id", { ascending: true })),
     porLotes(cursoIds, (lote) => supabase.from("groups_courses")
       .select("id, id_group, id_course").in("id_course", lote).order("id", { ascending: true })),
+    // Si todavía no se creó la tabla de accesos, la gráfica se arma solo con
+    // lo que la gente hizo (sin las visitas en las que no hizo nada).
+    dePersonas("accesos_diarios", "user_id, dia", "dia").catch((e) => {
+      if (tablaFaltante(e)) return null;
+      throw e;
+    }),
+    dePersonas("entregas", "id, user_id, entregado_at", "entregado_at"),
+    dePersonas("intentos_examen", "id, user_id, iniciado_at", "iniciado_at"),
   ]);
 
   // Tanda 3: actividades de esas secciones e integrantes de esos grupos.
   const [actividades, integrantes] = await Promise.all([
     porLotes(secciones.map((s) => s.id), (lote) => supabase.from("activities")
-      .select("id, section_id").in("section_id", lote).order("id", { ascending: true })),
+      .select("id, section_id, created_at").in("section_id", lote).order("id", { ascending: true })),
     porLotes(gruposCursos.map((g) => g.id_group), (lote) => supabase.from("users_groups")
       .select("id, id_user, id_group").in("id_group", lote).order("id", { ascending: true })),
   ]);
@@ -105,7 +128,10 @@ async function cargar(tenantId, desdeAnterior) {
   const completadas = await porLotes(deCursosPublicados, (lote) => supabase.from("xp_movimientos")
     .select("id, user_id, activity_id, created_at").in("activity_id", lote).order("id", { ascending: true }));
 
-  return { usuarios, cursos, tenants, porRevisar, ventana, gruposCursos, integrantes, actividadesPorCurso, completadas };
+  return {
+    usuarios, cursos, tenants, porRevisar, grupos, ventana, gruposCursos, integrantes, actividadesPorCurso, completadas,
+    accesos, entregasVentana, intentosVentana, actividades,
+  };
 }
 
 /**
@@ -185,14 +211,42 @@ function comunes(datos, { dias, desde, desdeAnterior }) {
 
   // Un día por fecha, terminando hoy, aunque no haya pasado nada: la gráfica
   // necesita los ceros para no saltarse días.
+  //
+  //   activos      personas distintas que usaron la plataforma ese día: las
+  //                que entraron (accesos_diarios) más las que hicieron algo
+  //                (ganar XP, enviar una entrega, empezar un examen)
+  //   completadas  actividades completadas
+  //   entregas     entregas enviadas
+  //   creadas      actividades nuevas en los cursos
+  //   xp           XP otorgado
   const hoy = Date.now();
   const serie = new Map();
-  for (let i = dias - 1; i >= 0; i--) serie.set(diaColombia(hoy - i * DIA_MS), { xp: 0, completadas: 0 });
+  for (let i = dias - 1; i >= 0; i--) {
+    serie.set(diaColombia(hoy - i * DIA_MS), { activos: new Set(), completadas: 0, entregas: 0, creadas: 0, xp: 0 });
+  }
+  const marcar = (fecha, userId) => {
+    if (!enScope.has(userId)) return;
+    serie.get(fecha)?.activos.add(userId);
+  };
+  for (const a of datos.accesos || []) marcar(String(a.dia).slice(0, 10), a.user_id);
   for (const m of actuales) {
-    const d = serie.get(diaColombia(m.created_at));
+    const dia = diaColombia(m.created_at);
+    marcar(dia, m.user_id);
+    const d = serie.get(dia);
     if (!d) continue;
     d.xp += Number(m.xp) || 0;
     if (m.activity_id) d.completadas += 1;
+  }
+  for (const e of datos.entregasVentana || []) {
+    const dia = diaColombia(e.entregado_at);
+    marcar(dia, e.user_id);
+    if (enScope.has(e.user_id) && serie.has(dia)) serie.get(dia).entregas += 1;
+  }
+  for (const i of datos.intentosVentana || []) marcar(diaColombia(i.iniciado_at), i.user_id);
+  for (const a of datos.actividades || []) {
+    if (!a.created_at) continue;
+    const d = serie.get(diaColombia(a.created_at));
+    if (d) d.creadas += 1;
   }
 
   return {
@@ -209,7 +263,10 @@ function comunes(datos, { dias, desde, desdeAnterior }) {
     },
     xp: { otorgadoPeriodo: suma(actuales), otorgadoPeriodoAnterior: suma(anteriores) },
     actividadesCompletadasPeriodo: actuales.filter((m) => m.activity_id).length,
-    actividadPorDia: [...serie].map(([fecha, v]) => ({ fecha, ...v })),
+    actividadPorDia: [...serie].map(([fecha, v]) => ({ fecha, ...v, activos: v.activos.size })),
+    // false mientras no exista la tabla de accesos: "activos" cuenta solo a
+    // quien hizo algo, no a quien entró y miró.
+    accesosRegistrados: datos.accesos !== null,
   };
 }
 
@@ -249,17 +306,39 @@ class DashboardService {
       xpPorOrg.set(t, (xpPorOrg.get(t) || 0) + (Number(m.xp) || 0));
     }
 
+    const contarPor = (filas) => {
+      const m = new Map();
+      for (const f of filas) m.set(f.tenant_id, (m.get(f.tenant_id) || 0) + 1);
+      return m;
+    };
+    const gruposPorOrg = contarPor(datos.grupos);
+    const pendientesPorOrg = contarPor(datos.porRevisar);
+
+    // Una fila por organización con lo que sirve para saber si la están
+    // usando: cuánta gente tiene por rol, cuántos aprendices hicieron algo en
+    // el periodo, qué armó (cursos y grupos), qué tiene pendiente y cuándo
+    // fue la última vez que alguien entró a hacer algo.
     const porOrganizacion = datos.tenants.map((t) => {
       const suyos = datos.usuarios.filter((u) => u.tenant_id === t.id);
       const aprendices = suyos.filter(esAprendiz);
+      const suyosCursos = datos.cursos.filter((c) => c.tenant_id === t.id);
+      const ultima = suyos.map((u) => u.ultima_actividad).filter(Boolean).sort().pop() ?? null;
       return {
         id: t.id,
         nombre: t.name,
         activa: t.active !== false,
+        creada: t.created_at ?? null,
         usuarios: suyos.length,
+        aprendices: aprendices.length,
+        instructores: suyos.filter((u) => u.role === "instructor").length,
+        admins: suyos.filter((u) => u.role === "admin").length,
         aprendicesActivos: aprendices.filter((u) => activos.has(u.id)).length,
-        cursosPublicados: datos.cursos.filter((c) => c.tenant_id === t.id && publicado(c)).length,
+        cursosPublicados: suyosCursos.filter(publicado).length,
+        cursosCreados: suyosCursos.filter((c) => !c.archivado).length,
+        grupos: gruposPorOrg.get(t.id) || 0,
+        entregasPorRevisar: pendientesPorOrg.get(t.id) || 0,
         tasaFinalizacion: tasa(aprendices, porAprendiz).actual,
+        ultimaActividad: ultima,
         xpPeriodo: xpPorOrg.get(t.id) || 0,
       };
     }).sort((a, b) => String(a.nombre).localeCompare(String(b.nombre)));
@@ -276,6 +355,7 @@ class DashboardService {
       xp: base.xp,
       actividadesCompletadasPeriodo: base.actividadesCompletadasPeriodo,
       actividadPorDia: base.actividadPorDia,
+      accesosRegistrados: base.accesosRegistrados,
       porOrganizacion,
     };
   }
@@ -338,6 +418,7 @@ class DashboardService {
       xp: base.xp,
       entregasPorRevisar: datos.porRevisar,
       actividadPorDia: base.actividadPorDia,
+      accesosRegistrados: base.accesosRegistrados,
       cursosDetalle,
       aprendicesSinActividad,
     };

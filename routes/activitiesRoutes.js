@@ -4,6 +4,7 @@ const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
 const ActivitiesController = require("../controllers/activitiesController.js");
 const subida = require("../middlewares/subida.js");
+const { soloLectura } = require("../middlewares/soloLectura.js");
 
 /**
  * @swagger
@@ -130,12 +131,13 @@ router.get("/reglas-xp", verifyJWT, requireRole("admin", "superadmin", "instruct
  *       401:
  *         description: Token ausente o inválido
  *       403:
- *         description: Rol sin permiso para crear actividades
+ *         description: Rol sin permiso para crear actividades; o el superadministrador solo consulta las organizaciones
  */
 router.post(
   "/create",
   verifyJWT,
   requireRole("admin", "superadmin", "instructor"),
+  soloLectura,
   subida.material,
   ActivitiesController.create
 );
@@ -221,7 +223,7 @@ router.get("/:id/adjunto", verifyJWT, ActivitiesController.adjunto);
  *       400:
  *         description: No se envió nada que cambiar, o los datos no son válidos
  *       403:
- *         description: La actividad no pertenece a un curso que dicte el instructor
+ *         description: La actividad no pertenece a un curso que dicte el instructor; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: No existe o es de otra organización
  *       409:
@@ -231,6 +233,7 @@ router.put(
   "/:id",
   verifyJWT,
   requireRole("admin", "superadmin", "instructor"),
+  soloLectura,
   subida.material,
   ActivitiesController.actualizar
 );
@@ -255,6 +258,8 @@ router.put(
  *         required: true
  *         schema: { type: string }
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Actividad eliminada
  *       404:
@@ -264,6 +269,7 @@ router.delete(
   "/:id",
   verifyJWT,
   requireRole("admin", "superadmin", "instructor"),
+  soloLectura,
   ActivitiesController.eliminar
 );
 

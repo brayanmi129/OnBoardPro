@@ -3,6 +3,7 @@ const router = express.Router();
 const ExamenService = require("../services/examenService.js");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
+const { soloLectura } = require("../middlewares/soloLectura.js");
 
 const puedeEditar = requireRole("admin", "superadmin", "instructor");
 
@@ -202,11 +203,11 @@ router.get("/activities/:id/examen", verifyJWT, async (req, res) => {
  *           Valores fuera de rango, nada que guardar, una pregunta mal armada, o
  *           un id de pregunta que no es de este examen
  *       403:
- *         description: El examen no pertenece a un curso que dicte el instructor
+ *         description: El examen no pertenece a un curso que dicte el instructor; o el superadministrador solo consulta las organizaciones
  *       409:
  *         description: La actividad no es un examen, o ya fue rendido y se intentaron cambiar las preguntas
  */
-router.put("/activities/:id/examen", verifyJWT, puedeEditar, async (req, res) => {
+router.put("/activities/:id/examen", verifyJWT, puedeEditar, soloLectura, async (req, res) => {
   try {
     const r = await ExamenService.guardar(req.params.id, actorDe(req), req.body || {});
     return res.status(200).json(r);
@@ -492,6 +493,8 @@ router.get("/activities/:id/examen/resultados", verifyJWT, puedeEditar, async (r
  *                     texto:      { type: string }
  *                     esCorrecta: { type: boolean }
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Pregunta actualizada
  *       400:
@@ -499,7 +502,7 @@ router.get("/activities/:id/examen/resultados", verifyJWT, puedeEditar, async (r
  *       404:
  *         description: El examen no existe, o la pregunta no es de ese examen
  */
-router.put("/activities/:id/preguntas/:preguntaId", verifyJWT, puedeEditar, async (req, res) => {
+router.put("/activities/:id/preguntas/:preguntaId", verifyJWT, puedeEditar, soloLectura, async (req, res) => {
   try {
     const r = await ExamenService.editarPregunta(
       req.params.id, req.params.preguntaId, actorDe(req), req.body || {}
@@ -529,12 +532,14 @@ router.put("/activities/:id/preguntas/:preguntaId", verifyJWT, puedeEditar, asyn
  *         required: true
  *         schema: { type: string }
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Pregunta eliminada
  *       404:
  *         description: El examen no existe, o la pregunta no es de ese examen
  */
-router.delete("/activities/:id/preguntas/:preguntaId", verifyJWT, puedeEditar, async (req, res) => {
+router.delete("/activities/:id/preguntas/:preguntaId", verifyJWT, puedeEditar, soloLectura, async (req, res) => {
   try {
     const r = await ExamenService.eliminarPregunta(req.params.id, req.params.preguntaId, actorDe(req));
     return res.status(200).json(r);

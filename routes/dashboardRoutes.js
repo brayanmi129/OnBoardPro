@@ -37,8 +37,13 @@ const DashboardService = require("../services/dashboardService.js");
  *       type: object
  *       properties:
  *         fecha: { type: string, example: "2026-11-16" }
- *         xp: { type: integer }
- *         completadas: { type: integer }
+ *         activos:
+ *           type: integer
+ *           description: Personas distintas que usaron la plataforma ese día (entraron o hicieron algo)
+ *         completadas: { type: integer, description: Actividades completadas }
+ *         entregas: { type: integer, description: Entregas enviadas }
+ *         creadas: { type: integer, description: Actividades nuevas en los cursos }
+ *         xp: { type: integer, description: XP otorgado }
  */
 
 /**
@@ -52,12 +57,15 @@ const DashboardService = require("../services/dashboardService.js");
  *       `dias` previos. Una persona está activa si tuvo algún movimiento de XP
  *       en el periodo. Las fechas de `actividadPorDia` son días en hora de
  *       Colombia, uno por día aunque no haya pasado nada, terminando hoy.
+ *       `accesosRegistrados` es false mientras no exista el registro de
+ *       accesos: entonces `activos` cuenta solo a quien hizo algo ese día.
  *
  *       **Superadmin sin tenantId** (`alcance: plataforma`): organizaciones,
  *       usuarios, cursos, XP, actividades completadas, serie por día y una
- *       fila por organización (`porOrganizacion`: id, nombre, activa,
- *       usuarios, aprendicesActivos, cursosPublicados, tasaFinalizacion,
- *       xpPeriodo).
+ *       fila por organización (`porOrganizacion`) con su uso: personas por
+ *       rol, aprendices activos en el periodo, cursos publicados y creados,
+ *       grupos, entregas por revisar, tasa de finalización, fecha de creación
+ *       y día de la última actividad de cualquiera de sus usuarios.
  *
  *       **Admin, o superadmin con tenantId** (`alcance: organizacion`):
  *       usuarios, cursos, `tasaFinalizacion` {actual, anterior}, xpPromedio,
@@ -113,6 +121,7 @@ const DashboardService = require("../services/dashboardService.js");
  *                     actividadPorDia:
  *                       type: array
  *                       items: { $ref: '#/components/schemas/DiaTablero' }
+ *                     accesosRegistrados: { type: boolean }
  *                     porOrganizacion:
  *                       type: array
  *                       items:
@@ -121,10 +130,18 @@ const DashboardService = require("../services/dashboardService.js");
  *                           id: { type: string }
  *                           nombre: { type: string }
  *                           activa: { type: boolean }
+ *                           creada: { type: string, format: date-time, nullable: true }
  *                           usuarios: { type: integer }
+ *                           aprendices: { type: integer }
+ *                           instructores: { type: integer }
+ *                           admins: { type: integer }
  *                           aprendicesActivos: { type: integer }
  *                           cursosPublicados: { type: integer }
+ *                           cursosCreados: { type: integer, description: Sin contar los archivados }
+ *                           grupos: { type: integer }
+ *                           entregasPorRevisar: { type: integer }
  *                           tasaFinalizacion: { type: number, example: 42.5 }
+ *                           ultimaActividad: { type: string, format: date, nullable: true }
  *                           xpPeriodo: { type: integer }
  *                 - type: object
  *                   properties:
@@ -156,6 +173,7 @@ const DashboardService = require("../services/dashboardService.js");
  *                     actividadPorDia:
  *                       type: array
  *                       items: { $ref: '#/components/schemas/DiaTablero' }
+ *                     accesosRegistrados: { type: boolean }
  *                     cursosDetalle:
  *                       type: array
  *                       items:

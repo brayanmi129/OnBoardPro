@@ -3,6 +3,7 @@ const router = express.Router();
 const NivelesService = require("../services/nivelesService.js");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
+const { soloLectura } = require("../middlewares/soloLectura.js");
 
 const puedeAdministrar = requireRole("admin", "superadmin");
 
@@ -99,9 +100,9 @@ router.get("/niveles", verifyJWT, async (req, res) => {
  *       400:
  *         description: Tabla vacía, más de 50 niveles, XP que no sube, o nombre demasiado largo (el mensaje dice qué nivel)
  *       403:
- *         description: Quien llama no es administrador
+ *         description: Quien llama no es administrador; o el superadministrador solo consulta las organizaciones
  */
-router.put("/niveles", verifyJWT, puedeAdministrar, async (req, res) => {
+router.put("/niveles", verifyJWT, puedeAdministrar, soloLectura, async (req, res) => {
   try {
     return res.status(200).json(await NivelesService.guardar(actorDe(req), req.body || {}));
   } catch (error) {
@@ -129,9 +130,9 @@ router.put("/niveles", verifyJWT, puedeAdministrar, async (req, res) => {
  *       200:
  *         description: Devuelve message, personasConNivelNuevo y la tabla por defecto
  *       403:
- *         description: Quien llama no es administrador
+ *         description: Quien llama no es administrador; o el superadministrador solo consulta las organizaciones
  */
-router.delete("/niveles", verifyJWT, puedeAdministrar, async (req, res) => {
+router.delete("/niveles", verifyJWT, puedeAdministrar, soloLectura, async (req, res) => {
   try {
     return res.status(200).json(await NivelesService.restaurar(actorDe(req), req.query.tenantId));
   } catch (error) {

@@ -1,5 +1,6 @@
 const crypto = require("crypto");
 const { supabase } = require("../helpers/supabaseHelper.js");
+const { MENSAJE: MENSAJE_SOLO_LECTURA } = require("../middlewares/soloLectura.js");
 
 function fallo(message, status) {
   const err = new Error(message);
@@ -277,12 +278,23 @@ class LogroService {
     if (!data) throw fallo("Curso no encontrado en la organización del logro.", 404);
   }
 
+  /**
+   * El superadmin solo modifica los logros genéricos, que son de la
+   * plataforma. Los de una organización los gestiona su administrador.
+   */
+  static _soloGenericosParaSuper(logro, actor) {
+    if (actor.role === "superadmin" && logro.tenant_id) {
+      throw fallo(MENSAJE_SOLO_LECTURA, 403);
+    }
+  }
+
   static async obtener(id, actor) {
     return presentar(await LogroService._logro(id, actor, { soloLectura: true }));
   }
 
   static async actualizar(id, actor, datos) {
     const actual = await LogroService._logro(id, actor);
+    LogroService._soloGenericosParaSuper(actual, actor);
 
     const limpio = LogroService._validar(datos, { parcial: true });
     if (limpio.course_id !== undefined) {
@@ -304,7 +316,7 @@ class LogroService {
   }
 
   static async eliminar(id, actor) {
-    await LogroService._logro(id, actor);
+    LogroService._soloGenericosParaSuper(await LogroService._logro(id, actor), actor);
 
     const { error } = await supabase.from("logros").delete().eq("id", id);
     if (error) throw new Error(error.message);

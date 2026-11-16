@@ -410,6 +410,11 @@ class EntregaService {
    * cualquier cosa no debería dar puntos.
    */
   static async revisar(entregaId, actor, { aprobada, feedback }) {
+    // Corregir es tarea de quien dicta el curso: ni el administrador de la
+    // organización ni el superadmin revisan entregas.
+    if (actor.role !== "instructor") {
+      throw fallo("Las entregas las revisa el instructor del curso.", 403);
+    }
     const { data: entrega } = await supabase
       .from("entregas").select("*").eq("id", entregaId).maybeSingle();
     if (!entrega) throw fallo("Entrega no encontrada", 404);

@@ -4,6 +4,7 @@ const UserController = require("../controllers/userController");
 const verifyJWT = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
 const subida = require("../middlewares/subida.js");
+const { soloLectura, soloCreaAdministradores } = require("../middlewares/soloLectura.js");
 
 const administra = requireRole("admin", "superadmin");
 
@@ -114,11 +115,11 @@ router.get("/import/plantilla", verifyJWT, administra, UserController.plantillaI
  *           Sin archivo, tipo no permitido, más de 2 MB, vacío, sin las columnas
  *           nombre y correo, más de 1000 filas, o superadmin sin tenantId
  *       403:
- *         description: Quien llama no es administrador
+ *         description: Quien llama no es administrador; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: La organización indicada no existe
  */
-router.post("/import/preview", verifyJWT, administra, subida.planilla, UserController.previsualizarImportacion);
+router.post("/import/preview", verifyJWT, administra, soloLectura, subida.planilla, UserController.previsualizarImportacion);
 
 /**
  * @swagger
@@ -165,11 +166,11 @@ router.post("/import/preview", verifyJWT, administra, subida.planilla, UserContr
  *       400:
  *         description: Archivo inválido (mismos casos que la vista previa)
  *       403:
- *         description: Quien llama no es administrador
+ *         description: Quien llama no es administrador; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: La organización indicada no existe
  */
-router.post("/import", verifyJWT, administra, subida.planilla, UserController.importar);
+router.post("/import", verifyJWT, administra, soloLectura, subida.planilla, UserController.importar);
 
 /**
  * @swagger
@@ -206,9 +207,27 @@ router.post("/import", verifyJWT, administra, subida.planilla, UserController.im
  *     description: >
  *       El cuerpo es el array de siempre. La paginación viaja en cabeceras:
  *       `X-Total-Count`, `X-Page`, `X-Per-Page` y `X-Total-Pages`.
+ *       Cada usuario trae `tenantName` y `ultimaConexion`: el último día
+ *       (hora de Colombia) en que usó la plataforma, o null si nunca.
  *     responses:
  *       200:
  *         description: Lista de usuarios sin contraseñas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 type: object
+ *                 properties:
+ *                   id: { type: string }
+ *                   firstname: { type: string }
+ *                   lastname: { type: string }
+ *                   email: { type: string }
+ *                   role: { type: string }
+ *                   status: { type: string }
+ *                   tenantId: { type: string, nullable: true }
+ *                   tenantName: { type: string, nullable: true }
+ *                   ultimaConexion: { type: string, format: date, nullable: true }
  *       403:
  *         description: Sin permisos
  */
@@ -308,6 +327,12 @@ router.get(
  *   post:
  *     summary: Crea un nuevo usuario en el tenant
  *     tags: [Usuarios]
+ *     description: >
+ *       El administrador crea aprendices, instructores y administradores de su
+ *       organización. El superadministrador solo crea administradores, en la
+ *       organización que indique con `tenantId`. Nadie crea superadministradores
+ *       por aquí. XP, nivel, racha, promedio y misiones se ganan usando la
+ *       plataforma: si llegan en el cuerpo se ignoran y el usuario arranca en cero.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -331,11 +356,18 @@ router.get(
  *               password:
  *                 type: string
  *                 example: contraseña123
+ *                 description: >
+ *                   Contraseña temporal: la persona tendrá que cambiarla en su
+ *                   primer ingreso. Sin contraseña, entra con Google o Microsoft
+ *                   o la define con "olvidé mi contraseña".
  *               role:
  *                 type: string
- *                 enum: [student, instructor, admin, superadmin]
+ *                 enum: [student, instructor, admin]
  *                 default: student
- *                 description: Solo un superadmin puede crear otro superadmin.
+ *                 description: El superadministrador solo puede enviar admin.
+ *               tenantId:
+ *                 type: string
+ *                 description: Solo superadministrador (obligatorio para él); el administrador crea en su organización.
  *               phonumber:
  *                 type: string
  *                 example: "+57 300 0000000"
@@ -343,30 +375,15 @@ router.get(
  *                 type: string
  *                 enum: [Active, Inactive]
  *                 default: Active
- *               level:
- *                 type: integer
- *                 default: 0
- *               xp:
- *                 type: integer
- *                 default: 0
- *               streak:
- *                 type: integer
- *               average:
- *                 type: number
- *                 minimum: 0
- *                 maximum: 5
- *               missions:
- *                 type: string
- *                 example: "0/0"
  *     responses:
  *       201:
  *         description: Usuario creado correctamente
  *       400:
- *         description: Error de validación
+ *         description: Error de validación, o el superadministrador no indicó la organización
  *       403:
- *         description: Sin permisos
+ *         description: Sin permisos, se pidió el rol superadmin, o el superadministrador intentó crear algo distinto de un administrador
  */
-router.post("/create", verifyJWT, requireRole("admin", "superadmin"), UserController.create);
+router.post("/create", verifyJWT, requireRole("admin", "superadmin"), soloCreaAdministradores, UserController.create);
 
 /**
  * @swagger
@@ -389,11 +406,11 @@ router.post("/create", verifyJWT, requireRole("admin", "superadmin"), UserContro
  *       200:
  *         description: Usuario eliminado correctamente
  *       403:
- *         description: Un administrador intentó eliminar a un superadmin
+ *         description: Un administrador intentó eliminar a un superadmin; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: Usuario no encontrado o de otra organización
  */
-router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), UserController.deleteUser);
+router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), soloLectura, UserController.deleteUser);
 
 /**
  * @swagger
@@ -404,7 +421,9 @@ router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), User
  *     description: >
  *       Solo cambia lo que se envía. El id y la organización no se editan, el
  *       correo se guarda en minúsculas y la respuesta nunca incluye la
- *       contraseña.
+ *       contraseña. Una contraseña puesta aquí a otra persona es temporal:
+ *       tendrá que cambiarla en su próximo ingreso. XP, nivel, racha, promedio
+ *       y misiones no se editan (se ignoran) y nadie asciende a superadministrador.
  *     security:
  *       - bearerAuth: []
  *     parameters:
@@ -436,10 +455,10 @@ router.delete("/delete/:id", verifyJWT, requireRole("admin", "superadmin"), User
  *       400:
  *         description: Error de validación, o se intentó cambiar el id
  *       403:
- *         description: Un administrador intentó asignar el rol superadmin o modificar a un superadmin
+ *         description: Se intentó asignar el rol superadmin, un administrador intentó modificar a un superadmin, o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: Usuario no encontrado o de otra organización
  */
-router.put("/update/:id", verifyJWT, requireRole("admin", "superadmin"), UserController.updateUser);
+router.put("/update/:id", verifyJWT, requireRole("admin", "superadmin"), soloLectura, UserController.updateUser);
 
 module.exports = router;

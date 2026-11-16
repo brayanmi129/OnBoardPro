@@ -51,7 +51,9 @@ describe("Crear usuario", () => {
     assert.equal(inserciones().length, 0);
   });
 
-  test("S2-11 · HU-014 · el superadmin elige la empresa del nuevo usuario y puede crear otros superadmins", async () => {
+  // Sprint 11: el superadmin solo da de alta administradores de una
+  // organización; ya no crea otros superadmins ni aprendices desde acá.
+  test("S2-11 · HU-014 · el superadmin elige la empresa del nuevo administrador y no puede crear superadmins", async () => {
     preparar({ tablas: tablas() });
     const enOtra = await crear(superadmin, { email: "ana@otra.com", role: "admin", tenantId: "t-otra" });
     assert.equal(enOtra.statusCode, 201);
@@ -59,9 +61,8 @@ describe("Crear usuario", () => {
     assert.equal(enOtra.body.role, "admin");
 
     const otroSuper = await crear(superadmin, { email: "root2@onboardpro.com", role: "superadmin" });
-    assert.equal(otroSuper.statusCode, 201);
-    assert.equal(otroSuper.body.role, "superadmin");
-    assert.equal(inserciones().length, 2);
+    assert.equal(otroSuper.statusCode, 403);
+    assert.equal(inserciones().length, 1);
   });
 
   test("S2-12 · HU-014 · el esquema rechaza correo inválido, rol fuera del catálogo y campos desconocidos con 400 indicando el campo", async () => {

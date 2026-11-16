@@ -50,6 +50,11 @@ const frenoCambio = frenarFallos({
  *       El correo no distingue mayúsculas. Una cuenta desactivada, o de una
  *       organización desactivada, no recibe token aunque la contraseña sea
  *       correcta (403).
+
+ *       Si la contraseña es temporal (la puso un administrador),
+ *       `debeCambiarPassword` llega en true y el token solo sirve para
+ *       `GET /api/auth/me` y `POST /api/auth/change-password`: cualquier otra
+ *       ruta responde 403 con `codigo: CAMBIO_PASSWORD_REQUERIDO`.
  *     requestBody:
  *       required: true
  *       content:
@@ -77,6 +82,9 @@ const frenoCambio = frenarFallos({
  *                 token:
  *                   type: string
  *                   example: eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+ *                 debeCambiarPassword:
+ *                   type: boolean
+ *                   description: La contraseña es temporal y hay que cambiarla antes de seguir
  *                 user:
  *                   type: object
  *                   properties:
@@ -239,7 +247,9 @@ router.get("/me", verifyJWT, AuthController.me);
  *       Exige el JWT y la contraseña actual. El usuario que se modifica es
  *       siempre el del token: no se puede cambiar la contraseña de otra persona.
  *       Las cuentas creadas con Google o Microsoft no tienen contraseña y
- *       reciben 409.
+ *       reciben 409. Si la contraseña era temporal, deja de serlo y la
+ *       respuesta trae un token nuevo sin esa restricción, que reemplaza al
+ *       anterior.
  *     security:
  *       - bearerAuth: []
  *     requestBody:
@@ -260,6 +270,13 @@ router.get("/me", verifyJWT, AuthController.me);
  *     responses:
  *       200:
  *         description: Contraseña actualizada correctamente
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message: { type: string }
+ *                 token: { type: string, description: Token nuevo para seguir usando la sesión }
  *       400:
  *         description: Faltan datos, la nueva es muy corta o es igual a la actual
  *       401:

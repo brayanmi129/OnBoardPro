@@ -68,11 +68,25 @@
             "type": "string",
             "example": "2026-11-16"
           },
-          "xp": {
-            "type": "integer"
+          "activos": {
+            "type": "integer",
+            "description": "Personas distintas que usaron la plataforma ese día (entraron o hicieron algo)"
           },
           "completadas": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Actividades completadas"
+          },
+          "entregas": {
+            "type": "integer",
+            "description": "Entregas enviadas"
+          },
+          "creadas": {
+            "type": "integer",
+            "description": "Actividades nuevas en los cursos"
+          },
+          "xp": {
+            "type": "integer",
+            "description": "XP otorgado"
           }
         }
       },
@@ -350,7 +364,7 @@
             "description": "Token ausente o inválido"
           },
           "403": {
-            "description": "Rol sin permiso para crear actividades"
+            "description": "Rol sin permiso para crear actividades; o el superadministrador solo consulta las organizaciones"
           }
         }
       }
@@ -476,7 +490,7 @@
             "description": "No se envió nada que cambiar, o los datos no son válidos"
           },
           "403": {
-            "description": "La actividad no pertenece a un curso que dicte el instructor"
+            "description": "La actividad no pertenece a un curso que dicte el instructor; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "No existe o es de otra organización"
@@ -511,6 +525,9 @@
           "200": {
             "description": "Actividad eliminada"
           },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
+          },
           "404": {
             "description": "No existe o es de otra organización"
           }
@@ -523,7 +540,7 @@
         "tags": [
           "Autenticación"
         ],
-        "description": "El correo no distingue mayúsculas. Una cuenta desactivada, o de una organización desactivada, no recibe token aunque la contraseña sea correcta (403).\n",
+        "description": "El correo no distingue mayúsculas. Una cuenta desactivada, o de una organización desactivada, no recibe token aunque la contraseña sea correcta (403).\nSi la contraseña es temporal (la puso un administrador), `debeCambiarPassword` llega en true y el token solo sirve para `GET /api/auth/me` y `POST /api/auth/change-password`: cualquier otra ruta responde 403 con `codigo: CAMBIO_PASSWORD_REQUERIDO`.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -559,6 +576,10 @@
                     "token": {
                       "type": "string",
                       "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                    },
+                    "debeCambiarPassword": {
+                      "type": "boolean",
+                      "description": "La contraseña es temporal y hay que cambiarla antes de seguir"
                     },
                     "user": {
                       "type": "object",
@@ -786,7 +807,7 @@
         "tags": [
           "Autenticación"
         ],
-        "description": "Exige el JWT y la contraseña actual. El usuario que se modifica es siempre el del token: no se puede cambiar la contraseña de otra persona. Las cuentas creadas con Google o Microsoft no tienen contraseña y reciben 409.\n",
+        "description": "Exige el JWT y la contraseña actual. El usuario que se modifica es siempre el del token: no se puede cambiar la contraseña de otra persona. Las cuentas creadas con Google o Microsoft no tienen contraseña y reciben 409. Si la contraseña era temporal, deja de serlo y la respuesta trae un token nuevo sin esa restricción, que reemplaza al anterior.\n",
         "security": [
           {
             "bearerAuth": []
@@ -819,7 +840,23 @@
         },
         "responses": {
           "200": {
-            "description": "Contraseña actualizada correctamente"
+            "description": "Contraseña actualizada correctamente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "token": {
+                      "type": "string",
+                      "description": "Token nuevo para seguir usando la sesión"
+                    }
+                  }
+                }
+              }
+            }
           },
           "400": {
             "description": "Faltan datos, la nueva es muy corta o es igual a la actual"
@@ -1069,6 +1106,9 @@
           },
           "400": {
             "description": "Error en los datos o validación fallida"
+          },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
           }
         }
       }
@@ -1134,7 +1174,7 @@
             "description": "Datos inválidos, no se envió nada, o el instructor no es válido"
           },
           "403": {
-            "description": "El instructor no dicta este curso o intentó reasignarlo"
+            "description": "El instructor no dicta este curso o intentó reasignarlo; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "El curso no existe o es de otra organización"
@@ -1195,7 +1235,7 @@
             "description": "Falta el instructor, no existe en la organización, no puede dictar o está desactivado"
           },
           "403": {
-            "description": "Quien llama no es administrador"
+            "description": "Quien llama no es administrador; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "El curso no existe o es de otra organización"
@@ -1286,7 +1326,7 @@
             "description": "Falta `archivado` o no es booleano"
           },
           "403": {
-            "description": "El instructor no dicta este curso"
+            "description": "El instructor no dicta este curso; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "El curso no existe o es de otra organización"
@@ -1321,7 +1361,7 @@
             "description": "Devuelve message, actividades borradas y archivosBorrados"
           },
           "403": {
-            "description": "Quien llama no es administrador"
+            "description": "Quien llama no es administrador; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "El curso no existe o es de otra organización"
@@ -1377,7 +1417,7 @@
             "description": "Falta `publicado` o no es booleano"
           },
           "403": {
-            "description": "El instructor no dicta este curso"
+            "description": "El instructor no dicta este curso; o el superadministrador solo consulta las organizaciones"
           },
           "409": {
             "description": "Se intentó publicar un curso sin actividades"
@@ -1500,6 +1540,9 @@
           "400": {
             "description": "Sin archivo, tipo no permitido o supera los 5 MB"
           },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
+          },
           "404": {
             "description": "El curso no existe o es de otra empresa"
           }
@@ -1547,7 +1590,7 @@
         "tags": [
           "Tablero"
         ],
-        "description": "El \"periodo actual\" son los últimos `dias` días y el \"anterior\", los `dias` previos. Una persona está activa si tuvo algún movimiento de XP en el periodo. Las fechas de `actividadPorDia` son días en hora de Colombia, uno por día aunque no haya pasado nada, terminando hoy.\n**Superadmin sin tenantId** (`alcance: plataforma`): organizaciones, usuarios, cursos, XP, actividades completadas, serie por día y una fila por organización (`porOrganizacion`: id, nombre, activa, usuarios, aprendicesActivos, cursosPublicados, tasaFinalizacion, xpPeriodo).\n**Admin, o superadmin con tenantId** (`alcance: organizacion`): usuarios, cursos, `tasaFinalizacion` {actual, anterior}, xpPromedio, XP, entregasPorRevisar, serie por día, `cursosDetalle` (por curso publicado: aprendices, avancePromedio, completaron) y `aprendicesSinActividad` (aprendices sin movimientos en los últimos 7 días, máximo 20; `ultimaActividad` es el último día con actividad o null si nunca tuvo). Un admin ve siempre su organización, aunque mande otro tenantId.\n`tasaFinalizacion` (0 a 100) = actividades completadas por los aprendices activos / actividades que tienen asignadas por sus grupos en cursos publicados. \"anterior\" cuenta solo lo completado antes del inicio del periodo. Los cursos totales no incluyen los archivados.\n",
+        "description": "El \"periodo actual\" son los últimos `dias` días y el \"anterior\", los `dias` previos. Una persona está activa si tuvo algún movimiento de XP en el periodo. Las fechas de `actividadPorDia` son días en hora de Colombia, uno por día aunque no haya pasado nada, terminando hoy. `accesosRegistrados` es false mientras no exista el registro de accesos: entonces `activos` cuenta solo a quien hizo algo ese día.\n**Superadmin sin tenantId** (`alcance: plataforma`): organizaciones, usuarios, cursos, XP, actividades completadas, serie por día y una fila por organización (`porOrganizacion`) con su uso: personas por rol, aprendices activos en el periodo, cursos publicados y creados, grupos, entregas por revisar, tasa de finalización, fecha de creación y día de la última actividad de cualquiera de sus usuarios.\n**Admin, o superadmin con tenantId** (`alcance: organizacion`): usuarios, cursos, `tasaFinalizacion` {actual, anterior}, xpPromedio, XP, entregasPorRevisar, serie por día, `cursosDetalle` (por curso publicado: aprendices, avancePromedio, completaron) y `aprendicesSinActividad` (aprendices sin movimientos en los últimos 7 días, máximo 20; `ultimaActividad` es el último día con actividad o null si nunca tuvo). Un admin ve siempre su organización, aunque mande otro tenantId.\n`tasaFinalizacion` (0 a 100) = actividades completadas por los aprendices activos / actividades que tienen asignadas por sus grupos en cursos publicados. \"anterior\" cuenta solo lo completado antes del inicio del periodo. Los cursos totales no incluyen los archivados.\n",
         "security": [
           {
             "bearerAuth": []
@@ -1637,6 +1680,9 @@
                             "$ref": "#/components/schemas/DiaTablero"
                           }
                         },
+                        "accesosRegistrados": {
+                          "type": "boolean"
+                        },
                         "porOrganizacion": {
                           "type": "array",
                           "items": {
@@ -1651,7 +1697,21 @@
                               "activa": {
                                 "type": "boolean"
                               },
+                              "creada": {
+                                "type": "string",
+                                "format": "date-time",
+                                "nullable": true
+                              },
                               "usuarios": {
+                                "type": "integer"
+                              },
+                              "aprendices": {
+                                "type": "integer"
+                              },
+                              "instructores": {
+                                "type": "integer"
+                              },
+                              "admins": {
                                 "type": "integer"
                               },
                               "aprendicesActivos": {
@@ -1660,9 +1720,24 @@
                               "cursosPublicados": {
                                 "type": "integer"
                               },
+                              "cursosCreados": {
+                                "type": "integer",
+                                "description": "Sin contar los archivados"
+                              },
+                              "grupos": {
+                                "type": "integer"
+                              },
+                              "entregasPorRevisar": {
+                                "type": "integer"
+                              },
                               "tasaFinalizacion": {
                                 "type": "number",
                                 "example": 42.5
+                              },
+                              "ultimaActividad": {
+                                "type": "string",
+                                "format": "date",
+                                "nullable": true
                               },
                               "xpPeriodo": {
                                 "type": "integer"
@@ -1742,6 +1817,9 @@
                           "items": {
                             "$ref": "#/components/schemas/DiaTablero"
                           }
+                        },
+                        "accesosRegistrados": {
+                          "type": "boolean"
                         },
                         "cursosDetalle": {
                           "type": "array",
@@ -2092,7 +2170,7 @@
             "description": "Falta indicar si queda aprobada, o se piden cambios sin comentario"
           },
           "403": {
-            "description": "La entrega no pertenece a un curso que dicte el instructor"
+            "description": "Solo el instructor revisa entregas (el administrador y el superadministrador no), y solo las de los cursos que dicta"
           },
           "404": {
             "description": "La entrega no existe o es de otra organización"
@@ -2314,7 +2392,7 @@
             "description": "Valores fuera de rango, nada que guardar, una pregunta mal armada, o un id de pregunta que no es de este examen\n"
           },
           "403": {
-            "description": "El examen no pertenece a un curso que dicte el instructor"
+            "description": "El examen no pertenece a un curso que dicte el instructor; o el superadministrador solo consulta las organizaciones"
           },
           "409": {
             "description": "La actividad no es un examen, o ya fue rendido y se intentaron cambiar las preguntas"
@@ -2620,6 +2698,9 @@
           "400": {
             "description": "Enunciado vacío, puntaje o dificultad inválidos, o las opciones no tienen una sola correcta"
           },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
+          },
           "404": {
             "description": "El examen no existe, o la pregunta no es de ese examen"
           }
@@ -2657,6 +2738,9 @@
         "responses": {
           "200": {
             "description": "Pregunta eliminada"
+          },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "El examen no existe, o la pregunta no es de ese examen"
@@ -3067,6 +3151,9 @@
           },
           "400": {
             "description": "Datos inválidos, o algún integrante no pertenece a la organización"
+          },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
           }
         }
       }
@@ -3108,6 +3195,9 @@
           },
           "400": {
             "description": "Error de validación"
+          },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
           }
         }
       }
@@ -3154,6 +3244,9 @@
         "responses": {
           "200": {
             "description": "Usuarios agregados correctamente"
+          },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
           }
         }
       }
@@ -3203,6 +3296,9 @@
           },
           "400": {
             "description": "Error al eliminar usuarios"
+          },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
           }
         }
       }
@@ -3227,6 +3323,9 @@
         "responses": {
           "200": {
             "description": "Grupo eliminado correctamente"
+          },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "Grupo no encontrado"
@@ -3336,6 +3435,9 @@
           "400": {
             "description": "Lista vacía, o algún curso es de otra organización"
           },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
+          },
           "404": {
             "description": "El equipo no existe o es de otra organización"
           }
@@ -3388,6 +3490,9 @@
         "responses": {
           "200": {
             "description": "Cursos retirados"
+          },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "El equipo no existe o es de otra organización"
@@ -3498,7 +3603,7 @@
             "description": "Falta un campo, el tipo de condición no existe, la meta no es un entero positivo, o se ató un logro genérico a un curso\n"
           },
           "403": {
-            "description": "No es administrador, o pidió un logro genérico sin ser superadministrador"
+            "description": "No es administrador, o pidió un logro genérico sin ser superadministrador; o el superadministrador solo crea logros genéricos"
           },
           "404": {
             "description": "El curso indicado no existe o es de otra organización"
@@ -3610,7 +3715,7 @@
             "description": "Tipo de condición inexistente o meta inválida"
           },
           "403": {
-            "description": "Quien llama no es administrador"
+            "description": "Quien llama no es administrador; o el superadministrador solo pide la vista previa de logros genéricos"
           }
         }
       }
@@ -3650,7 +3755,7 @@
             "description": "El superadmin no indicó la organización"
           },
           "403": {
-            "description": "Quien llama no es administrador"
+            "description": "Quien llama no es administrador; o el superadministrador solo consulta las organizaciones"
           }
         }
       }
@@ -3892,7 +3997,7 @@
             "description": "No se envió ningún archivo"
           },
           "403": {
-            "description": "La actividad no pertenece a un curso que dicte el instructor"
+            "description": "La actividad no pertenece a un curso que dicte el instructor; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "La actividad no existe o es de otra organización"
@@ -3928,7 +4033,7 @@
             "description": "Material eliminado"
           },
           "403": {
-            "description": "La actividad no pertenece a un curso que dicte el instructor"
+            "description": "La actividad no pertenece a un curso que dicte el instructor; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "El material no existe"
@@ -4028,7 +4133,7 @@
             "description": "Tabla vacía, más de 50 niveles, XP que no sube, o nombre demasiado largo (el mensaje dice qué nivel)"
           },
           "403": {
-            "description": "Quien llama no es administrador"
+            "description": "Quien llama no es administrador; o el superadministrador solo consulta las organizaciones"
           }
         }
       },
@@ -4058,7 +4163,7 @@
             "description": "Devuelve message, personasConNivelNuevo y la tabla por defecto"
           },
           "403": {
-            "description": "Quien llama no es administrador"
+            "description": "Quien llama no es administrador; o el superadministrador solo consulta las organizaciones"
           }
         }
       }
@@ -4147,6 +4252,9 @@
           "400": {
             "description": "Datos inválidos"
           },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
+          },
           "404": {
             "description": "El curso no existe o es de otra organización"
           }
@@ -4197,6 +4305,9 @@
           "200": {
             "description": "Sección actualizada"
           },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
+          },
           "404": {
             "description": "No existe o es de otra organización"
           }
@@ -4226,6 +4337,9 @@
         "responses": {
           "200": {
             "description": "Sección eliminada"
+          },
+          "403": {
+            "description": "El superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "No existe o es de otra organización"
@@ -4527,7 +4641,7 @@
             "description": "Sin archivo, tipo no permitido, más de 2 MB, vacío, sin las columnas nombre y correo, más de 1000 filas, o superadmin sin tenantId\n"
           },
           "403": {
-            "description": "Quien llama no es administrador"
+            "description": "Quien llama no es administrador; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "La organización indicada no existe"
@@ -4605,7 +4719,7 @@
             "description": "Archivo inválido (mismos casos que la vista previa)"
           },
           "403": {
-            "description": "Quien llama no es administrador"
+            "description": "Quien llama no es administrador; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "La organización indicada no existe"
@@ -4675,10 +4789,53 @@
             }
           }
         ],
-        "description": "El cuerpo es el array de siempre. La paginación viaja en cabeceras: `X-Total-Count`, `X-Page`, `X-Per-Page` y `X-Total-Pages`.\n",
+        "description": "El cuerpo es el array de siempre. La paginación viaja en cabeceras: `X-Total-Count`, `X-Page`, `X-Per-Page` y `X-Total-Pages`. Cada usuario trae `tenantName` y `ultimaConexion`: el último día (hora de Colombia) en que usó la plataforma, o null si nunca.\n",
         "responses": {
           "200": {
-            "description": "Lista de usuarios sin contraseñas"
+            "description": "Lista de usuarios sin contraseñas",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "id": {
+                        "type": "string"
+                      },
+                      "firstname": {
+                        "type": "string"
+                      },
+                      "lastname": {
+                        "type": "string"
+                      },
+                      "email": {
+                        "type": "string"
+                      },
+                      "role": {
+                        "type": "string"
+                      },
+                      "status": {
+                        "type": "string"
+                      },
+                      "tenantId": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "tenantName": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "ultimaConexion": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "403": {
             "description": "Sin permisos"
@@ -4791,6 +4948,7 @@
         "tags": [
           "Usuarios"
         ],
+        "description": "El administrador crea aprendices, instructores y administradores de su organización. El superadministrador solo crea administradores, en la organización que indique con `tenantId`. Nadie crea superadministradores por aquí. XP, nivel, racha, promedio y misiones se ganan usando la plataforma: si llegan en el cuerpo se ignoran y el usuario arranca en cero.\n",
         "security": [
           {
             "bearerAuth": []
@@ -4820,18 +4978,22 @@
                   },
                   "password": {
                     "type": "string",
-                    "example": "contraseña123"
+                    "example": "contraseña123",
+                    "description": "Contraseña temporal: la persona tendrá que cambiarla en su primer ingreso. Sin contraseña, entra con Google o Microsoft o la define con \"olvidé mi contraseña\".\n"
                   },
                   "role": {
                     "type": "string",
                     "enum": [
                       "student",
                       "instructor",
-                      "admin",
-                      "superadmin"
+                      "admin"
                     ],
                     "default": "student",
-                    "description": "Solo un superadmin puede crear otro superadmin."
+                    "description": "El superadministrador solo puede enviar admin."
+                  },
+                  "tenantId": {
+                    "type": "string",
+                    "description": "Solo superadministrador (obligatorio para él); el administrador crea en su organización."
                   },
                   "phonumber": {
                     "type": "string",
@@ -4844,26 +5006,6 @@
                       "Inactive"
                     ],
                     "default": "Active"
-                  },
-                  "level": {
-                    "type": "integer",
-                    "default": 0
-                  },
-                  "xp": {
-                    "type": "integer",
-                    "default": 0
-                  },
-                  "streak": {
-                    "type": "integer"
-                  },
-                  "average": {
-                    "type": "number",
-                    "minimum": 0,
-                    "maximum": 5
-                  },
-                  "missions": {
-                    "type": "string",
-                    "example": "0/0"
                   }
                 }
               }
@@ -4875,10 +5017,10 @@
             "description": "Usuario creado correctamente"
           },
           "400": {
-            "description": "Error de validación"
+            "description": "Error de validación, o el superadministrador no indicó la organización"
           },
           "403": {
-            "description": "Sin permisos"
+            "description": "Sin permisos, se pidió el rol superadmin, o el superadministrador intentó crear algo distinto de un administrador"
           }
         }
       }
@@ -4910,7 +5052,7 @@
             "description": "Usuario eliminado correctamente"
           },
           "403": {
-            "description": "Un administrador intentó eliminar a un superadmin"
+            "description": "Un administrador intentó eliminar a un superadmin; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "Usuario no encontrado o de otra organización"
@@ -4924,7 +5066,7 @@
         "tags": [
           "Usuarios"
         ],
-        "description": "Solo cambia lo que se envía. El id y la organización no se editan, el correo se guarda en minúsculas y la respuesta nunca incluye la contraseña.\n",
+        "description": "Solo cambia lo que se envía. El id y la organización no se editan, el correo se guarda en minúsculas y la respuesta nunca incluye la contraseña. Una contraseña puesta aquí a otra persona es temporal: tendrá que cambiarla en su próximo ingreso. XP, nivel, racha, promedio y misiones no se editan (se ignoran) y nadie asciende a superadministrador.\n",
         "security": [
           {
             "bearerAuth": []
@@ -4981,7 +5123,7 @@
             "description": "Error de validación, o se intentó cambiar el id"
           },
           "403": {
-            "description": "Un administrador intentó asignar el rol superadmin o modificar a un superadmin"
+            "description": "Se intentó asignar el rol superadmin, un administrador intentó modificar a un superadmin, o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "Usuario no encontrado o de otra organización"

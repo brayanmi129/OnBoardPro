@@ -4,6 +4,17 @@ const zod = require("zod");
 
 const actorDe = (req) => ({ id: req.user.id, email: req.user.email, role: req.user.role, tenantId: req.user.tenantId });
 
+// Lo que se gana usando la plataforma (XP, nivel, racha, promedio, misiones)
+// no se fija a mano: un usuario nuevo arranca en cero y después solo lo mueve
+// el sistema. Si llega en el cuerpo, se descarta.
+const CAMPOS_DE_JUEGO = ["xp", "level", "streak", "racha_maxima", "average", "missions"];
+const sinCamposDeJuego = (cuerpo = {}) =>
+  Object.fromEntries(Object.entries(cuerpo).filter(([k]) => !CAMPOS_DE_JUEGO.includes(k)));
+
+// El superadmin es de la plataforma, no de una organización: no se crea ni se
+// asigna desde la gestión de usuarios.
+const NO_SUPERADMIN = "El rol superadministrador no se puede asignar desde la gestión de usuarios.";
+
 class UserController {
   /** La plantilla CSV para la carga masiva. */
   static plantillaImportacion(req, res) {
@@ -38,15 +49,25 @@ class UserController {
 
   static async create(req, res) {
     try {
-      // Admin solo puede crear usuarios en su tenant; superadmin puede especificar tenantId
-      if (req.body.role === "superadmin" && req.user.role !== "superadmin") {
-        return res.status(403).json({ message: "Solo un superadmin puede crear otros superadmins" });
+      if (req.body.role === "superadmin") {
+        return res.status(403).json({ message: NO_SUPERADMIN });
+      }
+      // El superadmin solo da de alta al administrador de una organización;
+      // el resto de la gente la crea ese administrador.
+      if (req.user.role === "superadmin" && req.body.role !== "admin") {
+        return res.status(403).json({
+          message: "El superadministrador solo puede crear administradores; el resto de usuarios los crea el administrador de la organización.",
+        });
       }
 
+      // Admin solo puede crear usuarios en su tenant; superadmin elige la organización
       const tenantId =
         req.user.role === "superadmin" ? req.body.tenantId || req.user.tenantId : req.user.tenantId;
+      if (req.user.role === "superadmin" && !tenantId) {
+        return res.status(400).json({ message: "Indica la organización del administrador (tenantId)." });
+      }
 
-      const user = await UserService.create({ ...req.body, tenantId });
+      const user = await UserService.create({ ...sinCamposDeJuego(req.body), tenantId });
       return res.status(201).json(user);
     } catch (error) {
       if (error instanceof zod.ZodError) {
@@ -130,11 +151,11 @@ class UserController {
   static async updateUser(req, res) {
     try {
       const { id } = req.params;
-      const updateData = req.body;
+      const updateData = sinCamposDeJuego(req.body);
 
-      // Admin no puede escalar roles a superadmin
-      if (updateData.role === "superadmin" && req.user.role !== "superadmin") {
-        return res.status(403).json({ message: "No puedes asignar el rol superadmin" });
+      // Nadie asciende a superadmin desde acá: es un rol de la plataforma.
+      if (updateData.role === "superadmin") {
+        return res.status(403).json({ message: NO_SUPERADMIN });
       }
 
       const tenantId = req.user.role === "superadmin" ? null : req.user.tenantId;

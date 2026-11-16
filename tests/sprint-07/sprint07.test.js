@@ -235,23 +235,25 @@ describe("Calificar y retroalimentar entrega", () => {
     preparar({ tablas: conEntregas() });
     const acreditar = t.mock.method(GamificationService, "acreditar", async () => ({ xpGanado: 30 }));
 
-    await rechaza(EntregaService.revisar("e1", admin, { aprobada: false, feedback: "  " }), 400, "corregir");
-    await rechaza(EntregaService.revisar("e1", admin, { aprobada: "si", feedback: "x" }), 400);
+    await rechaza(EntregaService.revisar("e1", instructor, { aprobada: false, feedback: "  " }), 400, "corregir");
+    await rechaza(EntregaService.revisar("e1", instructor, { aprobada: "si", feedback: "x" }), 400);
 
-    const r = await EntregaService.revisar("e1", admin, { aprobada: false, feedback: "Falta la conclusión" });
+    const r = await EntregaService.revisar("e1", instructor, { aprobada: false, feedback: "Falta la conclusión" });
     assert.equal(r.estado, "rehacer");
     assert.equal(r.xpAcreditado, 0);
     assert.equal(acreditar.mock.callCount(), 0);
 
-    await rechaza(EntregaService.revisar("e2", admin, { aprobada: false, feedback: "Mejor no" }), 409, "aprobada");
+    await rechaza(EntregaService.revisar("e2", instructor, { aprobada: false, feedback: "Mejor no" }), 409, "aprobada");
     assert.equal(estado.tablas.entregas.find((e) => e.id === "e2").estado, "aprobada");
   });
 
   test("S7-14 · HU-048 · un instructor que no dicta el curso recibe 403; otra organización o una entrega inexistente, 404", async () => {
     preparar({ tablas: conEntregas() });
     await rechaza(EntregaService.revisar("e1", instructorAjeno, { aprobada: true }), 403);
-    await rechaza(EntregaService.revisar("e1", adminAjeno, { aprobada: true }), 404);
-    await rechaza(EntregaService.revisar("no-existe", admin, { aprobada: true }), 404);
+    await rechaza(EntregaService.revisar("e1", { ...instructor, tenantId: "t2" }, { aprobada: true }), 404);
+    await rechaza(EntregaService.revisar("no-existe", instructor, { aprobada: true }), 404);
+    // Revisar es solo del instructor: el administrador recibe 403.
+    await rechaza(EntregaService.revisar("e1", admin, { aprobada: true, feedback: "ok" }), 403);
     assert.equal(estado.tablas.entregas.find((e) => e.id === "e1").estado, "entregado");
   });
 });

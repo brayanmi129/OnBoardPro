@@ -4,6 +4,7 @@ const CourseController = require("../controllers/courseController");
 const verifyToken = require("../middlewares/jwt.js");
 const requireRole = require("../middlewares/requireRole.js");
 const subida = require("../middlewares/subida.js");
+const { soloLectura } = require("../middlewares/soloLectura.js");
 
 /**
  * @swagger
@@ -116,12 +117,14 @@ router.get("/get/id/:id", verifyToken, CourseController.getById);
  *                 items: { type: string }
  *                 description: Ids de actividades ya creadas.
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       201:
  *         description: Curso creado correctamente
  *       400:
  *         description: Error en los datos o validación fallida
  */
-router.post("/create", verifyToken, requireRole("admin", "superadmin", "instructor"), CourseController.create);
+router.post("/create", verifyToken, requireRole("admin", "superadmin", "instructor"), soloLectura, CourseController.create);
 
 /**
  * @swagger
@@ -163,13 +166,13 @@ router.post("/create", verifyToken, requireRole("admin", "superadmin", "instruct
  *       400:
  *         description: Datos inválidos, no se envió nada, o el instructor no es válido
  *       403:
- *         description: El instructor no dicta este curso o intentó reasignarlo
+ *         description: El instructor no dicta este curso o intentó reasignarlo; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: El curso no existe o es de otra organización
  *       409:
  *         description: Se intentó publicar un curso sin actividades
  */
-router.put("/update/:id", verifyToken, requireRole("admin", "superadmin", "instructor"), CourseController.update);
+router.put("/update/:id", verifyToken, requireRole("admin", "superadmin", "instructor"), soloLectura, CourseController.update);
 
 /**
  * @swagger
@@ -212,11 +215,11 @@ router.put("/update/:id", verifyToken, requireRole("admin", "superadmin", "instr
  *       400:
  *         description: Falta el instructor, no existe en la organización, no puede dictar o está desactivado
  *       403:
- *         description: Quien llama no es administrador
+ *         description: Quien llama no es administrador; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: El curso no existe o es de otra organización
  */
-router.put("/:id/instructor", verifyToken, requireRole("admin", "superadmin"), CourseController.asignarInstructor);
+router.put("/:id/instructor", verifyToken, requireRole("admin", "superadmin"), soloLectura, CourseController.asignarInstructor);
 
 /**
  * @swagger
@@ -283,11 +286,11 @@ router.get("/:id/impacto", verifyToken, requireRole("admin", "superadmin", "inst
  *       400:
  *         description: Falta `archivado` o no es booleano
  *       403:
- *         description: El instructor no dicta este curso
+ *         description: El instructor no dicta este curso; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: El curso no existe o es de otra organización
  */
-router.put("/:id/archivar", verifyToken, requireRole("admin", "superadmin", "instructor"), CourseController.archivar);
+router.put("/:id/archivar", verifyToken, requireRole("admin", "superadmin", "instructor"), soloLectura, CourseController.archivar);
 
 /**
  * @swagger
@@ -316,11 +319,11 @@ router.put("/:id/archivar", verifyToken, requireRole("admin", "superadmin", "ins
  *       200:
  *         description: Devuelve message, actividades borradas y archivosBorrados
  *       403:
- *         description: Quien llama no es administrador
+ *         description: Quien llama no es administrador; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: El curso no existe o es de otra organización
  */
-router.delete("/delete/:id", verifyToken, requireRole("admin", "superadmin"), CourseController.eliminar);
+router.delete("/delete/:id", verifyToken, requireRole("admin", "superadmin"), soloLectura, CourseController.eliminar);
 
 /**
  * @swagger
@@ -357,11 +360,11 @@ router.delete("/delete/:id", verifyToken, requireRole("admin", "superadmin"), Co
  *       400:
  *         description: Falta `publicado` o no es booleano
  *       403:
- *         description: El instructor no dicta este curso
+ *         description: El instructor no dicta este curso; o el superadministrador solo consulta las organizaciones
  *       409:
  *         description: Se intentó publicar un curso sin actividades
  */
-router.put("/:id/publicar", verifyToken, requireRole("admin", "superadmin", "instructor"), CourseController.publicar);
+router.put("/:id/publicar", verifyToken, requireRole("admin", "superadmin", "instructor"), soloLectura, CourseController.publicar);
 
 /**
  * @swagger
@@ -439,6 +442,8 @@ router.get("/me", verifyToken, CourseController.getMyCourses);
  *                 type: string
  *                 format: binary
  *     responses:
+ *       403:
+ *         description: El superadministrador solo consulta las organizaciones
  *       200:
  *         description: Portada actualizada, devuelve bannerUrl
  *       400:
@@ -450,6 +455,7 @@ router.post(
   "/:id/banner",
   verifyToken,
   requireRole("admin", "superadmin", "instructor"),
+  soloLectura,
   subida.banner,
   CourseController.subirBanner
 );

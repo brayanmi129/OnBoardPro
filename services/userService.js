@@ -4,13 +4,17 @@ const UserSchema = require("../schemas/userSchemas.js");
 const bcrypt = require("bcrypt");
 const crypto = require("crypto");
 
+const { porLotes } = require("../helpers/consultas.js");
+const { tablaFaltante } = require("../helpers/accesos.js");
+
 const SALT_ROUNDS = 10;
 
 function toUser(row) {
   if (!row) return null;
-  const { tenant_id, created_at, ...rest } = row;
+  const { tenant_id, created_at, debe_cambiar_password, ...rest } = row;
   const user = { ...rest };
   if (tenant_id !== undefined) user.tenantId = tenant_id;
+  user.debeCambiarPassword = debe_cambiar_password === true;
   return user;
 }
 
@@ -20,8 +24,30 @@ function fromUser(data) {
     out.tenant_id = out.tenantId ?? null;
     delete out.tenantId;
   }
+  if ("debeCambiarPassword" in out) {
+    out.debe_cambiar_password = out.debeCambiarPassword === true;
+    delete out.debeCambiarPassword;
+  }
   delete out.createdAt;
   return out;
+}
+
+// Mientras no se corra scripts/pendiente.sql la columna no existe y PostgREST
+// rechaza la escritura entera. Se reintenta sin ella, para que dar de alta o
+// editar usuarios siga funcionando (sin la contraseña temporal) hasta entonces.
+const faltaColumnaTemporal = (error) => /debe_cambiar_password/.test(error?.message || "");
+let avisoColumna = false;
+async function escribirUsuario(fila, escribir) {
+  let r = await escribir(fila);
+  if (r.error && faltaColumnaTemporal(r.error) && "debe_cambiar_password" in fila) {
+    if (!avisoColumna) {
+      avisoColumna = true;
+      console.warn("[usuarios] Falta la columna users.debe_cambiar_password (scripts/pendiente.sql): no se marca la contraseña temporal.");
+    }
+    const { debe_cambiar_password: _, ...sinColumna } = fila;
+    r = await escribir(sinColumna);
+  }
+  return r;
 }
 
 
@@ -43,6 +69,36 @@ async function conNombreDeEmpresa(usuarios) {
   const nombres = new Map((empresas || []).map((t) => [t.id, t.name]));
 
   return usuarios.map((u) => ({ ...u, tenantName: u.tenantId ? nombres.get(u.tenantId) ?? null : null }));
+}
+
+/**
+ * Agrega a cada usuario el último día en que usó la plataforma
+ * (`ultimaConexion`, "YYYY-MM-DD" o null si nunca).
+ *
+ * Sale del registro de accesos (accesos_diarios: una fila por persona y día)
+ * y de ultima_actividad (el último día en que ganó XP), el más reciente de
+ * los dos. Mientras la tabla de accesos no exista, queda solo
+ * ultima_actividad. Una consulta por lote de ids, no una por persona.
+ */
+async function conUltimaConexion(usuarios) {
+  const ultima = new Map();
+  const anotar = (id, dia) => {
+    if (!dia) return;
+    const d = String(dia).slice(0, 10);
+    if (!ultima.has(id) || d > ultima.get(id)) ultima.set(id, d);
+  };
+  for (const u of usuarios) anotar(u.id, u.ultima_actividad);
+
+  try {
+    const accesos = await porLotes(usuarios.map((u) => u.id), (lote) => supabase
+      .from("accesos_diarios").select("user_id, dia").in("user_id", lote)
+      .order("dia", { ascending: false }));
+    for (const a of accesos) anotar(a.user_id, a.dia);
+  } catch (e) {
+    if (!tablaFaltante(e)) throw e;
+  }
+
+  return usuarios.map((u) => ({ ...u, ultimaConexion: ultima.get(u.id) ?? null }));
 }
 
 class UserService {
@@ -96,6 +152,11 @@ class UserService {
     // le creaba una segunda cuenta como aprendiz.
     if (typeof userData.email === "string") userData.email = userData.email.trim().toLowerCase();
 
+    // Quien da de alta a otra persona le pone una contraseña que conoce: es
+    // temporal y se cambia en el primer ingreso. Sin contraseña (entra con
+    // Google o Microsoft, o la define con "olvidé mi contraseña") no hay nada
+    // que cambiar. El valor nunca lo decide quien llama.
+    userData.debeCambiarPassword = Boolean(userData.password);
     if (userData.password) {
       userData.password = await bcrypt.hash(userData.password, SALT_ROUNDS);
     }
@@ -106,7 +167,7 @@ class UserService {
     }
 
     const user = validation.data;
-    const { error } = await supabase.from("users").insert(fromUser(user));
+    const { error } = await escribirUsuario(fromUser(user), (fila) => supabase.from("users").insert(fila));
     if (error) throw new Error(error.message);
 
     const { password: _, ...safeUser } = user;
@@ -151,7 +212,7 @@ class UserService {
     });
 
     return {
-      usuarios: await conNombreDeEmpresa(usuarios),
+      usuarios: await conUltimaConexion(await conNombreDeEmpresa(usuarios)),
       total: count ?? usuarios.length,
       pagina,
       porPagina,
@@ -243,6 +304,15 @@ class UserService {
     delete updateData.id;
     if (typeof updateData.email === "string") updateData.email = updateData.email.trim().toLowerCase();
 
+    // El aviso de contraseña temporal no lo fija quien edita desde la API:
+    // si un admin le pone una contraseña a otra persona, es temporal; si la
+    // cambia la persona misma (perfil o enlace del correo), el servicio que
+    // llama sin actor decide.
+    if (actor) {
+      delete updateData.debeCambiarPassword;
+      if (updateData.password && actor.id !== id) updateData.debeCambiarPassword = true;
+    }
+
     if (updateData.password) {
       updateData.password = await bcrypt.hash(updateData.password, SALT_ROUNDS);
     }
@@ -252,7 +322,8 @@ class UserService {
       return detalleDeValidacion(validation.error);
     }
 
-    const { error } = await supabase.from("users").update(fromUser(validation.data)).eq("id", id);
+    const { error } = await escribirUsuario(fromUser(validation.data),
+      (fila) => supabase.from("users").update(fila).eq("id", id));
     if (error) return { error: error.message };
 
     // Criterio 3 de HU-018: el cambio de rol queda auditado con autor y fecha.
