@@ -2,7 +2,7 @@ const crypto = require("crypto");
 const { errorDeValidacion, detalleDeValidacion } = require("../helpers/validacion.js");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const CourseSchema = require("../schemas/courseSchemas.js");
-const { subirBanner, borrar, BANNERS, MATERIALES } = require("../helpers/storage.js");
+const { subirBanner, borrar, esCompartido, BANNERS, MATERIALES } = require("../helpers/storage.js");
 const AvisoService = require("./avisoService.js");
 
 
@@ -418,7 +418,7 @@ class CourseService {
       ...actividades.map((a) => a.adjunto),
       ...(materiales || []).map((m) => m.ruta),
       ...(entregas || []).map((e) => e.archivo),
-    ].filter((r) => r && !/^https?:\/\//i.test(r)))];
+    ].filter((r) => r && !/^https?:\/\//i.test(r) && !esCompartido(r)))];
 
     if (actIds.length) {
       const { error } = await supabase.from("activities").delete().in("id", actIds);

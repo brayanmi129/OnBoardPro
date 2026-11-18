@@ -1,0 +1,170 @@
+{
+  "nombre": "Introducción a OnBoard Pro",
+  "descripcion": "Aprende a usar la plataforma: tu primer ingreso, tus cursos, exámenes, entregas, XP, logros, ranking y perfil.",
+  "secciones": [
+    {
+      "nombre": "Tu primer ingreso",
+      "actividades": [
+        {
+          "tipo": "Recurso",
+          "xp": 10,
+          "nombre": "Primer ingreso y contraseña",
+          "titulo": "Tu primer ingreso y el cambio de contraseña",
+          "descripcion": "Entra con tu correo y la contraseña temporal que te dio tu empresa. La primera vez, la plataforma te pide cambiarla: elige una de al menos 8 caracteres, distinta de la temporal. Si tu empresa lo permite, también puedes entrar con tu cuenta de Google o Microsoft, y si olvidas tu contraseña puedes recuperarla desde «¿Olvidaste tu contraseña?».",
+          "video": "01-primer-ingreso.mp4"
+        }
+      ]
+    },
+    {
+      "nombre": "Tu inicio",
+      "actividades": [
+        {
+          "tipo": "Recurso",
+          "xp": 10,
+          "nombre": "Tu página de inicio",
+          "titulo": "Qué encuentras en tu página de inicio",
+          "descripcion": "Tu inicio te muestra lo que tienes pendiente y tu siguiente paso, tu nivel y tu XP, tu racha de días seguidos, las actividades que has completado, tus logros y lo último que sumaste. Desde ahí también llegas a tus cursos.",
+          "video": "02-inicio.mp4"
+        }
+      ]
+    },
+    {
+      "nombre": "Cursos y actividades",
+      "actividades": [
+        {
+          "tipo": "Recurso",
+          "xp": 10,
+          "nombre": "Tus cursos y sus actividades",
+          "titulo": "Cómo avanzar en un curso",
+          "descripcion": "En «Mis cursos» ves los cursos de tu inducción y cuánto llevas de cada uno. Cada curso se divide en secciones con tres tipos de actividad: recursos (material que revisas y marcas como completado), tareas (subes un archivo para que lo revise tu instructor) y exámenes. Cada actividad completada suma XP y avanza tu progreso.",
+          "video": "03-cursos-y-actividades.mp4"
+        }
+      ]
+    },
+    {
+      "nombre": "Exámenes",
+      "actividades": [
+        {
+          "tipo": "Recurso",
+          "xp": 10,
+          "nombre": "Cómo presentar un examen",
+          "titulo": "Exámenes: tiempo, intentos y puntaje",
+          "descripcion": "Antes de empezar verás el tiempo límite, cuántos intentos tienes y el porcentaje que necesitas para aprobar. El XP que ganas es proporcional a tu nota, y si apruebas en un segundo intento recibes la mitad. Un examen aprobado ya no se vuelve a presentar.",
+          "video": "04-examenes.mp4"
+        }
+      ]
+    },
+    {
+      "nombre": "Entregas",
+      "actividades": [
+        {
+          "tipo": "Recurso",
+          "xp": 10,
+          "nombre": "Cómo enviar una entrega",
+          "titulo": "Tareas: enviar tu trabajo y ver la calificación",
+          "descripcion": "En una tarea subes tu archivo y puedes dejar un comentario. Tu instructor la revisa y la aprueba o te pide cambios, siempre con una retroalimentación. Si te pide cambios, puedes reemplazar tu archivo. El XP de la tarea se suma cuando la aprueban.",
+          "video": "05-entregas.mp4"
+        }
+      ]
+    },
+    {
+      "nombre": "XP, niveles y logros",
+      "actividades": [
+        {
+          "tipo": "Recurso",
+          "xp": 10,
+          "nombre": "XP, niveles, rachas y logros",
+          "titulo": "Cómo ganas XP, subes de nivel y desbloqueas logros",
+          "descripcion": "Cada actividad te da XP una sola vez. Al acumular XP subes de nivel, y si haces algo cada día mantienes tu racha. Los logros se desbloquean solos cuando cumples su condición, por ejemplo terminar un curso o aprobar un examen, y algunos te dan XP adicional.",
+          "video": "06-xp-niveles-logros.mp4"
+        }
+      ]
+    },
+    {
+      "nombre": "Ranking",
+      "actividades": [
+        {
+          "tipo": "Recurso",
+          "xp": 10,
+          "nombre": "El ranking",
+          "titulo": "Cómo leer el ranking",
+          "descripcion": "El ranking te compara con tus compañeros. Por defecto se abre en tu curso, y también puedes verlo por grupo de ingreso o por toda la organización, y filtrarlo por semana, mes o todo el periodo. Las medallas de posición se entregan al cierre de cada periodo.",
+          "video": "07-ranking.mp4"
+        }
+      ]
+    },
+    {
+      "nombre": "Tu perfil",
+      "actividades": [
+        {
+          "tipo": "Recurso",
+          "xp": 10,
+          "nombre": "Tu perfil",
+          "titulo": "Tu perfil, tus entregas y tu contraseña",
+          "descripcion": "En tu perfil ves y actualizas tus datos, revisas tus entregas con su calificación y el detalle de tus últimas acreditaciones de XP. Desde ahí también puedes cambiar tu contraseña cuando quieras.",
+          "video": "08-perfil.mp4"
+        }
+      ]
+    },
+    {
+      "nombre": "Comprueba lo que aprendiste",
+      "actividades": [
+        {
+          "tipo": "Examen",
+          "xp": 50,
+          "nombre": "Evaluación de la introducción",
+          "titulo": "Evaluación: ¿ya sabes usar OnBoard Pro?",
+          "descripcion": "Cinco preguntas sobre lo que viste en este curso. Necesitas 60 % para aprobar y tienes tres intentos de 10 minutos.",
+          "examen": {
+            "tiempoLimite": 10,
+            "intentosPermitidos": 3,
+            "porcentajeAprobacion": 60,
+            "mostrarRespuestas": true
+          },
+          "preguntas": [
+            {
+              "enunciado": "¿Qué pasa la primera vez que entras con la contraseña temporal que te dio tu empresa?",
+              "opciones": [
+                { "texto": "La plataforma te pide cambiarla por una tuya antes de seguir.", "esCorrecta": true },
+                { "texto": "Puedes usarla para siempre.", "esCorrecta": false },
+                { "texto": "Tu cuenta queda bloqueada hasta que llames a soporte.", "esCorrecta": false }
+              ]
+            },
+            {
+              "enunciado": "¿Cuántas veces te da XP una misma actividad?",
+              "opciones": [
+                { "texto": "Cada vez que la vuelves a abrir.", "esCorrecta": false },
+                { "texto": "Una sola vez.", "esCorrecta": true },
+                { "texto": "Una vez por día.", "esCorrecta": false }
+              ]
+            },
+            {
+              "enunciado": "Apruebas un examen de 50 XP con 80 % en tu segundo intento. ¿Cuánto XP recibes?",
+              "opciones": [
+                { "texto": "50 XP", "esCorrecta": false },
+                { "texto": "40 XP", "esCorrecta": false },
+                { "texto": "20 XP", "esCorrecta": true }
+              ]
+            },
+            {
+              "enunciado": "¿Cuándo se suma el XP de una tarea que entregaste?",
+              "opciones": [
+                { "texto": "Apenas subes el archivo.", "esCorrecta": false },
+                { "texto": "Cuando tu instructor la aprueba.", "esCorrecta": true },
+                { "texto": "Al final del curso.", "esCorrecta": false }
+              ]
+            },
+            {
+              "enunciado": "¿En qué vista se abre el ranking por defecto?",
+              "opciones": [
+                { "texto": "En la de toda la organización.", "esCorrecta": false },
+                { "texto": "En la de tu curso.", "esCorrecta": true },
+                { "texto": "En la de todas las empresas de la plataforma.", "esCorrecta": false }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -34,6 +34,16 @@ class TenantService {
     });
     if (error) throw new Error(error.message);
 
+    // Toda organización nueva arranca con el curso "Introducción a OnBoard
+    // Pro". Si la copia falla, la organización igual queda creada: el curso
+    // se puede agregar después con scripts/curso-introduccion.js.
+    try {
+      const CursoIntroduccionService = require("./cursoIntroduccionService.js");
+      await CursoIntroduccionService.crearEn(validation.data.id);
+    } catch (err) {
+      console.error(`[organizaciones] no se creó el curso de introducción en ${validation.data.id}:`, err.message);
+    }
+
     return validation.data;
   }
 

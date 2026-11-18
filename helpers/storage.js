@@ -72,12 +72,18 @@ async function urlFirmada(ruta, segundos = VIGENCIA_FIRMA_SEG) {
   return data.signedUrl;
 }
 
+// Archivos de la plataforma que comparten todas las organizaciones (por ejemplo
+// los videos del curso de introducción): borrar el curso o el material en una
+// organización no puede dejar a las demás sin el archivo.
+const esCompartido = (ruta) => String(ruta || "").startsWith("plataforma/");
+
 async function borrar(bucket, ruta) {
-  if (!ruta || /^https?:\/\//i.test(ruta)) return;
+  if (!ruta || /^https?:\/\//i.test(ruta) || esCompartido(ruta)) return;
   await supabase.storage.from(bucket).remove([ruta]);
 }
 
 module.exports = {
+  esCompartido,
   BANNERS,
   MATERIALES,
   subirBanner,
