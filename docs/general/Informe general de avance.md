@@ -46,29 +46,29 @@
 | 8 | 16/10 – 23/10 | Cerrado | 7 / 6 | 29 | 24 | 83% | 154 | 4 |
 | 9 | 23/10 – 30/10 | Cerrado | 6 / 6 | 26 | 26 | 100% | 180 | 6 |
 | 10 | 30/10 – 6/11 | Cerrado | 6 / 6 | 19 | 19 | 100% | 199 | 5 |
-| 11 | 6/11 – 13/11 | Cerrado | 4 / 4 | 12 | 12 | 100% | 211 | 1 |
-| **Cerrados (1–11)** |  |  | **65 / 61** | **225** | **211** | **94%** | **211** | **31** |
-| **Todos (1–11)** |  |  | **65 / 61** | **225** | **211** | **94%** | **211** | **31** |
+| 11 | 6/11 – 13/11 | Cerrado | 4 / 4 | 12 | 12 | 100% | 211 | 8 |
+| **Cerrados (1–11)** |  |  | **65 / 61** | **225** | **211** | **94%** | **211** | **38** |
+| **Todos (1–11)** |  |  | **65 / 61** | **225** | **211** | **94%** | **211** | **38** |
 
-![Velocidad por sprint: puntos pronosticados contra completados.](img/g1-velocidad.png)
+![Velocidad por sprint: puntos pronosticados contra completados.](imagenes/g1-velocidad.png)
 
-![Burn-up: avance acumulado contra el alcance total del MVP.](img/g2-burnup.png)
+![Burn-up: avance acumulado contra el alcance total del MVP.](imagenes/g2-burnup.png)
 
 ## 4. KPIs de calidad
 
 | Indicador | Valor |
 |---|---|
-| Defectos detectados | 31 |
-| Defectos resueltos | 29 · 94% |
+| Defectos detectados | 38 |
+| Defectos resueltos | 36 · 95% |
 | Defectos mitigados | 2 |
 | Defectos abiertos | 0 |
-| Densidad | 0,15 por SP entregado |
-| Defectos de integración (merge) | 4 de 31 · 13% |
-| Defectos de seguridad | 12 de 31 · 39% |
-| Sprint con más defectos | Sprint 9 · 6 |
-| Resueltos en el mismo sprint | 29 de 31 · 94% |
+| Densidad | 0,18 por SP entregado |
+| Defectos de integración (merge) | 4 de 38 · 11% |
+| Defectos de seguridad | 15 de 38 · 39% |
+| Sprint con más defectos | Sprint 11 · 8 (semana de estabilización) |
+| Resueltos en el mismo sprint | 36 de 38 · 95% |
 
-![Defectos detectados en cada sprint.](img/g3-bugs.png)
+![Defectos detectados en cada sprint.](imagenes/g3-bugs.png)
 
 ## 5. Bitácora de defectos
 
@@ -105,6 +105,13 @@
 | B-29 | 10 | Al integrar la rama development, las portadas de «Mis cursos» dejaron de verse por un campo renombrado. | Merge | Resuelto |
 | B-30 | 10 | Completar una actividad tardaba más de 7 segundos por consultas en serie a la base. | Rendimiento | Mitigado |
 | B-31 | 11 | El ranking incluía a personas desactivadas en la organización. | Funcional | Resuelto |
+| B-32 | 11 | El superadministrador podía crear, editar y borrar contenido dentro de las organizaciones y cerrar sus periodos de ranking. | Seguridad | Resuelto |
+| B-33 | 11 | Al crear o editar un usuario se podían fijar a mano su XP, nivel, racha y promedio. | Seguridad | Resuelto |
+| B-34 | 11 | El administrador de la organización podía revisar entregas, tarea exclusiva del instructor del curso. | Seguridad | Resuelto |
+| B-35 | 11 | El listado de usuarios mostraba solo las primeras 50 personas de la organización. | Funcional | Resuelto |
+| B-36 | 11 | El formulario de usuario ofrecía los estados Pendiente y Suspendido, que el servidor rechaza. | Funcional | Resuelto |
+| B-37 | 11 | En el inicio del aprendiz, la tarjeta de logros se estiraba y montaba las últimas acreditaciones sobre los cursos. | Funcional | Resuelto |
+| B-38 | 11 | El detalle de los avisos de error era ilegible cuando el sistema operativo estaba en modo oscuro. | Funcional | Resuelto |
 
 ## 6. Alcance por módulo
 

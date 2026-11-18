@@ -22,16 +22,18 @@ function fallo(message, status) {
 // Qué se puede medir, y qué significa la meta en cada caso. El mensaje se usa
 // para explicar el error cuando llega un tipo que no existe, y para describir
 // la unidad en la respuesta.
+// Singular o plural según la meta: "Terminar 1 curso", "Terminar 3 cursos".
+const pl = (n, uno, varios) => `${n} ${Number(n) === 1 ? uno : varios}`;
 const CONDICIONES = {
-  actividades_completadas: { unidad: "actividades", texto: (n) => `Completar ${n} actividades` },
-  secciones_completadas: { unidad: "secciones", texto: (n) => `Completar ${n} secciones` },
-  cursos_completados: { unidad: "cursos", texto: (n) => `Terminar ${n} cursos al 100%` },
-  examenes_aprobados: { unidad: "exámenes", texto: (n) => `Aprobar ${n} exámenes` },
-  racha_dias: { unidad: "días seguidos", texto: (n) => `Mantener ${n} días seguidos de actividad` },
+  actividades_completadas: { unidad: "actividades", texto: (n) => `Completar ${pl(n, "actividad", "actividades")}` },
+  secciones_completadas: { unidad: "secciones", texto: (n) => `Completar ${pl(n, "sección", "secciones")}` },
+  cursos_completados: { unidad: "cursos", texto: (n) => `Terminar ${pl(n, "curso", "cursos")} al 100%` },
+  examenes_aprobados: { unidad: "exámenes", texto: (n) => `Aprobar ${pl(n, "examen", "exámenes")}` },
+  racha_dias: { unidad: "días seguidos", texto: (n) => `Mantener ${Number(n) === 1 ? "1 día" : `${n} días seguidos`} de actividad` },
   nivel_alcanzado: { unidad: "nivel", texto: (n) => `Alcanzar el nivel ${n}` },
-  entregas_aprobadas: { unidad: "entregas", texto: (n) => `Tener ${n} entregas aprobadas` },
+  entregas_aprobadas: { unidad: "entregas", texto: (n) => `Tener ${pl(n, "entrega aprobada", "entregas aprobadas")}` },
   posicion_ranking: { unidad: "puesto", texto: (n) => `Quedar en el puesto ${n} o mejor del ranking` },
-  juegos_completados: { unidad: "juegos", texto: (n) => `Completar ${n} juegos` },
+  juegos_completados: { unidad: "juegos", texto: (n) => `Completar ${pl(n, "juego", "juegos")}` },
 };
 
 const CATEGORIAS = ["Progreso", "Constancia", "Nivel", "Ranking", "Entregas", "Juegos"];

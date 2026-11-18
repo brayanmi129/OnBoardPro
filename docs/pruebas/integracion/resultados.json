@@ -1,23 +1,269 @@
 {
-  "fecha": "2026-11-16T16:49:55.648Z",
-  "duracionMs": 7296,
+  "fecha": "2026-11-18T20:37:27.231Z",
+  "duracionMs": 67103,
   "entorno": {
     "base": "dfbeioootnxeomupwdhe.supabase.co",
     "organizacion": "Test",
     "node": "v22.22.2",
-    "prefijoDatos": "itestmwji1akfdb5a"
+    "prefijoDatos": "itestmwml1lj31bb7"
   },
-  "ejecutado": false,
-  "errorGeneral": "No se pudo leer la base: TypeError: fetch failed (no hay conexión con https://dfbeioootnxeomupwdhe.supabase.co: revisá que el proyecto de Supabase no esté pausado y que la URL del .env sea la vigente)",
+  "ejecutado": true,
+  "errorGeneral": null,
   "resumen": {
-    "total": 0,
-    "pasan": 0,
+    "total": 24,
+    "pasan": 24,
     "noPasan": 0
   },
   "limpieza": {
-    "pasos": [],
-    "restos": {},
+    "pasos": [
+      "intentos_examen: ok",
+      "logros_usuario: ok",
+      "xp_movimientos: ok",
+      "entregas: ok",
+      "users_groups: ok",
+      "groups_courses: ok",
+      "materiales: ok",
+      "opciones: ok",
+      "preguntas: ok",
+      "activities: ok",
+      "sections: ok",
+      "courses: ok",
+      "groups: ok",
+      "logros: ok",
+      "users: ok",
+      "tenants: ok"
+    ],
+    "restos": {
+      "tenants": 0,
+      "users": 0,
+      "groups": 0,
+      "courses": 0,
+      "sections": 0,
+      "activities": 0,
+      "preguntas": 0,
+      "opciones": 0,
+      "materiales": 0,
+      "entregas": 0,
+      "logros": 0
+    },
     "limpio": true
   },
-  "casos": []
+  "casos": [
+    {
+      "id": "INT-01",
+      "grupo": "a) Concurrencia",
+      "que": "10 llamadas simultáneas a completarActividad (mismo usuario y actividad)",
+      "esperado": "1 éxito y 9 respuestas 409",
+      "obtenido": "1 éxito(s), 9 respuestas 409",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-02",
+      "grupo": "a) Concurrencia",
+      "que": "Movimientos de XP registrados por esa actividad",
+      "esperado": "exactamente 1 fila en xp_movimientos",
+      "obtenido": "1 fila(s)",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-03",
+      "grupo": "a) Concurrencia",
+      "que": "XP del usuario tras las 10 llamadas",
+      "esperado": "users.xp = suma del libro, y la actividad (10 XP) sumada una sola vez",
+      "obtenido": "users.xp = 25, suma del libro = 25, XP de actividades = 10 (el resto son logros)",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-04",
+      "grupo": "b) Aislamiento",
+      "que": "Curso de B (detalle)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "null (no encontrado)",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-05",
+      "grupo": "b) Aislamiento",
+      "que": "Curso de B (participantes, aprendiz A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "404 Curso no encontrado",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-06",
+      "grupo": "b) Aislamiento",
+      "que": "Secciones del curso de B (aprendiz A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "404 Curso no encontrado",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-07",
+      "grupo": "b) Aislamiento",
+      "que": "Secciones del curso de B (admin A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "404 Curso no encontrado",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-08",
+      "grupo": "b) Aislamiento",
+      "que": "Material de una actividad de B (aprendiz A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "404 Actividad no encontrada",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-09",
+      "grupo": "b) Aislamiento",
+      "que": "Material de una actividad de B (admin A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "404 Actividad no encontrada",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-10",
+      "grupo": "b) Aislamiento",
+      "que": "Entregas de una actividad de B (admin A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "404 Actividad no encontrada",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-11",
+      "grupo": "b) Aislamiento",
+      "que": "Archivo de una entrega de B (admin A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "null (no encontrado)",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-12",
+      "grupo": "b) Aislamiento",
+      "que": "Revisar una entrega de B (instructor A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "404 Entrega no encontrada",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-13",
+      "grupo": "b) Aislamiento",
+      "que": "Usuario de B por correo (admin A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "null (no encontrado)",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-14",
+      "grupo": "b) Aislamiento",
+      "que": "Editar un usuario de B (admin A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "404",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-15",
+      "grupo": "b) Aislamiento",
+      "que": "Completar una actividad de B (aprendiz A)",
+      "esperado": "404 (como si no existiera)",
+      "obtenido": "404 Actividad no encontrada",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-16",
+      "grupo": "b) Aislamiento",
+      "que": "El usuario de B sigue intacto tras el intento de edición desde A",
+      "esperado": "firstname = \"IT aprb\"",
+      "obtenido": "firstname = \"IT aprb\"",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-17",
+      "grupo": "b) Aislamiento",
+      "que": "El ranking de A (siempre y semana) no incluye a nadie de B",
+      "esperado": "ningún id de la organización B",
+      "obtenido": "6 filas (siempre), 6 (semana); de B: 0",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-18",
+      "grupo": "b) Aislamiento",
+      "que": "El tablero de A no cuenta datos de B",
+      "esperado": "usuarios = los de A; el XP que ganó B no cambia el XP de A; el curso de B no aparece",
+      "obtenido": "usuarios = 7 (en la base: 7); XP periodo antes/después = 25/25; curso de B listado: false; curso de A listado: true",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-19",
+      "grupo": "c) Reglas de gamificación",
+      "que": "Completar el mismo recurso dos veces",
+      "esperado": "1.ª: +10 XP; 2.ª: 409; 1 movimiento",
+      "obtenido": "1.ª: +10 XP; 2.ª: 409; 1 movimiento(s)",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-20",
+      "grupo": "c) Reglas de gamificación",
+      "que": "Examen de 50 XP aprobado con 80% en el 1.er intento",
+      "esperado": "40 XP (proporcional a la nota)",
+      "obtenido": "80%, aprobado=true, XP acreditado 40, en el libro 40",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-21",
+      "grupo": "c) Reglas de gamificación",
+      "que": "Examen de 50 XP: 1.er intento 40% (reprobado), 2.º intento 80%",
+      "esperado": "1.º: 0 XP; 2.º: 20 XP (80% de 50, a la mitad por reintento)",
+      "obtenido": "1.º: 40% aprobado=false XP 0; 2.º: 80% aprobado=true XP 20; en el libro 20; aviso: Aprobaste en un reintento: el XP se reduce a la mitad.",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-22",
+      "grupo": "c) Reglas de gamificación",
+      "que": "Un examen aprobado no se puede volver a rendir",
+      "esperado": "409 al iniciar un 3.er intento; sigue 1 movimiento",
+      "obtenido": "409; 1 movimiento(s)",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-23",
+      "grupo": "c) Reglas de gamificación",
+      "que": "Subida de nivel en la misma operación (actividad de 100 XP, el umbral del nivel 1)",
+      "esperado": "subioDeNivel = true y users.level >= 1 al terminar la llamada",
+      "obtenido": "subioDeNivel=true, nivel en la respuesta=1, en la base level=1, xp=115",
+      "pasa": true,
+      "detalle": null
+    },
+    {
+      "id": "INT-24",
+      "grupo": "c) Reglas de gamificación",
+      "que": "Logro de la organización (1 actividad completada, +5 XP) otorgado una sola vez",
+      "esperado": "se desbloquea en la 1.ª actividad, no en la 2.ª; 1 fila en logros_usuario y 1 movimiento del logro",
+      "obtenido": "1.ª: desbloqueado; 2.ª: no; logros_usuario=1; movimientos del logro=1",
+      "pasa": true,
+      "detalle": null
+    }
+  ]
 }

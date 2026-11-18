@@ -133,7 +133,11 @@ async function preparar() {
 
   const act = (sufijo, tenant, seccion, extra) => ({
     id: id(sufijo), tenant_id: tenant, section_id: seccion, name: sufijo, title: `${PREFIJO} ${sufijo}`,
-    adjunto: "", type: "Recurso", deliverable: false, xp: 10, orden: 0, ...extra,
+    adjunto: "", type: "Recurso", deliverable: false, xp: 10, orden: 0,
+    // Un insert de varias filas manda null en las columnas que alguna fila no
+    // trae, en vez de su DEFAULT: se fijan los mismos valores por defecto.
+    tiempo_limite: null, intentos_permitidos: 1, porcentaje_aprobacion: 70, mostrar_respuestas: true,
+    ...extra,
   });
   const a = {
     r1: act("r1", A, sA.id),
@@ -237,7 +241,8 @@ async function casosAislamiento({ A, B, u, a, cA, cB }) {
     ["Material de una actividad de B (admin A)", () => MaterialService.listar(a.rB.id, adminA, { conUrl: false })],
     ["Entregas de una actividad de B (admin A)", () => EntregaService.listar(a.tB.id, adminA)],
     ["Archivo de una entrega de B (admin A)", () => EntregaService.urlArchivo(id("entb"), adminA)],
-    ["Revisar una entrega de B (admin A)", () => EntregaService.revisar(id("entb"), adminA, { aprobada: true })],
+    // Revisar es solo del instructor: se intenta con un instructor de A.
+    ["Revisar una entrega de B (instructor A)", () => EntregaService.revisar(id("entb"), { ...adminA, role: "instructor" }, { aprobada: true })],
     ["Usuario de B por correo (admin A)", () => UserService.getByEmail(u.aprB.email, A)],
     ["Editar un usuario de B (admin A)", () => UserService.updateUser(u.aprB.id, { firstname: "Hackeado" }, A, adminA)],
     ["Completar una actividad de B (aprendiz A)", () => GamificationService.completarActividad(aprA.id, a.rB.id, A)],

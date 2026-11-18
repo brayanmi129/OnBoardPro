@@ -30,7 +30,7 @@ const pedir = (claims, method, originalUrl) =>
   }));
 
 describe("Contraseña temporal", () => {
-  test("S11-50 · crear un usuario con contraseña la deja temporal; sin contraseña, no; el valor no lo decide quien llama", async () => {
+  test("S11-50 · HU-014 · crear un usuario con contraseña la deja temporal; sin contraseña, no; el valor no lo decide quien llama", async () => {
     preparar({ tablas: datos() });
     await enSilencio(() => UserService.create({ firstname: "Ana", email: "ana@acme.com", password: "Inicial123", tenantId: "t1", debeCambiarPassword: false }));
     const ana = estado.tablas.users.find((u) => u.email === "ana@acme.com");
@@ -42,7 +42,7 @@ describe("Contraseña temporal", () => {
     assert.equal(estado.tablas.users.find((u) => u.email === "beto@acme.com").debe_cambiar_password, false);
   });
 
-  test("S11-51 · el login con contraseña temporal responde 200 con el aviso y un token marcado", async () => {
+  test("S11-51 · HU-013 · el login con contraseña temporal responde 200 con el aviso y un token marcado", async () => {
     preparar({ tablas: datos() });
     const res = respuesta();
     await enSilencio(() => AuthController.login({ body: { email: "nuevo@acme.com", password: "Temporal123" } }, res));
@@ -57,7 +57,7 @@ describe("Contraseña temporal", () => {
     assert.equal(jwt.decode(normal.cuerpo.token).cambiarPassword, undefined);
   });
 
-  test("S11-52 · con el token marcado solo se puede ver la sesión y cambiar la contraseña", async () => {
+  test("S11-52 · HU-013 · con el token marcado solo se puede ver la sesión y cambiar la contraseña", async () => {
     preparar({ tablas: datos() });
     const marcado = { id: "nue", role: "student", tenantId: "t1", cambiarPassword: true };
     const bloqueada = await pedir(marcado, "GET", "/api/courses/get/all");
@@ -69,7 +69,7 @@ describe("Contraseña temporal", () => {
     assert.equal((await pedir({ id: "adm", role: "admin", tenantId: "t1" }, "GET", "/api/courses/get/all")).statusCode, 200);
   });
 
-  test("S11-53 · cambiarla limpia la marca y devuelve un token nuevo; corta o igual a la temporal, no", async () => {
+  test("S11-53 · HU-013 · cambiarla limpia la marca y devuelve un token nuevo; corta o igual a la temporal, no", async () => {
     preparar({ tablas: datos() });
     const corta = await enSilencio(() => AuthService.cambiarPassword("nue", "Temporal123", "corta"));
     assert.equal(corta.estado, 400);
@@ -87,7 +87,7 @@ describe("Contraseña temporal", () => {
     assert.equal(me.debeCambiarPassword, false);
   });
 
-  test("S11-54 · si un admin le pone una contraseña a otra persona vuelve a ser temporal; el admin no puede quitar la marca", async () => {
+  test("S11-54 · HU-014 · si un admin le pone una contraseña a otra persona vuelve a ser temporal; el admin no puede quitar la marca", async () => {
     preparar({ tablas: { ...datos(), users: datos().users.map((u) => ({ ...u, debe_cambiar_password: false })) } });
     await enSilencio(() => UserService.updateUser("nue", { password: "OtraTemporal1" }, "t1", admin));
     assert.equal(fila("nue").debe_cambiar_password, true);
