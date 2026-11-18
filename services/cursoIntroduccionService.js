@@ -125,6 +125,9 @@ class CursoIntroduccionService {
           id: actividadId, tenant_id: tenantId, section_id: seccionId, orden: j,
           name: a.nombre, title: a.titulo, description: a.descripcion,
           type: a.tipo, xp: a.xp, deliverable: false, adjunto: null, mime: null, created_at: ahora,
+          // Un insert de varias filas manda null en las columnas que alguna
+          // fila no trae, en vez de su DEFAULT: se fijan los valores por defecto.
+          tiempo_limite: null, intentos_permitidos: 1, porcentaje_aprobacion: 70, mostrar_respuestas: true,
         };
         if (a.tipo === "Examen") {
           Object.assign(fila, {
