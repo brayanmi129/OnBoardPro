@@ -120,13 +120,16 @@ class AvisoService {
       if (!seccion) return;
 
       const { data: curso } = await supabase
-        .from("courses").select("id, name").eq("id", seccion.course_id).maybeSingle();
+        .from("courses").select("id, name, tenant_id").eq("id", seccion.course_id).maybeSingle();
       if (!curso) return;
 
-      const { data: gc } = await supabase
-        .from("groups_courses").select("id_group").eq("id_course", curso.id);
-
-      const personas = await aprendicesDe((gc || []).map((g) => g.id_group));
+      // Por grupo o por ser para toda la organización (helpers/asignacion.js).
+      const { ids } = await require("../helpers/asignacion.js").personasDeCurso(curso);
+      const { data: activos } = ids.length
+        ? await supabase.from("users").select("id, email, firstname")
+            .in("id", ids).eq("role", "student").eq("status", "Active")
+        : { data: [] };
+      const personas = activos || [];
       if (!personas.length) return;
 
       const asunto = `Nuevo contenido en ${curso.name}`;

@@ -1094,6 +1094,11 @@
                       "type": "string"
                     },
                     "description": "Ids de actividades ya creadas."
+                  },
+                  "paraTodos": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "El curso lo tienen todos los aprendices activos de la organización, estén o no en un grupo (también los que se registren después). Solo lo activa un administrador."
                   }
                 }
               }
@@ -1108,7 +1113,10 @@
             "description": "Error en los datos o validación fallida"
           },
           "403": {
-            "description": "El superadministrador solo consulta las organizaciones"
+            "description": "El superadministrador solo consulta las organizaciones; o quien no es administrador intentó activar paraTodos"
+          },
+          "409": {
+            "description": "paraTodos todavía no está disponible porque falta actualizar la base de datos"
           }
         }
       }
@@ -1160,6 +1168,10 @@
                       "Abierto",
                       "Cerrado"
                     ]
+                  },
+                  "paraTodos": {
+                    "type": "boolean",
+                    "description": "Para toda la organización (todos sus aprendices activos, sin pasar por grupos). Solo un administrador lo cambia."
                   }
                 }
               }
@@ -1174,13 +1186,13 @@
             "description": "Datos inválidos, no se envió nada, o el instructor no es válido"
           },
           "403": {
-            "description": "El instructor no dicta este curso o intentó reasignarlo; o el superadministrador solo consulta las organizaciones"
+            "description": "El instructor no dicta este curso o intentó reasignarlo; quien no es administrador intentó cambiar paraTodos; o el superadministrador solo consulta las organizaciones"
           },
           "404": {
             "description": "El curso no existe o es de otra organización"
           },
           "409": {
-            "description": "Se intentó publicar un curso sin actividades"
+            "description": "Se intentó publicar un curso sin actividades, o paraTodos todavía no está disponible en la base de datos"
           }
         }
       }

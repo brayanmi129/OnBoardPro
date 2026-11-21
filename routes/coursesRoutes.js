@@ -116,9 +116,15 @@ router.get("/get/id/:id", verifyToken, CourseController.getById);
  *                 type: array
  *                 items: { type: string }
  *                 description: Ids de actividades ya creadas.
+ *               paraTodos:
+ *                 type: boolean
+ *                 default: false
+ *                 description: El curso lo tienen todos los aprendices activos de la organización, estén o no en un grupo (también los que se registren después). Solo lo activa un administrador.
  *     responses:
  *       403:
- *         description: El superadministrador solo consulta las organizaciones
+ *         description: El superadministrador solo consulta las organizaciones; o quien no es administrador intentó activar paraTodos
+ *       409:
+ *         description: paraTodos todavía no está disponible porque falta actualizar la base de datos
  *       201:
  *         description: Curso creado correctamente
  *       400:
@@ -160,17 +166,20 @@ router.post("/create", verifyToken, requireRole("admin", "superadmin", "instruct
  *               instructor: { type: string, format: email }
  *               grupo:      { type: string, nullable: true }
  *               status:     { type: string, enum: [Abierto, Cerrado] }
+ *               paraTodos:
+ *                 type: boolean
+ *                 description: Para toda la organización (todos sus aprendices activos, sin pasar por grupos). Solo un administrador lo cambia.
  *     responses:
  *       200:
  *         description: Curso actualizado, devuelve el curso
  *       400:
  *         description: Datos inválidos, no se envió nada, o el instructor no es válido
  *       403:
- *         description: El instructor no dicta este curso o intentó reasignarlo; o el superadministrador solo consulta las organizaciones
+ *         description: El instructor no dicta este curso o intentó reasignarlo; quien no es administrador intentó cambiar paraTodos; o el superadministrador solo consulta las organizaciones
  *       404:
  *         description: El curso no existe o es de otra organización
  *       409:
- *         description: Se intentó publicar un curso sin actividades
+ *         description: Se intentó publicar un curso sin actividades, o paraTodos todavía no está disponible en la base de datos
  */
 router.put("/update/:id", verifyToken, requireRole("admin", "superadmin", "instructor"), soloLectura, CourseController.update);
 

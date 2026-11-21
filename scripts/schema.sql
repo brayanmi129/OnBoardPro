@@ -977,3 +977,7 @@ CREATE INDEX IF NOT EXISTS idx_accesos_dia ON accesos_diarios(dia);
 -- admin que se la cambia): en su primer ingreso tiene que cambiarla. Las
 -- cuentas que ya existen quedan en FALSE.
 ALTER TABLE users ADD COLUMN IF NOT EXISTS debe_cambiar_password BOOLEAN NOT NULL DEFAULT FALSE;
+
+-- Cursos para toda la organización: con para_todos = true el curso lo tienen
+-- todos los aprendices activos de su organización, estén o no en un grupo.
+ALTER TABLE courses ADD COLUMN IF NOT EXISTS para_todos BOOLEAN NOT NULL DEFAULT FALSE;

@@ -62,18 +62,12 @@ async function completadoPor(userId) {
 }
 
 /**
- * La estructura de los cursos que importan: los asignados a la persona por sus
- * grupos más los que nombre algún logro. Curso -> secciones -> actividades.
+ * La estructura de los cursos que importan: los asignados a la persona (por
+ * grupo o para toda la organización) más los que nombre algún logro.
  */
 async function estructura(userId, cursosExtra) {
-  const { data: grupos } = await supabase
-    .from("users_groups").select("id_group").eq("id_user", userId);
-  const { data: asignados } = grupos?.length
-    ? await supabase.from("groups_courses").select("id_course")
-        .in("id_group", grupos.map((g) => g.id_group))
-    : { data: [] };
-
-  const propios = new Set((asignados || []).map((a) => a.id_course));
+  // Por sus grupos o por ser para toda su organización.
+  const propios = await require("../helpers/asignacion.js").cursosAsignados(userId);
   const cursos = [...new Set([...propios, ...cursosExtra])];
   const mapa = new Map(cursos.map((c) => [c, []]));
   if (!cursos.length) return { mapa, propios };

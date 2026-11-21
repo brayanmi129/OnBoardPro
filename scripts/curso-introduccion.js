@@ -5,6 +5,11 @@
 //   node scripts/curso-introduccion.js --todas                todas
 //   node scripts/curso-introduccion.js --todas --plan         muestra qué haría, sin escribir
 //   node scripts/curso-introduccion.js --todas --videos <carpeta>
+//   node scripts/curso-introduccion.js --todas --para-todos [--plan]
+//
+// Con --para-todos no crea nada: marca el curso de introducción que ya tiene
+// cada organización como "para toda la organización" (lo ven todos sus
+// aprendices sin asignarlo a grupos). Requiere la columna courses.para_todos.
 //
 // Con --videos sube a Storage (bucket "materiales") los .mp4 de la carpeta cuyo
 // nombre coincide con el campo "video" de cada actividad en
@@ -23,11 +28,12 @@ const BUCKET = "materiales";
 const CARPETA_STORAGE = "plataforma/curso-introduccion";
 
 function argumentos(argv) {
-  const a = { todas: false, plan: false, videos: null, tenant: null };
+  const a = { todas: false, plan: false, videos: null, tenant: null, paraTodos: false };
   for (let i = 0; i < argv.length; i++) {
     const x = argv[i];
     if (x === "--todas") a.todas = true;
     else if (x === "--plan") a.plan = true;
+    else if (x === "--para-todos") a.paraTodos = true;
     else if (x === "--videos") a.videos = argv[++i];
     else if (!x.startsWith("--")) a.tenant = x;
   }
@@ -77,6 +83,27 @@ async function subirVideos(locales) {
   if (!organizaciones?.length) {
     console.error("No hay organizaciones que coincidan.");
     process.exit(1);
+  }
+
+  if (a.paraTodos) {
+    for (const o of organizaciones) {
+      const ya = await CursoIntroduccionService.existente(o.id);
+      if (!ya) {
+        console.log(`sin curso   ${o.id} · ${o.name} (créalo primero, sin --para-todos)`);
+        continue;
+      }
+      if (a.plan) {
+        console.log(`se marcaría ${o.id} · ${o.name}`);
+        continue;
+      }
+      try {
+        await CursoIntroduccionService.marcarParaTodos(o.id);
+        console.log(`marcado     ${o.id} · ${o.name}: para toda la organización`);
+      } catch (err) {
+        console.error(`error       ${o.id} · ${o.name}: ${err.message}`);
+      }
+    }
+    return;
   }
 
   const locales = videosLocales(a.videos);

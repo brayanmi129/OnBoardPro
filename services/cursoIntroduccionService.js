@@ -19,6 +19,7 @@ const path = require("path");
 const fs = require("fs");
 const { supabase } = require("../helpers/supabaseHelper.js");
 const ExamenService = require("./examenService.js");
+const { columnaFaltante } = require("../helpers/asignacion.js");
 
 const DEFINICION = path.join(__dirname, "..", "data", "curso-introduccion.json");
 // Los videos se suben una vez y los comparten todas las organizaciones.
@@ -38,6 +39,24 @@ async function insertar(tabla, filas) {
 
 class CursoIntroduccionService {
   static definicion = definicion;
+
+  /**
+   * Marca como "para toda la organización" el curso de introducción que ya
+   * tiene la organización. Devuelve { marcado, cursoId } o { marcado: false }
+   * si no lo tiene. Falla con un mensaje claro si la columna no existe.
+   */
+  static async marcarParaTodos(tenantId) {
+    const ya = await CursoIntroduccionService.existente(tenantId);
+    if (!ya) return { marcado: false, motivo: "sin curso" };
+    const { error } = await supabase.from("courses").update({ para_todos: true }).eq("id", ya.id);
+    if (error) {
+      if (columnaFaltante(error)) {
+        throw new Error("Falta la columna courses.para_todos: corre scripts/pendiente.sql primero.");
+      }
+      throw new Error(error.message);
+    }
+    return { marcado: true, cursoId: ya.id };
+  }
 
   /** El curso de introducción que ya tiene la organización, o null. */
   static async existente(tenantId) {
@@ -149,10 +168,19 @@ class CursoIntroduccionService {
       });
     });
 
-    await insertar("courses", [{
+    const fila = {
       id: cursoId, tenant_id: tenantId, name: def.nombre, instructor: null, grupo: null,
       status: "Abierto", actividades: [], archivado: false, created_at: ahora,
-    }]);
+    };
+    // Para toda la organización: lo tienen todos sus aprendices sin pasar por
+    // grupos. Si la columna todavía no existe (scripts/pendiente.sql), se crea
+    // sin ella, como antes, y el administrador lo asigna a sus grupos.
+    try {
+      await insertar("courses", [{ ...fila, para_todos: true }]);
+    } catch (e) {
+      if (!columnaFaltante(e)) throw e;
+      await insertar("courses", [fila]);
+    }
     try {
       await insertar("sections", secciones);
       await insertar("activities", actividades);

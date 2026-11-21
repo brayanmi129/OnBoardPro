@@ -21,18 +21,11 @@ class PendientesService {
     return PendientesService._administracion(actor);
   }
 
-  /** Cursos a los que llega esta persona por sus equipos. */
+  /** Cursos a los que llega esta persona: por sus equipos o por ser para toda su organización. */
   static async _misCursos(userId) {
-    const { data: misGrupos } = await supabase
-      .from("users_groups").select("id_group").eq("id_user", userId);
-    if (!misGrupos?.length) return [];
-
-    const { data: gc } = await supabase
-      .from("groups_courses").select("id_course")
-      .in("id_group", misGrupos.map((g) => g.id_group));
-    if (!gc?.length) return [];
-
-    const ids = [...new Set(gc.map((x) => x.id_course))];
+    // Por sus grupos o por ser para toda su organización.
+    const ids = [...await require("../helpers/asignacion.js").cursosAsignados(userId)];
+    if (!ids.length) return [];
     // Un curso despublicado no le muestra nada al aprendiz: tampoco pendientes.
     const { data } = await supabase.from("courses").select("id, name")
       .in("id", ids).eq("status", "Abierto").eq("archivado", false);
@@ -220,7 +213,13 @@ class PendientesService {
         .filter((u) => ["instructor", "admin"].includes(u.role) && u.status !== "Inactive")
         .map((u) => u.email)
     );
-    const sinEquipo = (usuarios || []).filter((u) => u.role === "student" && !conEquipo.has(u.id));
+    // Con algún curso para toda la organización, un aprendiz sin equipo igual
+    // llega a ese curso: deja de ser un pendiente.
+    const paraTodos = await require("../helpers/asignacion.js")
+      .cursosParaTodos({ cursoIds: (cursos || []).map((c) => c.id) });
+    const sinEquipo = paraTodos.size
+      ? []
+      : (usuarios || []).filter((u) => u.role === "student" && !conEquipo.has(u.id));
     const equiposSinCursos = (grupos || []).filter((g) => !conCursos.has(g.id));
     const cursosSinInstructor = (cursos || []).filter(
       (c) => !c.instructor || (!esSuper && !puedenDictar.has(c.instructor))

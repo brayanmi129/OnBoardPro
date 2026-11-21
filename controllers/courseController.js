@@ -21,7 +21,7 @@ class CourseController {
     try {
       const tenantId =
         req.user.role === "superadmin" ? req.body.tenantId || null : req.user.tenantId;
-      const course = await CourseService.createCourse({ ...req.body, tenantId });
+      const course = await CourseService.createCourse({ ...req.body, tenantId }, req.user.role);
       res.status(201).json(course);
     } catch (error) {
       console.error("Error al crear el curso:", error.message);

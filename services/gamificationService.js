@@ -132,13 +132,10 @@ class GamificationService {
     // Solo compite quien tiene el curso asignado hoy: si sacaron a alguien del
     // grupo, su XP se conserva pero deja de figurar en el ranking del curso.
     // Así el ranking y la lista de participantes cuentan a la misma gente.
-    const { data: enlaces } = await supabase
-      .from("groups_courses").select("id_group").eq("id_course", courseId);
-    const grupos = (enlaces || []).map((e) => e.id_group);
-    if (!grupos.length) return [];
-    const { data: miembros } = await supabase
-      .from("users_groups").select("id_user").in("id_group", grupos);
-    const asignados = new Set((miembros || []).map((m) => m.id_user));
+    // Por grupo o por ser para toda la organización (helpers/asignacion.js).
+    const { ids: asignadosIds } = await require("../helpers/asignacion.js").personasDeCurso({ id: courseId });
+    if (!asignadosIds.length) return [];
+    const asignados = new Set(asignadosIds);
     // Con semana o mes aparecen todos los asignados, también con 0: igual que
     // en el ranking de la organización.
     const ids = elegido === "siempre"

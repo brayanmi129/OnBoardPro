@@ -4,19 +4,39 @@ const { supabase } = require("../helpers/supabaseHelper.js");
 const CourseSchema = require("../schemas/courseSchemas.js");
 const { subirBanner, borrar, esCompartido, BANNERS, MATERIALES } = require("../helpers/storage.js");
 const AvisoService = require("./avisoService.js");
+const { columnaFaltante } = require("../helpers/asignacion.js");
 
 
 // La base guarda tenant_id; la API expone tenantId, igual que en usuarios.
 function aFila(d) {
   const o = { ...d };
   if ("tenantId" in o) { o.tenant_id = o.tenantId ?? null; delete o.tenantId; }
+  if ("paraTodos" in o) {
+    // Se manda solo si es true: así crear un curso no depende de que la
+    // columna exista (scripts/pendiente.sql).
+    if (o.paraTodos) o.para_todos = true;
+    delete o.paraTodos;
+  }
   return o;
+}
+
+/** Activar "para toda la organización" es decisión de un administrador. */
+function asegurarPuedeParaTodos(rol) {
+  if (rol !== "admin") {
+    throw fallo("Solo el administrador de la organización puede asignar un curso a toda la organización.", 403);
+  }
+}
+
+/** La columna para_todos todavía no existe en la base. */
+function sinColumnaParaTodos() {
+  return fallo("La opción para toda la organización aún no está disponible: falta actualizar la base de datos (scripts/pendiente.sql).", 409);
 }
 function aObjeto(r) {
   if (!r) return null;
-  const { tenant_id, banner_url, archivado, archivado_at, ...resto } = r;
+  const { tenant_id, banner_url, archivado, archivado_at, para_todos, ...resto } = r;
   return {
     ...resto,
+    paraTodos: Boolean(para_todos),
     tenantId: tenant_id ?? null,
     bannerUrl: banner_url ?? null,
     archivado: Boolean(archivado),
@@ -145,7 +165,7 @@ class CourseService {
     return curso;
   }
 
-  static async createCourse(courseData) {
+  static async createCourse(courseData, rol = null) {
     const customId = crypto.randomBytes(3).toString("hex");
     courseData.id = customId;
 
@@ -155,9 +175,13 @@ class CourseService {
     }
 
     const course = validation.data;
+    if (course.paraTodos) asegurarPuedeParaTodos(rol);
     const { error } = await supabase.from("courses").insert(aFila(course));
-    if (error) throw new Error(error.message);
-    return course;
+    if (error) {
+      if (course.paraTodos && columnaFaltante(error)) throw sinColumnaParaTodos();
+      throw new Error(error.message);
+    }
+    return { ...course, paraTodos: Boolean(course.paraTodos) };
   }
 
   /**
@@ -195,6 +219,12 @@ class CourseService {
     );
     if (!Object.keys(cambios).length) throw fallo("No enviaste nada que cambiar.", 400);
 
+    if ("paraTodos" in cambios) {
+      asegurarPuedeParaTodos(actor.role);
+      cambios.para_todos = cambios.paraTodos;
+      delete cambios.paraTodos;
+    }
+
     let nuevoInstructor = null;
     if (cambios.instructor && cambios.instructor !== curso.instructor) {
       if (actor.role === "instructor") {
@@ -211,7 +241,10 @@ class CourseService {
     }
 
     const { error } = await supabase.from("courses").update(cambios).eq("id", id);
-    if (error) throw new Error(error.message);
+    if (error) {
+      if ("para_todos" in cambios && columnaFaltante(error)) throw sinColumnaParaTodos();
+      throw new Error(error.message);
+    }
 
     if (nuevoInstructor) {
       AvisoService.instructorAsignado({ persona: nuevoInstructor, curso: { ...curso, ...cambios } });
@@ -326,17 +359,14 @@ class CourseService {
   static async impacto(id, actor) {
     const curso = await CourseService._editable(id, actor);
 
-    const [{ data: grupos }, { count: secciones }, actividades] = await Promise.all([
-      supabase.from("groups_courses").select("id_group").eq("id_course", id),
+    const [{ ids, grupoIds }, { count: secciones }, actividades] = await Promise.all([
+      require("../helpers/asignacion.js").personasDeCurso({ id, tenant_id: curso.tenant_id }),
       supabase.from("sections").select("id", { count: "exact", head: true }).eq("course_id", id),
       CourseService._actividadesDe(id),
     ]);
 
     let aprendices = 0;
-    if (grupos?.length) {
-      const { data: integrantes } = await supabase
-        .from("users_groups").select("id_user").in("id_group", grupos.map((g) => g.id_group));
-      const ids = [...new Set((integrantes || []).map((i) => i.id_user))];
+    {
       if (ids.length) {
         const { count } = await supabase.from("users").select("id", { count: "exact", head: true })
           .in("id", ids).eq("role", "student");
@@ -356,7 +386,7 @@ class CourseService {
     return {
       curso: { id: curso.id, nombre: curso.name, archivado: Boolean(curso.archivado) },
       aprendices,
-      grupos: grupos?.length ?? 0,
+      grupos: grupoIds.length,
       secciones: secciones ?? 0,
       actividades: actIds.length,
       entregas: entregas ?? 0,
@@ -484,29 +514,16 @@ class CourseService {
   }
 
   /**
-   * Los cursos asignados a una persona por sus grupos.
+   * Los cursos asignados a una persona: por sus grupos o por ser para toda
+   * su organización.
    *
    * `soloPublicados` deja fuera los despublicados (HU-033): el aprendiz no ve
    * un curso cerrado aunque su grupo lo tenga asignado.
    */
   static async getByUser(userId, { soloPublicados = false } = {}) {
-    const { data: userGroups } = await supabase
-      .from("users_groups")
-      .select("id_group")
-      .eq("id_user", userId);
-
-    if (!userGroups?.length) return [];
-
-    const groupIds = userGroups.map((ug) => ug.id_group);
-
-    const { data: groupCourses } = await supabase
-      .from("groups_courses")
-      .select("id_course")
-      .in("id_group", groupIds);
-
-    if (!groupCourses?.length) return [];
-
-    const courseIds = [...new Set(groupCourses.map((gc) => gc.id_course))];
+    // Por sus grupos o por ser para toda su organización.
+    const courseIds = [...await require("../helpers/asignacion.js").cursosAsignados(userId)];
+    if (!courseIds.length) return [];
 
     let q = supabase.from("courses").select("*").in("id", courseIds);
     // Un curso archivado ya no se dicta: no aparece en "mis cursos" de nadie.
@@ -542,9 +559,9 @@ class CourseService {
       throw fallo("Curso no encontrado", 404);
     }
 
-    const { data: enlaces } = await supabase
-      .from("groups_courses").select("id_group").eq("id_course", curso.id);
-    const grupoIds = [...new Set((enlaces || []).map((e) => e.id_group))];
+    // Los integrantes de sus grupos y, si es para toda la organización, todos
+    // sus aprendices activos.
+    const { ids, grupoIds, paraTodos } = await require("../helpers/asignacion.js").personasDeCurso(curso);
 
     let grupos = [];
     let aprendices = [];
@@ -552,10 +569,8 @@ class CourseService {
       const { data: gs } = await supabase.from("groups").select("id, name").in("id", grupoIds);
       grupos = (gs || []).map((g) => ({ id: g.id, nombre: g.name }))
         .sort((a, b) => a.nombre.localeCompare(b.nombre));
-
-      const { data: miembros } = await supabase
-        .from("users_groups").select("id_user").in("id_group", grupoIds);
-      const ids = [...new Set((miembros || []).map((m) => m.id_user))];
+    }
+    {
       if (ids.length) {
         const { data: personas } = await supabase
           .from("users").select("id, firstname, lastname, email, role, level, status")
@@ -589,6 +604,7 @@ class CourseService {
       curso: { id: curso.id, nombre: curso.name },
       instructor,
       grupos,
+      paraTodos,
       aprendices,
       total: aprendices.length,
     };

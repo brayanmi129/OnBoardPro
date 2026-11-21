@@ -10,6 +10,9 @@ class courseSchema {
     grupo: zod.string().min(1).max(50).optional(),
     status: zod.enum(["Cerrado", "Abierto"]).default("Abierto"),
     actividades: zod.array(zod.string()).optional(),
+    // Para toda la organización: lo tienen todos sus aprendices, estén o no en
+    // un grupo. Solo lo decide un administrador.
+    paraTodos: zod.boolean().optional(),
   });
 
   // Para editar (HU-028): todo opcional y sin valores por defecto, porque un
@@ -19,6 +22,7 @@ class courseSchema {
     instructor: zod.string().email().optional(),
     grupo: zod.string().min(1).max(50).nullable().optional(),
     status: zod.enum(["Cerrado", "Abierto"]).optional(),
+    paraTodos: zod.boolean().optional(),
   });
 
   constructor({ id, name, instructor, grupo, status, actividades = [] }) {

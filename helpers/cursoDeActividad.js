@@ -55,19 +55,11 @@ async function asegurarPublicado(actividadId, actor) {
 }
 
 /**
- * Si el curso está asignado a alguno de los grupos de la persona.
- *
- * La asignación es por grupo (groups_courses): no hay cursos asignados a una
- * persona suelta.
+ * Los cursos asignados a la persona: por sus grupos o, si es aprendiz, por
+ * ser para toda su organización (helpers/asignacion.js).
  */
 async function cursosAsignados(userId) {
-  const { data: grupos } = await supabase
-    .from("users_groups").select("id_group").eq("id_user", userId);
-  if (!grupos?.length) return new Set();
-  const { data: asignaciones } = await supabase
-    .from("groups_courses").select("id_course")
-    .in("id_group", grupos.map((g) => g.id_group));
-  return new Set((asignaciones || []).map((a) => a.id_course));
+  return require("./asignacion.js").cursosAsignados(userId);
 }
 
 async function cursoAsignado(courseId, userId) {

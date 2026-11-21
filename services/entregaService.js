@@ -250,18 +250,13 @@ class EntregaService {
       .from("sections").select("course_id").eq("id", actividad.section_id).maybeSingle();
     if (!seccion?.course_id) return [];
 
-    const { data: grupos } = await supabase
-      .from("groups_courses").select("id_group").eq("id_course", seccion.course_id);
-    if (!grupos?.length) return [];
-
-    const { data: integrantes } = await supabase
-      .from("users_groups").select("id_user")
-      .in("id_group", grupos.map((g) => g.id_group));
-    if (!integrantes?.length) return [];
+    // Por grupo o por ser para toda la organización (helpers/asignacion.js).
+    const { ids } = await require("../helpers/asignacion.js").personasDeCurso({ id: seccion.course_id });
+    if (!ids.length) return [];
 
     const { data: personas } = await supabase
       .from("users").select("id, firstname, lastname, email, role")
-      .in("id", [...new Set(integrantes.map((i) => i.id_user))]);
+      .in("id", ids);
 
     // Solo aprendices: quien dicta o administra no entrega nada.
     return (personas || []).filter((u) => u.role === "student");

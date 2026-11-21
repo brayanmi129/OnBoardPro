@@ -125,11 +125,14 @@ async function cargar(tenantId, desdeAnterior) {
   const deCursosPublicados = actividades
     .filter((a) => publicado(cursoPorId.get(cursoDeSeccion.get(a.section_id)) || {}))
     .map((a) => a.id);
+  // Cursos para toda la organización: los tienen todos sus aprendices, estén
+  // o no en un grupo (helpers/asignacion.js).
+  const paraTodos = await require("../helpers/asignacion.js").cursosParaTodos({ cursoIds });
   const completadas = await porLotes(deCursosPublicados, (lote) => supabase.from("xp_movimientos")
     .select("id, user_id, activity_id, created_at").in("activity_id", lote).order("id", { ascending: true }));
 
   return {
-    usuarios, cursos, tenants, porRevisar, grupos, ventana, gruposCursos, integrantes, actividadesPorCurso, completadas,
+    usuarios, cursos, tenants, porRevisar, grupos, ventana, gruposCursos, integrantes, actividadesPorCurso, completadas, paraTodos,
     accesos, entregasVentana, intentosVentana, actividades,
   };
 }
@@ -143,6 +146,7 @@ async function cargar(tenantId, desdeAnterior) {
  */
 function avance(datos, desde) {
   const { usuarios, cursos, gruposCursos, integrantes, actividadesPorCurso, completadas } = datos;
+  const paraTodos = datos.paraTodos || new Set();
   const cursosDeGrupo = new Map();
   for (const g of gruposCursos) {
     if (!cursosDeGrupo.has(g.id_group)) cursosDeGrupo.set(g.id_group, new Set());
@@ -155,6 +159,19 @@ function avance(datos, desde) {
       if (!publicados.has(c)) continue;
       if (!cursosDe.has(i.id_user)) cursosDe.set(i.id_user, new Set());
       cursosDe.get(i.id_user).add(c);
+    }
+  }
+  // Los publicados para toda la organización, a cada aprendiz de esa organización.
+  const paraTodosPorOrg = new Map();
+  for (const c of cursos) {
+    if (!paraTodos.has(c.id) || !publicados.has(c.id)) continue;
+    if (!paraTodosPorOrg.has(c.tenant_id)) paraTodosPorOrg.set(c.tenant_id, []);
+    paraTodosPorOrg.get(c.tenant_id).push(c.id);
+  }
+  for (const u of usuarios) {
+    for (const c of paraTodosPorOrg.get(u.tenant_id) || []) {
+      if (!cursosDe.has(u.id)) cursosDe.set(u.id, new Set());
+      cursosDe.get(u.id).add(c);
     }
   }
 
